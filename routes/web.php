@@ -113,6 +113,8 @@ Route::middleware('auth')->prefix('parent')->group(function (){
     Route::get('/notifications', [ParentController::class, 'notifications'])->name('parent.notifications');
     Route::get('/events', [ParentController::class, 'events'])->name('parent.events');
     Route::get('/settings', [ParentController::class, 'settings'])->name('parent.settings');
+    Route::post('/settings', [ParentController::class, 'updateSettings'])->name('parent.settings.update');
+    Route::post('/settings/password', [ParentController::class, 'updatePassword'])->name('parent.settings.password');
     Route::get('/help', [ParentController::class, 'help'])->name('parent.help');
     Route::get('/caregivers', [ParentController::class, 'caregivers'])->name('parent.caregivers');
 });

@@ -17,9 +17,8 @@
                     <h2>Childcare</h2>
                 </div>
                 <div class="user-info">
-                    <div class="user-avatar">JD</div>
                     <div class="user-details">
-                        <h4>John Doe</h4>
+                        <h4>{{ Auth::user()->name }}</h4>
                         <p>Parent Account</p>
                     </div>
                 </div>
@@ -165,41 +164,35 @@
                                 </div>
                                 <div class="profile-section">
                                     <div class="profile-avatar-section">
-                                        <div class="profile-avatar-large">JD</div>
                                         <div class="profile-header-info">
-                                            <h3>John Doe</h3>
+                                            <h3>{{ Auth::user()->name }}</h3>
                                             <p>Parent Account</p>
-                                            <p>john.doe@example.com</p>
+                                            <p>{{ Auth::user()->email }}</p>
                                         </div>
                                     </div>
-                                    <form class="settings-form">
-                                        <div class="form-row">
-                                            <div class="form-group">
-                                                <label>First Name</label>
-                                                <input type="text" value="John" class="form-input">
-                                            </div>
-                                            <div class="form-group">
-                                                <label>Last Name</label>
-                                                <input type="text" value="Doe" class="form-input">
-                                            </div>
+                                    <form class="settings-form" action="{{ route('parent.settings.update') }}" method="POST">
+                                        @csrf
+                                        <div class="form-group">
+                                            <label>Full Name</label>
+                                            <input type="text" name="name" value="{{ Auth::user()->name }}" class="form-input" required>
                                         </div>
                                         <div class="form-group">
                                             <label>Email Address</label>
-                                            <input type="email" value="john.doe@example.com" class="form-input">
+                                            <input type="email" value="{{ Auth::user()->email }}" class="form-input" disabled style="background-color: #f3f4f6; cursor: not-allowed;">
                                         </div>
                                         <div class="form-row">
                                             <div class="form-group">
                                                 <label>Phone Number</label>
-                                                <input type="tel" value="+1 (555) 123-4567" class="form-input">
+                                                <input type="tel" name="phone" value="{{ Auth::user()->phone }}" class="form-input">
                                             </div>
                                             <div class="form-group">
                                                 <label>Date of Birth</label>
-                                                <input type="date" value="1985-06-15" class="form-input">
+                                                <input type="date" name="dob" value="{{ Auth::user()->dob }}" class="form-input">
                                             </div>
                                         </div>
                                         <div class="form-group">
                                             <label>Address</label>
-                                            <input type="text" value="123 Main Street, New York, NY 10001" class="form-input">
+                                            <input type="text" name="address" value="{{ Auth::user()->address }}" class="form-input">
                                         </div>
                                         <div class="form-actions">
                                             <button type="button" class="btn-cancel">Cancel</button>
@@ -216,18 +209,25 @@
                                 <div class="card-header">
                                     <h2><i class="fas fa-key"></i> Change Password</h2>
                                 </div>
-                                <form class="settings-form">
+                                <form class="settings-form" action="{{ route('parent.settings.password') }}" method="POST">
+                                    @csrf
                                     <div class="form-group">
                                         <label>Current Password</label>
-                                        <input type="password" class="form-input" placeholder="Enter current password">
+                                        <input type="password" name="current_password" class="form-input @error('current_password') is-invalid @enderror" placeholder="Enter current password" required>
+                                        @error('current_password')
+                                            <span class="text-danger" style="color: red; font-size: 0.875em;">{{ $message }}</span>
+                                        @enderror
                                     </div>
                                     <div class="form-group">
                                         <label>New Password</label>
-                                        <input type="password" class="form-input" placeholder="Enter new password">
+                                        <input type="password" name="new_password" class="form-input @error('new_password') is-invalid @enderror" placeholder="Enter new password" required>
+                                        @error('new_password')
+                                            <span class="text-danger" style="color: red; font-size: 0.875em;">{{ $message }}</span>
+                                        @enderror
                                     </div>
                                     <div class="form-group">
                                         <label>Confirm New Password</label>
-                                        <input type="password" class="form-input" placeholder="Confirm new password">
+                                        <input type="password" name="new_password_confirmation" class="form-input" placeholder="Confirm new password" required>
                                     </div>
                                     <div class="form-actions">
                                         <button type="submit" class="btn-save">Update Password</button>
@@ -411,25 +411,13 @@
             }, 3000);
         }
 
-        // Handle form submissions
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const btn = this.querySelector('button[type="submit"]');
-                const originalText = btn.innerHTML;
-
-                // Show loading state
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-
-                // Simulate API call
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                    showToast('Changes saved successfully!');
-                }, 1000);
+        @if(session('success'))
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast("{{ session('success') }}", 'success');
             });
-        });
+        @endif
+
+
 
         // Handle cancel buttons
         document.querySelectorAll('.btn-cancel').forEach(btn => {
