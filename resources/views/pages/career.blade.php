@@ -6,6 +6,33 @@
     {{-- Header --}}
     @include('layouts.header')
 
+    {{-- Success Message --}}
+    @if(session('success'))
+        <div class="fixed top-24 right-4 z-50 max-w-sm w-full mx-auto p-4 transition-all duration-500 ease-in-out">
+            <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-lg flex items-center justify-between" role="alert">
+                <div>
+                    <strong class="font-bold">Success!</strong>
+                    <span class="block sm:inline">{{ session('success') }}</span>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove()" class="text-green-700 hover:text-green-900">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <script>
+                // Auto-dismiss after 5 seconds
+                setTimeout(function() {
+                    const alert = document.querySelector('.bg-green-100').parentElement;
+                    if(alert) {
+                        alert.style.opacity = '0';
+                        setTimeout(() => alert.remove(), 500);
+                    }
+                }, 5000);
+            </script>
+        </div>
+    @endif
+
     {{-- Career Hero Section --}}
     <section class="relative h-[300px] md:h-[400px] mt-20">
         {{-- Background Image with Blue Overlay --}}
@@ -58,6 +85,23 @@
 <div id="applyModal" class="fixed inset-0 bg-black/60 hidden flex items-center justify-center z-50 p-4">
     <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl relative max-h-[90vh] overflow-y-auto">
 
+        <!-- Notification Messages -->
+        @if($errors->any())
+            <div class="absolute top-4 left-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <strong class="font-bold">Error!</strong>
+                <ul class="list-disc list-inside">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+             <script>
+                document.addEventListener("DOMContentLoaded", function() {
+                    openForm();
+                });
+            </script>
+        @endif
+
         <!-- Header Section -->
         <div class="sticky top-0 bg-white border-b border-gray-200 px-6 md:px-8 py-6 rounded-t-2xl">
             <!-- Close Button -->
@@ -75,12 +119,13 @@
 
         <!-- Form Content -->
         <div class="px-6 md:px-8 py-6">
-            <form id="careerApplicationForm" class="space-y-6">
+            <form id="careerApplicationForm" action="{{ route('career.submit') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                @csrf
 
                 <!-- Full Name -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Full Name <span class="text-red-600">*</span></label>
-                    <input type="text" placeholder="Enter your full name" required
+                    <input type="text" name="full_name" placeholder="Enter your full name" required value="{{ old('full_name') }}"
                            class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
                 </div>
 
@@ -89,35 +134,37 @@
                     <!-- Email -->
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Email <span class="text-red-600">*</span></label>
-                        <input type="email" placeholder="your.email@example.com" required
+                        <input type="email" name="email" placeholder="your.email@example.com" required value="{{ old('email') }}"
                                class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
                     </div>
 
                     <!-- Phone -->
                     <div>
+                    <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Phone Number <span class="text-red-600">*</span></label>
-                        <input type="tel" placeholder="+880 1XXX-XXXXXX" required
+                        <input type="tel" name="phone_number" placeholder="+880 1XXX-XXXXXX" required value="{{ old('phone_number') }}"
                                class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
+                    </div>
                     </div>
                 </div>
 
                 <!-- Address -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Address <span class="text-red-600">*</span></label>
-                    <textarea rows="3" placeholder="Enter your complete address" required
-                              class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition resize-none"></textarea>
+                    <textarea name="address" rows="3" placeholder="Enter your complete address" required
+                              class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition resize-none">{{ old('address') }}</textarea>
                 </div>
 
                 <!-- Position Dropdown -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Select Position <span class="text-red-600">*</span></label>
-                    <select required
+                    <select name="position" required
                         class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
                         <option value="" disabled selected>Choose a position</option>
-                        <option value="toddlers">Toddlers (1-2 years)</option>
-                        <option value="preschool">Preschool (3-4 years)</option>
-                        <option value="pre-k">Pre-K (5 years)</option>
-                        <option value="young-learners">Young Learners (6-7 years)</option>
+                        <option value="toddlers" {{ old('position') == 'toddlers' ? 'selected' : '' }}>Toddlers (1-2 years)</option>
+                        <option value="preschool" {{ old('position') == 'preschool' ? 'selected' : '' }}>Preschool (3-4 years)</option>
+                        <option value="pre-k" {{ old('position') == 'pre-k' ? 'selected' : '' }}>Pre-K (5 years)</option>
+                        <option value="young-learners" {{ old('position') == 'young-learners' ? 'selected' : '' }}>Young Learners (6-7 years)</option>
                     </select>
                 </div>
 
@@ -125,7 +172,7 @@
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Upload CV / Resume (PDF only) <span class="text-red-600">*</span></label>
                     <div class="relative">
-                        <input type="file" accept="application/pdf" required
+                        <input type="file" name="resume" accept="application/pdf" required
                                class="w-full border border-gray-300 rounded-lg px-4 py-3 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-teal-50 file:text-teal-700 file:font-semibold hover:file:bg-teal-100 cursor-pointer">
                     </div>
                     <p class="text-xs text-gray-500 mt-2">Maximum file size: 5MB</p>

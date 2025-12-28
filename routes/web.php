@@ -15,6 +15,7 @@ Route::get('/contact', fn() => view('pages.contact'))->name('contact');
 Route::get('/activities', fn() => view('pages.activities'))->name('activities');
 Route::get('/programs', fn() => view('pages.programs'))->name('programs');
 Route::get('/career', fn() => view('pages.career'))->name('career');
+Route::post('/career/submit', [App\Http\Controllers\JobApplicationController::class, 'store'])->name('career.submit');
 
 
 
