@@ -133,7 +133,7 @@
                             <i class="fas fa-child"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>2</h3>
+                            <h3>{{ $childrenCount }}</h3>
                             <p>Registered Children</p>
                         </div>
                     </a>

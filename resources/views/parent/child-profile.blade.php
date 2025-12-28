@@ -17,9 +17,8 @@
                     <h2>Childcare</h2>
                 </div>
                 <div class="user-info">
-                    <div class="user-avatar">JD</div>
                     <div class="user-details">
-                        <h4>John Doe</h4>
+                        <h4>{{ auth()->user()->name }}</h4>
                         <p>Parent Account</p>
                     </div>
                 </div>
@@ -141,101 +140,59 @@
 
         <!-- Children Grid -->
         <div class="children-grid" id="childrenGrid">
-            <!-- Sample Child Card 1 -->
+            @forelse($children as $child)
             <div class="child-card">
                 <div class="child-header">
-                    <div class="child-avatar">EM</div>
+                    <div class="child-avatar" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+                        {{ strtoupper(substr($child->first_name, 0, 1) . substr($child->last_name, 0, 1)) }}
+                    </div>
                     <div class="child-info">
-                        <h3>Emma Doe</h3>
-                        <p class="age">4 years old</p>
+                        <h3>{{ $child->first_name }} {{ $child->last_name }}</h3>
+                        <p class="age">{{ \Carbon\Carbon::parse($child->dob)->age }} years old</p>
                     </div>
                 </div>
 
                 <div class="child-details">
                     <div class="detail-item">
                         <i class="fas fa-birthday-cake"></i>
-                        <span><strong>DOB:</strong> March 15, 2020</span>
+                        <span><strong>DOB:</strong> {{ \Carbon\Carbon::parse($child->dob)->format('F j, Y') }}</span>
                     </div>
                     <div class="detail-item">
                         <i class="fas fa-venus-mars"></i>
-                        <span><strong>Gender:</strong> Female</span>
+                        <span><strong>Gender:</strong> {{ ucfirst($child->gender) }}</span>
                     </div>
                     <div class="detail-item">
                         <i class="fas fa-school"></i>
-                        <span><strong>Class:</strong> Preschool A</span>
+                        <span><strong>Class:</strong> {{ $child->class ?? 'Not Assigned' }}</span>
                     </div>
                     <div class="detail-item">
                         <i class="fas fa-heartbeat"></i>
-                        <span><strong>Blood Group:</strong> O+</span>
+                        <span><strong>Blood Group:</strong> {{ $child->blood_group ?? 'N/A' }}</span>
                     </div>
                 </div>
 
                 <div class="card-actions">
-                    <button class="action-btn btn-view" onclick="viewChild(1)">
+                    <button class="action-btn btn-view" onclick="viewChild({{ $child->id }})">
                         <i class="fas fa-eye"></i> View
                     </button>
-                    <button class="action-btn btn-edit" onclick="editChild(1)">
+                    <button class="action-btn btn-edit" onclick="editChild({{ $child->id }})">
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <button class="action-btn btn-delete" onclick="deleteChild(1)">
+                    <button class="action-btn btn-delete" onclick="deleteChild({{ $child->id }})">
                         <i class="fas fa-trash"></i> Delete
                     </button>
                 </div>
             </div>
-
-            <!-- Sample Child Card 2 -->
-            <div class="child-card">
-                <div class="child-header">
-                    <div class="child-avatar" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">LJ</div>
-                    <div class="child-info">
-                        <h3>Lucas James</h3>
-                        <p class="age">3 years old</p>
-                    </div>
-                </div>
-
-                <div class="child-details">
-                    <div class="detail-item">
-                        <i class="fas fa-birthday-cake"></i>
-                        <span><strong>DOB:</strong> July 22, 2021</span>
-                    </div>
-                    <div class="detail-item">
-                        <i class="fas fa-venus-mars"></i>
-                        <span><strong>Gender:</strong> Male</span>
-                    </div>
-                    <div class="detail-item">
-                        <i class="fas fa-school"></i>
-                        <span><strong>Class:</strong> Toddler B</span>
-                    </div>
-                    <div class="detail-item">
-                        <i class="fas fa-heartbeat"></i>
-                        <span><strong>Blood Group:</strong> A+</span>
-                    </div>
-                </div>
-
-                <div class="card-actions">
-                    <button class="action-btn btn-view" onclick="viewChild(2)">
-                        <i class="fas fa-eye"></i> View
-                    </button>
-                    <button class="action-btn btn-edit" onclick="editChild(2)">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="action-btn btn-delete" onclick="deleteChild(2)">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
-                </div>
+            @empty
+            <div class="empty-state">
+                <i class="fas fa-child"></i>
+                <h3>No Children Added Yet</h3>
+                <p>Click the "Add New Child" button to register your first child</p>
             </div>
+            @endforelse
         </div>
 
-        <!-- Empty State (hidden by default, show when no children) -->
-        <div class="empty-state" style="display: none;" id="emptyState">
-            <i class="fas fa-child"></i>
-            <h3>No Children Added Yet</h3>
-            <p>Click the "Add New Child" button to register your first child</p>
-            <button class="add-child-btn" onclick="openAddModal()">
-                <i class="fas fa-plus"></i>
-                Add Your First Child
-            </button>
-                </div>
+
             </div>
         </main>
     </div>
@@ -250,16 +207,17 @@
                 </button>
             </div>
 
-            <form id="childForm">
+            <form id="childForm" action="{{ route('parent.child-profile.store') }}" method="POST">
+                @csrf
                 <div class="modal-body">
                     <div class="form-row">
                         <div class="form-group">
                             <label for="firstName">First Name *</label>
-                            <input type="text" id="firstName" name="firstName" required placeholder="Enter first name">
+                            <input type="text" id="firstName" name="first_name" required placeholder="Enter first name">
                         </div>
                         <div class="form-group">
                             <label for="lastName">Last Name *</label>
-                            <input type="text" id="lastName" name="lastName" required placeholder="Enter last name">
+                            <input type="text" id="lastName" name="last_name" required placeholder="Enter last name">
                         </div>
                     </div>
 
@@ -282,7 +240,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="bloodGroup">Blood Group</label>
-                            <select id="bloodGroup" name="bloodGroup">
+                            <select id="bloodGroup" name="blood_group">
                                 <option value="">Select blood group</option>
                                 <option value="A+">A+</option>
                                 <option value="A-">A-</option>
@@ -295,15 +253,13 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="class">Class</label>
-                            <select id="class" name="class">
+                            <label for="class">Class *</label>
+                            <select id="class" name="class" required>
                                 <option value="">Select class</option>
-                                <option value="Infant">Infant</option>
-                                <option value="Toddler A">Toddler A</option>
-                                <option value="Toddler B">Toddler B</option>
-                                <option value="Preschool A">Preschool A</option>
-                                <option value="Preschool B">Preschool B</option>
-                                <option value="Kindergarten">Kindergarten</option>
+                                <option value="Toddler">Toddler(1-2 years)</option>
+                                <option value="Preschool">Preschool(3-4 years)</option>
+                                <option value="Pre-K">Pre-K(4-5 years)</option>
+                                <option value="Young Learners">Young Learners(6-7 years)</option>
                             </select>
                         </div>
                     </div>
@@ -315,12 +271,12 @@
 
                     <div class="form-group">
                         <label for="medicalNotes">Medical Notes</label>
-                        <textarea id="medicalNotes" name="medicalNotes" placeholder="Any medical conditions or special needs"></textarea>
+                        <textarea id="medicalNotes" name="medical_notes" placeholder="Any medical conditions or special needs"></textarea>
                     </div>
 
                     <div class="form-group">
-                        <label for="emergencyContact">Emergency Contact</label>
-                        <input type="tel" id="emergencyContact" name="emergencyContact" placeholder="Emergency contact number">
+                        <label for="emergencyContact">Emergency Contact *</label>
+                        <input type="tel" id="emergencyContact" name="emergency_contact" required placeholder="Emergency contact number">
                     </div>
                 </div>
 
@@ -355,16 +311,56 @@
     </div>
 
     <script>
+        const childrenData = @json($children);
+
         // Modal Functions
         function openAddModal() {
             document.getElementById('modalTitle').textContent = 'Add New Child';
-            document.getElementById('childForm').reset();
+            
+            const form = document.getElementById('childForm');
+            form.reset();
+            form.action = "{{ route('parent.child-profile.store') }}";
+            
+            const methodInput = form.querySelector('input[name="_method"]');
+            if (methodInput) {
+                methodInput.remove();
+            }
+
             document.getElementById('childModal').classList.add('active');
         }
 
         function editChild(id) {
+            const child = childrenData.find(c => c.id === id);
+            if (!child) return;
+
             document.getElementById('modalTitle').textContent = 'Edit Child';
-            // Here you would populate the form with child data
+            
+            const form = document.getElementById('childForm');
+            form.action = `/parent/child-profile/${id}`;
+            
+            // Add hidden method field for PUT
+            let methodInput = form.querySelector('input[name="_method"]');
+            if (!methodInput) {
+                methodInput = document.createElement('input');
+                methodInput.type = 'hidden';
+                methodInput.name = '_method';
+                methodInput.value = 'PUT';
+                form.appendChild(methodInput);
+            }
+
+            // Populate form fields
+            document.getElementById('firstName').value = child.first_name;
+            document.getElementById('lastName').value = child.last_name;
+            document.getElementById('dob').value = child.dob.substring(0, 10);
+            document.getElementById('gender').value = child.gender;
+            document.getElementById('bloodGroup').value = child.blood_group || '';
+            document.getElementById('allergies').value = child.allergies || '';
+            document.getElementById('medicalNotes').value = child.medical_notes || '';
+            document.getElementById('emergencyContact').value = child.emergency_contact;
+            
+            document.getElementById('emergencyContact').value = child.emergency_contact;
+            document.getElementById('class').value = child.class || ''; 
+            
             document.getElementById('childModal').classList.add('active');
         }
 
@@ -373,57 +369,56 @@
         }
 
         function viewChild(id) {
-            // Sample data - replace with actual data
-            const childData = {
-                name: 'Emma Doe',
-                dob: 'March 15, 2020',
-                age: '4 years',
-                gender: 'Female',
-                bloodGroup: 'O+',
-                class: 'Preschool A',
-                allergies: 'None',
-                medicalNotes: 'None',
-                emergencyContact: '+1234567890'
-            };
+            const child = childrenData.find(c => c.id === id);
+            if (!child) return;
+
+            // Calculate age safely
+            const dob = new Date(child.dob);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
 
             const viewBody = document.getElementById('viewModalBody');
             viewBody.innerHTML = `
                 <div class="child-details">
                     <div class="detail-item">
                         <i class="fas fa-user"></i>
-                        <span><strong>Full Name:</strong> ${childData.name}</span>
+                        <span><strong>Full Name:</strong> ${child.first_name} ${child.last_name}</span>
                     </div>
                     <div class="detail-item">
                         <i class="fas fa-birthday-cake"></i>
-                        <span><strong>Date of Birth:</strong> ${childData.dob}</span>
+                        <span><strong>Date of Birth:</strong> ${new Date(child.dob).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
                     </div>
                     <div class="detail-item">
                         <i class="fas fa-calendar"></i>
-                        <span><strong>Age:</strong> ${childData.age}</span>
+                        <span><strong>Age:</strong> ${age} years old</span>
                     </div>
                     <div class="detail-item">
                         <i class="fas fa-venus-mars"></i>
-                        <span><strong>Gender:</strong> ${childData.gender}</span>
-                    </div>
-                    <div class="detail-item">
-                        <i class="fas fa-heartbeat"></i>
-                        <span><strong>Blood Group:</strong> ${childData.bloodGroup}</span>
+                        <span><strong>Gender:</strong> ${child.gender.charAt(0).toUpperCase() + child.gender.slice(1)}</span>
                     </div>
                     <div class="detail-item">
                         <i class="fas fa-school"></i>
-                        <span><strong>Class:</strong> ${childData.class}</span>
+                        <span><strong>Class:</strong> ${child.class || 'Not Assigned'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-heartbeat"></i>
+                        <span><strong>Blood Group:</strong> ${child.blood_group || 'N/A'}</span>
                     </div>
                     <div class="detail-item">
                         <i class="fas fa-allergies"></i>
-                        <span><strong>Allergies:</strong> ${childData.allergies}</span>
+                        <span><strong>Allergies:</strong> ${child.allergies || 'None'}</span>
                     </div>
                     <div class="detail-item">
                         <i class="fas fa-notes-medical"></i>
-                        <span><strong>Medical Notes:</strong> ${childData.medicalNotes}</span>
+                        <span><strong>Medical Notes:</strong> ${child.medical_notes || 'None'}</span>
                     </div>
                     <div class="detail-item">
                         <i class="fas fa-phone"></i>
-                        <span><strong>Emergency Contact:</strong> ${childData.emergencyContact}</span>
+                        <span><strong>Emergency Contact:</strong> ${child.emergency_contact}</span>
                     </div>
                 </div>
             `;
@@ -436,19 +431,33 @@
         }
 
         function deleteChild(id) {
-            if (confirm('Are you sure you want to delete this child profile?')) {
-                // Handle delete logic here
-                alert('Child profile deleted successfully!');
+            if (confirm('Are you sure you want to delete this child profile? This action cannot be undone.')) {
+                // Create a form to submit DELETE request
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/parent/child-profile/${id}`;
+                
+                // Add CSRF token
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = '{{ csrf_token() }}';
+                form.appendChild(csrfInput);
+                
+                // Add method spoofing for DELETE
+                const methodInput = document.createElement('input');
+                methodInput.type = 'hidden';
+                methodInput.name = '_method';
+                methodInput.value = 'DELETE';
+                form.appendChild(methodInput);
+                
+                // Append form to body and submit
+                document.body.appendChild(form);
+                form.submit();
             }
         }
 
-        // Form submission
-        document.getElementById('childForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            // Handle form submission here
-            alert('Child profile saved successfully!');
-            closeModal();
-        });
+
 
         // Close modal when clicking outside
         window.addEventListener('click', function(e) {

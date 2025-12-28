@@ -14,6 +14,7 @@ Route::get('/aboutus', fn() => view('pages.about'))->name('about');
 Route::get('/contact', fn() => view('pages.contact'))->name('contact');
 Route::get('/activities', fn() => view('pages.activities'))->name('activities');
 Route::get('/programs', fn() => view('pages.programs'))->name('programs');
+Route::get('/career', fn() => view('pages.career'))->name('career');
 
 
 
@@ -105,10 +106,19 @@ Route::middleware('auth')->prefix('caregiver')->group(function () {
 Route::middleware('auth')->prefix('parent')->group(function (){
     Route::get('/dashboard', [ParentController::class, 'dashboard'])->name('parent.dashboard');
     Route::get('/child-profile', [ParentController::class, 'childProfile'])->name('parent.child-profile');
+    Route::post('/child-profile', [ParentController::class, 'storeChild'])->name('parent.child-profile.store');
+    Route::put('/child-profile/{id}', [ParentController::class, 'updateChild'])->name('parent.child-profile.update');
+    Route::delete('/child-profile/{id}', [ParentController::class, 'deleteChild'])->name('parent.child-profile.delete');
     Route::get('/reports', [ParentController::class, 'reports'])->name('parent.reports');
     Route::get('/attendance', [ParentController::class, 'attendance'])->name('parent.attendance');
     Route::get('/invoices', [ParentController::class, 'invoices'])->name('parent.invoice');
     Route::get('/health', [ParentController::class, 'health'])->name('parent.health');
+    Route::get('/health/vaccinations', [ParentController::class, 'vaccinations'])->name('parent.vaccinations');
+    Route::get('/health/medications', [ParentController::class, 'medications'])->name('parent.medications');
+    Route::post('/health/vaccination', [ParentController::class, 'storeVaccination'])->name('parent.health.vaccination.store');
+    Route::post('/health/medication', [ParentController::class, 'storeMedication'])->name('parent.health.medication.store');
+    Route::post('/health/record', [ParentController::class, 'storeHealthRecord'])->name('parent.health.record.store');
+    Route::put('/health/record/{id}', [ParentController::class, 'updateHealthRecord'])->name('parent.health.record.update');
     Route::get('/messages', [ParentController::class, 'messages'])->name('parent.messages');
     Route::get('/notifications', [ParentController::class, 'notifications'])->name('parent.notifications');
     Route::get('/events', [ParentController::class, 'events'])->name('parent.events');

@@ -32,6 +32,7 @@
                 <a href="{{ url('/aboutus') }}" class="text-lg font-bold text-gray-700 hover:text-teal-600 transition-colors">About</a>
                 <a href="{{ url('/programs') }}" class="text-lg font-bold text-gray-700 hover:text-teal-600 transition-colors">Programs</a>
                 <a href="{{ url('/activities') }}" class="text-lg font-bold text-gray-700 hover:text-teal-600 transition-colors">Activities</a>
+                <a href="{{ url('/career') }}" class="text-lg font-bold text-gray-700 hover:text-teal-600 transition-colors">Career</a>
                 <a href="{{ url('/contact') }}" class="text-lg font-bold text-gray-700 hover:text-teal-600 transition-colors">Contact</a>
             </div>
 
@@ -65,6 +66,7 @@
             <a href="{{ url('/aboutus') }}" class="block text-gray-700 font-medium hover:text-teal-600">About</a>
             <a href="{{ url('/programs') }}" class="block text-gray-700 font-medium hover:text-teal-600">Programs</a>
             <a href="{{ url('/activities') }}" class="block text-gray-700 font-medium hover:text-teal-600">Activities</a>
+            <a href="{{ url('/career') }}" class="block text-gray-700 font-medium hover:text-teal-600">Career</a>
             <a href="{{ url('/contact') }}" class="block text-gray-700 font-medium hover:text-teal-600">Contact</a>
             <a href="{{ url('/register') }}">
                 <button class="w-full bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-6 py-3 rounded-lg font-semibold">

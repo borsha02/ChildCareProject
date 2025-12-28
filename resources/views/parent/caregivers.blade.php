@@ -17,9 +17,8 @@
                     <h2>Childcare</h2>
                 </div>
                 <div class="user-info">
-                    <div class="user-avatar">JD</div>
                     <div class="user-details">
-                        <h4>John Doe</h4>
+                        <h4>{{ auth()->user()->name }}</h4>
                         <p>Parent Account</p>
                     </div>
                 </div>
