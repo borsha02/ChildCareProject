@@ -116,7 +116,12 @@
                 <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
                     <i class="fas fa-bars"></i>
                 </button>
-                <h1>Analytics Dashboard</h1>
+                <div style="display: flex; align-items: center;">
+                    <a href="{{ route('admin.dashboard') }}" class="back-dashboard-icon">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1>Analytics Dashboard</h1>
+                </div>
                 <div class="top-bar-actions">
                     <select class="filter-select">
                         <option>Last 7 Days</option>

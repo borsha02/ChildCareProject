@@ -104,7 +104,12 @@
                 <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
                     <i class="fas fa-bars"></i>
                 </button>
-                <h1>Communication Logs</h1>
+                <div style="display: flex; align-items: center;">
+                    <a href="{{ route('admin.dashboard') }}" class="back-dashboard-icon">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1>Communication Logs</h1>
+                </div>
                 <div class="top-bar-actions">
                     <input type="date" class="date-picker" value="{{ date('Y-m-d') }}">
                 </div>
