@@ -83,14 +83,183 @@ class ParentController extends Controller
     }
 
 
-    public function reports()
+    public function reports(Request $request)
     {
-        return view('parent.reports');
+        $unreadCount = auth()->user()->unreadNotifications->count();
+        // Fetch all children that are NOT pending (assuming 'pending' is the status for unapproved)
+        $children = \App\Models\Child::where('parent_id', auth()->id())
+            ->where('status', '!=', 'pending') 
+            ->get();
+            
+        // Determine which children's data to show
+        if ($request->has('child_id') && $request->child_id != 'all') {
+            // Verify the requested child belongs to the parent
+            $selectedChild = $children->where('id', $request->child_id)->first();
+            $childIds = $selectedChild ? collect([$selectedChild->id]) : $children->pluck('id');
+        } else {
+            $childIds = $children->pluck('id');
+        }
+
+        // Determine time period for filtering
+        $period = $request->get('period', 'month'); // Default to 'month'
+        
+        // Build date query based on period
+        $reportsQuery = \App\Models\DailyReport::whereIn('child_id', $childIds);
+        $statsQuery = \App\Models\DailyReport::whereIn('child_id', $childIds);
+        $attendanceQuery = \App\Models\Attendance::whereIn('child_id', $childIds)->where('status', 'present');
+        
+        if ($period === 'week') {
+            $reportsQuery->whereBetween('report_date', [now()->startOfWeek(), now()->endOfWeek()]);
+            $statsQuery->whereBetween('report_date', [now()->startOfWeek(), now()->endOfWeek()]);
+            $attendanceQuery->whereBetween('date', [now()->startOfWeek(), now()->endOfWeek()]);
+        } elseif ($period === 'month') {
+            $reportsQuery->whereMonth('report_date', now()->month)->whereYear('report_date', now()->year);
+            $statsQuery->whereMonth('report_date', now()->month)->whereYear('report_date', now()->year);
+            $attendanceQuery->whereMonth('date', now()->month)->whereYear('date', now()->year);
+        } elseif ($period === 'year') {
+            $reportsQuery->whereYear('report_date', now()->year);
+            $statsQuery->whereYear('report_date', now()->year);
+            $attendanceQuery->whereYear('date', now()->year);
+        }
+        // 'all' means no date filter
+
+        // Check if viewing all reports or just recent (limit to 10)
+        $viewAll = $request->get('view_all', false);
+        
+        // Recent Reports Table
+        $recentReportsQuery = $reportsQuery->with('child')->latest('report_date');
+        $recentReports = $viewAll ? $recentReportsQuery->get() : $recentReportsQuery->take(10)->get();
+
+        // --- Calculate Stats ---
+        $filteredReports = $statsQuery->get();
+
+        // 1. Total Daily Reports
+        $totalReports = $filteredReports->count();
+
+        // 2. Average Nap Duration
+        $avgNapDuration = $filteredReports->avg('nap_duration') ?? 0; // in minutes
+
+        // 3. Activity Stats & Summary
+        $activityCounts = [];
+        $totalActivities = 0;
+
+        foreach ($filteredReports as $report) {
+            $activities = $report->activities ?? [];
+            if (is_string($activities)) {
+                 $activities = json_decode($activities, true) ?? [];
+            }
+            
+            if (is_array($activities)) {
+                $totalActivities += count($activities);
+                foreach ($activities as $activity) {
+                    $name = is_array($activity) ? ($activity['name'] ?? 'Unknown') : $activity;
+                    if (!isset($activityCounts[$name])) {
+                        $activityCounts[$name] = 0;
+                    }
+                    $activityCounts[$name]++;
+                }
+            }
+        }
+        
+        // Sort activities by popularity
+        arsort($activityCounts);
+        $topActivities = array_slice($activityCounts, 0, 5); // Take top 5
+
+        // 4. Attendance Count
+        $attendanceCount = $attendanceQuery->count();
+            
+        // Latest Teacher Note (from most recent report)
+        $latestReport = $recentReports->first();
+        $latestTeacherNote = $latestReport ? $latestReport->notes : 'No recent notes available.';
+
+        return view('parent.reports', compact(
+            'unreadCount', 
+            'children', 
+            'recentReports',
+            'totalReports',
+            'avgNapDuration',
+            'totalActivities',
+            'attendanceCount',
+            'topActivities',
+            'latestTeacherNote',
+            'period'
+        ));
     }
 
-    public function attendance()
+    public function attendance(Request $request)
     {
-        return view('parent.attendance');
+        $unreadCount = auth()->user()->unreadNotifications->count();
+        
+        // Fetch active children (for the filter buttons)
+        $children = \App\Models\Child::where('parent_id', auth()->id())
+            ->where('status', '!=', 'pending')
+            ->get();
+
+        // Determine which children's data to show
+        if ($request->has('child_id') && $request->child_id != 'all') {
+            $childIds = $children->where('id', $request->child_id)->pluck('id');
+            // If invalid child_id (not belonging to parent), fall back to all
+            if ($childIds->isEmpty()) {
+                $childIds = $children->pluck('id');
+            }
+        } else {
+            $childIds = $children->pluck('id');
+        }
+        
+        // Get current month/year or from request
+        $month = $request->get('month', now()->month);
+        $year = $request->get('year', now()->year);
+        
+        // Fetch attendance records for current month
+        $attendanceRecords = \App\Models\Attendance::whereIn('child_id', $childIds)
+            ->whereMonth('date', $month)
+            ->whereYear('date', $year)
+            ->get();
+        
+        // Calculate stats
+        $totalDays = $attendanceRecords->count();
+        $daysPresent = $attendanceRecords->where('status', 'present')->count();
+        $daysAbsent = $attendanceRecords->where('status', 'absent')->count();
+        $timesLate = $attendanceRecords->where('status', 'late')->count();
+        $attendanceRate = $totalDays > 0 ? round(($daysPresent / $totalDays) * 100) : 0;
+        
+        // Build calendar data (group by date)
+        $calendarData = [];
+        foreach ($attendanceRecords as $record) {
+            $day = \Carbon\Carbon::parse($record->date)->day;
+            if (!isset($calendarData[$day])) {
+                $calendarData[$day] = [];
+            }
+            $calendarData[$day][] = $record;
+        }
+        
+        // Fetch recent attendance history (last 20 records)
+        $recentAttendance = \App\Models\Attendance::whereIn('child_id', $childIds)
+            ->with('child')
+            ->latest('date')
+            ->take(20)
+            ->get();
+        
+        // Get month info for calendar generation
+        $firstDayOfMonth = \Carbon\Carbon::create($year, $month, 1);
+        $daysInMonth = $firstDayOfMonth->daysInMonth;
+        $startDayOfWeek = $firstDayOfMonth->dayOfWeek; // 0 = Sunday
+        
+        return view('parent.attendance', compact(
+            'unreadCount',
+            'children',
+            'attendanceRate',
+            'daysPresent',
+            'daysAbsent',
+            'timesLate',
+            'totalDays',
+            'calendarData',
+            'recentAttendance',
+            'month',
+            'year',
+            'daysInMonth',
+            'startDayOfWeek'
+        ));
     }
 
     public function invoices()
@@ -214,7 +383,18 @@ class ParentController extends Controller
 
     public function caregivers()
     {
-        return view('parent.caregivers');
+        $unreadCount = auth()->user()->unreadNotifications->count();
+        
+        // Fetch caregivers assigned to the parent's children
+        // We get all children of the parent, then pluck their caregivers, collapse into one collection, and make unique
+        $caregivers = \App\Models\Child::where('parent_id', auth()->id())
+            ->with('caregivers')
+            ->get()
+            ->pluck('caregivers')
+            ->flatten()
+            ->unique('id');
+
+        return view('parent.caregivers', compact('unreadCount', 'caregivers'));
     }
 
     public function storeVaccination(Request $request)

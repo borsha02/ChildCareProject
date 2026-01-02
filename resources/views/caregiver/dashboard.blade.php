@@ -28,39 +28,41 @@
     <div class="content-area">
         <!-- Stats Grid -->
         <div class="stats-grid">
-            <div class="stat-card">
+            <div class="stat-card" onclick="window.location.href='{{ route('caregiver.assigned') }}'" style="cursor: pointer;">
                 <div class="stat-icon green">
                     <i class="fas fa-users"></i>
                 </div>
                 <div class="stat-details">
-                    <h3>12</h3>
+                    <h3>{{ $assignedChildren->count() }}</h3>
                     <p>Assigned Children</p>
                 </div>
             </div>
-            <div class="stat-card">
+            <!-- Dynamic Status -->
+            <div class="stat-card" onclick="window.location.href='{{ route('caregiver.attendance') }}'" style="cursor: pointer;">
                 <div class="stat-icon blue">
                     <i class="fas fa-user-check"></i>
                 </div>
                 <div class="stat-details">
-                    <h3>10</h3>
+                    <h3>{{ $presentCount }}</h3>
                     <p>Present Today</p>
                 </div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" onclick="window.location.href='{{ route('caregiver.reports') }}'" style="cursor: pointer;">
                 <div class="stat-icon orange">
                     <i class="fas fa-tasks"></i>
                 </div>
+                <!-- Logic is handled in controller -->
                 <div class="stat-details">
-                    <h3>5</h3>
-                    <p>Pending Tasks</p>
+                    <h3>{{ $pendingReportsCount }}</h3>
+                    <p>Pending Reports</p>
                 </div>
             </div>
-            <div class="stat-card">
+            <div class="stat-card" onclick="window.location.href='{{ route('caregiver.messages') }}'" style="cursor: pointer;">
                 <div class="stat-icon purple">
                     <i class="fas fa-comments"></i>
                 </div>
                 <div class="stat-details">
-                    <h3>4</h3>
+                    <h3>0</h3>
                     <p>New Messages</p>
                 </div>
             </div>
@@ -75,38 +77,22 @@
                     <a href="{{ route('caregiver.assigned') }}" class="view-all">View All</a>
                 </div>
                 <div class="children-list">
+                    @forelse($assignedChildren->take(4) as $child)
                     <div class="child-item">
-                        <div class="child-avatar">EM</div>
-                        <div class="child-info">
-                            <h4>Emma Martinez</h4>
-                            <p>Age: 4 years • Class: Preschool A</p>
+                        <div class="child-avatar" style="background: {{ '#' . substr(md5($child->first_name . $child->last_name), 0, 6) }};">
+                            {{ strtoupper(substr($child->first_name, 0, 1) . substr($child->last_name, 0, 1)) }}
                         </div>
-                        <span class="status-badge present">Present</span>
-                    </div>
-                    <div class="child-item">
-                        <div class="child-avatar" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">LJ</div>
                         <div class="child-info">
-                            <h4>Lucas Johnson</h4>
-                            <p>Age: 3 years • Class: Toddler B</p>
+                            <h4>{{ $child->first_name }} {{ $child->last_name }}</h4>
+                            <p>Age: {{ \Carbon\Carbon::parse($child->dob)->age }} years • Class: {{ $child->class }}</p>
                         </div>
-                        <span class="status-badge present">Present</span>
+                        <span class="status-badge {{ $child->status }}">{{ ucfirst($child->status) }}</span>
                     </div>
-                    <div class="child-item">
-                        <div class="child-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">OW</div>
-                        <div class="child-info">
-                            <h4>Olivia Williams</h4>
-                            <p>Age: 5 years • Class: Preschool A</p>
-                        </div>
-                        <span class="status-badge present">Present</span>
+                    @empty
+                    <div class="empty-state" style="padding: 20px; text-align: center; color: #6b7280;">
+                        <p>No children assigned yet.</p>
                     </div>
-                    <div class="child-item">
-                        <div class="child-avatar" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">NB</div>
-                        <div class="child-info">
-                            <h4>Noah Brown</h4>
-                            <p>Age: 2 years • Class: Toddler A</p>
-                        </div>
-                        <span class="status-badge absent">Absent</span>
-                    </div>
+                    @endforelse
                 </div>
             </div>
 
@@ -170,46 +156,20 @@
                     <a href="{{ route('caregiver.reports') }}" class="view-all">View All</a>
                 </div>
                 <div class="task-list">
-                    <div class="task-item">
+                    @forelse($tasks as $task)
+                    <div class="task-item" onclick="window.location.href='{{ $task['link'] }}'" style="cursor: pointer;">
                         <div class="task-checkbox"></div>
                         <div class="task-content">
-                            <p>Complete daily report for Emma Martinez</p>
-                            <span>Due: 4:00 PM</span>
+                            <p>{{ $task['title'] }}</p>
+                            <span>{{ $task['description'] }} • Due: {{ $task['due'] }}</span>
                         </div>
-                        <span class="task-priority high">High</span>
+                        <span class="task-priority {{ $task['priority'] }}">{{ ucfirst($task['priority']) }}</span>
                     </div>
-                    <div class="task-item">
-                        <div class="task-checkbox"></div>
-                        <div class="task-content">
-                            <p>Update health records for Lucas Johnson</p>
-                            <span>Due: 3:00 PM</span>
-                        </div>
-                        <span class="task-priority medium">Medium</span>
+                    @empty
+                    <div class="empty-state" style="padding: 20px; text-align: center; color: #6b7280;">
+                        <p>No pending tasks for today!</p>
                     </div>
-                    <div class="task-item">
-                        <div class="task-checkbox"></div>
-                        <div class="task-content">
-                            <p>Respond to parent messages</p>
-                            <span>Due: End of day</span>
-                        </div>
-                        <span class="task-priority medium">Medium</span>
-                    </div>
-                    <div class="task-item">
-                        <div class="task-checkbox"></div>
-                        <div class="task-content">
-                            <p>Prepare materials for tomorrow's art class</p>
-                            <span>Due: Tomorrow</span>
-                        </div>
-                        <span class="task-priority low">Low</span>
-                    </div>
-                    <div class="task-item">
-                        <div class="task-checkbox"></div>
-                        <div class="task-content">
-                            <p>Review attendance records</p>
-                            <span>Due: End of week</span>
-                        </div>
-                        <span class="task-priority low">Low</span>
-                    </div>
+                    @endforelse
                 </div>
             </div>
 

@@ -9,7 +9,7 @@
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar (Same as dashboard) -->
+        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">
@@ -18,7 +18,7 @@
                 </div>
                 <div class="user-info">
                     <div class="user-details">
-                        <h4>{{ auth()->user()->name }}</h4>
+                        <h4>{{ Auth::user()->name }}</h4>
                         <p>Parent Account</p>
                     </div>
                 </div>
@@ -52,9 +52,10 @@
                         <span>Messages</span>
                         <span class="badge">3</span>
                     </a>
-                    <a href="{{ route('parent.notifications') }}" class="icon-btn">
+                    <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
+                        <span>Notifications</span>
+                        <span class="badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
@@ -122,33 +123,30 @@
 
             <div class="content-area">
                 <div class="caregiver-grid">
-                    <div class="caregiver-card">
-                        <div class="caregiver-avatar">SJ</div>
-                        <div class="caregiver-info">
-                            <h3>Sarah Johnson</h3>
-                            <p>Lead Teacher • Preschool A</p>
-                            <p class="mt-2 text-sm">Experience: 5 Years</p>
+                    @forelse($caregivers as $caregiver)
+                        <div class="caregiver-card">
+                            <div class="caregiver-avatar" style="background: linear-gradient(135deg, {{ $loop->iteration % 2 == 0 ? '#3b82f6, #2563eb' : '#10b981, #059669' }});">
+                                {{ strtoupper(substr($caregiver->name, 0, 1) . substr(strrchr($caregiver->name, ' '), 1, 1)) }}
+                            </div>
+                            <div class="caregiver-info">
+                                <h3>{{ $caregiver->name }}</h3>
+                                <p>Caregiver</p>
+                                <!-- Assuming phone or email as contact info since we don't have experience/class explicitly in user table -->
+                                <p class="mt-2 text-sm">{{ $caregiver->email }}</p> 
+                            </div>
+                            <div class="caregiver-actions">
+                                <a href="#" class="btn-message" style="opacity: 0.5; cursor: not-allowed;" onclick="return false;">
+                                    <i class="fas fa-comment-alt"></i> Send Message
+                                </a>
+                            </div>
                         </div>
-                        <div class="caregiver-actions">
-                            <a href="{{ route('parent.messages') }}" class="btn-message">
-                                <i class="fas fa-comment-alt"></i> Send Message
-                            </a>
+                    @empty
+                        <div class="no-caregivers" style="grid-column: 1 / -1; text-align: center; padding: 40px;">
+                            <i class="fas fa-chalkboard-teacher" style="font-size: 48px; color: #cbd5e1; margin-bottom: 20px;"></i>
+                            <h3 style="color: #64748b;">No Caregivers Assigned Yet</h3>
+                            <p style="color: #94a3b8;">Once your child is enrolled in a class, their teacher will appear here.</p>
                         </div>
-                    </div>
-
-                    <div class="caregiver-card">
-                        <div class="caregiver-avatar" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">MR</div>
-                        <div class="caregiver-info">
-                            <h3>Michael Ross</h3>
-                            <p>Assistant Teacher • Toddler B</p>
-                            <p class="mt-2 text-sm">Experience: 3 Years</p>
-                        </div>
-                        <div class="caregiver-actions">
-                            <a href="{{ route('parent.messages') }}" class="btn-message">
-                                <i class="fas fa-comment-alt"></i> Send Message
-                            </a>
-                        </div>
-                    </div>
+                    @endforelse
                 </div>
             </div>
         </main>

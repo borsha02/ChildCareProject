@@ -104,8 +104,11 @@ Route::middleware('auth')->prefix('caregiver')->group(function () {
     Route::get('/dashboard', [CaregiverController::class, 'dashboard'])->name('caregiver.dashboard');
     Route::get('/assigned-children', [CaregiverController::class, 'assignedChildren'])->name('caregiver.assigned');
     Route::get('/attendance', [CaregiverController::class, 'attendance'])->name('caregiver.attendance');
+    Route::post('/attendance', [CaregiverController::class, 'storeAttendance'])->name('caregiver.attendance.store');
     Route::get('/daily-reports', [CaregiverController::class, 'dailyReports'])->name('caregiver.reports');
+    Route::post('/daily-reports', [CaregiverController::class, 'storeDailyReport'])->name('caregiver.reports.store');
     Route::get('/health-records', [CaregiverController::class, 'healthRecords'])->name('caregiver.health');
+    Route::get('/health-records/{id}', [CaregiverController::class, 'showChildHealth'])->name('caregiver.health.show');
     Route::get('/messages', [CaregiverController::class, 'messages'])->name('caregiver.messages');
     Route::get('/schedule', [CaregiverController::class, 'schedule'])->name('caregiver.schedule');
     Route::get('/events', [CaregiverController::class, 'events'])->name('caregiver.events');
