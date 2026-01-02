@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notifications - Childcare Management</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite(['resources/css/notifications.css'])
 </head>
 <body>
@@ -55,7 +56,7 @@
                     <a href="{{ route('parent.notifications') }}" class="nav-item active">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="badge" id="sidebar-badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
@@ -120,7 +121,7 @@
                     </div>
                     <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
                     </a>
                     <a href="{{ route('parent.messages') }}" class="icon-btn">
                         <i class="fas fa-envelope"></i>
@@ -134,7 +135,7 @@
                     <div class="notification-actions">
                         <div class="filter-tabs">
                             <button class="filter-tab active" data-filter="all">All</button>
-                            <button class="filter-tab" data-filter="unread">Unread (5)</button>
+                            <button class="filter-tab" data-filter="unread">Unread (<span id="tab-unread-count">{{ $unreadCount }}</span>)</button>
                             <button class="filter-tab" data-filter="important">Important</button>
                         </div>
                         <div class="action-buttons">
@@ -146,154 +147,61 @@
 
                     <!-- Notifications List -->
                     <div class="notifications-list">
-                        <!-- Unread Notification -->
-                        <div class="notification-item unread">
-                            <div class="notification-icon payment">
-                                <i class="fas fa-dollar-sign"></i>
-                            </div>
-                            <div class="notification-content">
-                                <h4>Payment Reminder</h4>
-                                <p>Your December tuition payment of $450.00 is due on Dec 31, 2025. Please make the payment to avoid late fees.</p>
-                                <div class="notification-meta">
-                                    <span class="time"><i class="fas fa-clock"></i> 2 hours ago</span>
-                                    <span class="category">Billing</span>
-                                </div>
-                            </div>
-                            <div class="notification-actions-menu">
-                                <button class="mark-read-btn" title="Mark as read">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                                <button class="delete-btn" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
+                        @forelse($notifications as $notification)
+                            @php
+                                $data = $notification->data;
+                                $isUnread = is_null($notification->read_at);
+                                $iconClass = 'fas fa-bell';
+                                $bgClass = 'message'; // Default background class
 
-                        <!-- Unread Notification -->
-                        <div class="notification-item unread important">
-                            <div class="notification-icon important-icon">
-                                <i class="fas fa-exclamation-circle"></i>
-                            </div>
-                            <div class="notification-content">
-                                <h4>Important: Parent-Teacher Conference</h4>
-                                <p>Reminder: Your parent-teacher conference with Ms. Sarah Johnson is scheduled for December 28, 2025 at 2:00 PM. Please confirm your attendance.</p>
-                                <div class="notification-meta">
-                                    <span class="time"><i class="fas fa-clock"></i> 5 hours ago</span>
-                                    <span class="category">Events</span>
+                                if(isset($data['type'])) {
+                                    switch($data['type']) {
+                                        case 'child_approved':
+                                            $iconClass = 'fas fa-child';
+                                            $bgClass = 'achievement';
+                                            break;
+                                        case 'payment':
+                                            $iconClass = 'fas fa-dollar-sign';
+                                            $bgClass = 'payment';
+                                            break;
+                                        case 'event':
+                                            $iconClass = 'fas fa-calendar';
+                                            $bgClass = 'event';
+                                            break;
+                                        // Add more cases as needed
+                                    }
+                                }
+                            @endphp
+                            <div class="notification-item {{ $isUnread ? 'unread' : '' }}" data-id="{{ $notification->id }}">
+                                <div class="notification-icon {{ $bgClass }}">
+                                    <i class="{{ $iconClass }}"></i>
+                                </div>
+                                <div class="notification-content">
+                                    <h4>{{ isset($data['type']) && $data['type'] == 'child_approved' ? 'Registration Approved' : 'New Notification' }}</h4>
+                                    <p>{{ $data['message'] ?? 'No message content' }}</p>
+                                    <div class="notification-meta">
+                                        <span class="time"><i class="fas fa-clock"></i> {{ $notification->created_at->diffForHumans() }}</span>
+                                        <span class="category">System</span>
+                                    </div>
+                                </div>
+                                <div class="notification-actions-menu">
+                                    @if($isUnread)
+                                        <button class="mark-read-btn" title="Mark as read">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    @endif
+                                    <button class="delete-btn" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="notification-actions-menu">
-                                <button class="mark-read-btn" title="Mark as read">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                                <button class="delete-btn" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Unread Notification -->
-                        <div class="notification-item unread">
-                            <div class="notification-icon achievement">
-                                <i class="fas fa-trophy"></i>
-                            </div>
-                            <div class="notification-content">
-                                <h4>Achievement Unlocked!</h4>
-                                <p>Emma has completed her art project and received excellent feedback from the teacher. Great job!</p>
-                                <div class="notification-meta">
-                                    <span class="time"><i class="fas fa-clock"></i> 1 day ago</span>
-                                    <span class="category">Progress</span>
+                        @empty
+                            <div class="notification-item" style="justify-content: center; background: transparent; cursor: default;">
+                                <div class="notification-content" style="text-align: center;">
+                                    <p style="color: var(--text-muted); margin: 0;">You have no notifications at this time.</p>
                                 </div>
                             </div>
-                            <div class="notification-actions-menu">
-                                <button class="mark-read-btn" title="Mark as read">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                                <button class="delete-btn" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Read Notification -->
-                        <div class="notification-item">
-                            <div class="notification-icon message">
-                                <i class="fas fa-comment"></i>
-                            </div>
-                            <div class="notification-content">
-                                <h4>New Message from Ms. Sarah Johnson</h4>
-                                <p>You have received a new message regarding Emma's progress in art class. Click to view the message.</p>
-                                <div class="notification-meta">
-                                    <span class="time"><i class="fas fa-clock"></i> 2 days ago</span>
-                                    <span class="category">Messages</span>
-                                </div>
-                            </div>
-                            <div class="notification-actions-menu">
-                                <button class="delete-btn" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Read Notification -->
-                        <div class="notification-item">
-                            <div class="notification-icon event">
-                                <i class="fas fa-calendar"></i>
-                            </div>
-                            <div class="notification-content">
-                                <h4>Upcoming Event: Christmas Party</h4>
-                                <p>Don't forget! The Christmas party is scheduled for December 25, 2025 from 10:00 AM to 2:00 PM. You are registered for this event.</p>
-                                <div class="notification-meta">
-                                    <span class="time"><i class="fas fa-clock"></i> 3 days ago</span>
-                                    <span class="category">Events</span>
-                                </div>
-                            </div>
-                            <div class="notification-actions-menu">
-                                <button class="delete-btn" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Read Notification -->
-                        <div class="notification-item">
-                            <div class="notification-icon health">
-                                <i class="fas fa-heartbeat"></i>
-                            </div>
-                            <div class="notification-content">
-                                <h4>Health Checkup Reminder</h4>
-                                <p>Emma's annual health checkup is coming up on January 15, 2026. Please schedule an appointment with your pediatrician.</p>
-                                <div class="notification-meta">
-                                    <span class="time"><i class="fas fa-clock"></i> 5 days ago</span>
-                                    <span class="category">Health</span>
-                                </div>
-                            </div>
-                            <div class="notification-actions-menu">
-                                <button class="delete-btn" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Read Notification -->
-                        <div class="notification-item">
-                            <div class="notification-icon attendance">
-                                <i class="fas fa-calendar-check"></i>
-                            </div>
-                            <div class="notification-content">
-                                <h4>Attendance Update</h4>
-                                <p>Lucas has perfect attendance for the month of November! Keep up the great work.</p>
-                                <div class="notification-meta">
-                                    <span class="time"><i class="fas fa-clock"></i> 1 week ago</span>
-                                    <span class="category">Attendance</span>
-                                </div>
-                            </div>
-                            <div class="notification-actions-menu">
-                                <button class="delete-btn" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </div>
+                        @endforelse
                     </div>
                 </div>
             </div>
@@ -301,6 +209,33 @@
     </div>
 
     <script>
+        // Set up CSRF token for AJAX requests
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        // Update badge counts
+        function updateBadges(count) {
+            const sidebarBadge = document.getElementById('sidebar-badge');
+            const tabUnreadCount = document.getElementById('tab-unread-count');
+            const topBarDot = document.querySelector('.notification-dot');
+
+            sidebarBadge.textContent = count > 0 ? count : '';
+            tabUnreadCount.textContent = count;
+            
+            if (count > 0) {
+                if (topBarDot) topBarDot.style.display = 'block';
+            } else {
+                if (topBarDot) topBarDot.style.display = 'none';
+            }
+        }
+
+        function decrementUnreadCount() {
+            const tabUnreadCount = document.getElementById('tab-unread-count');
+            let current = parseInt(tabUnreadCount.textContent) || 0;
+            if (current > 0) {
+                updateBadges(current - 1);
+            }
+        }
+
         // Filter tabs
         document.querySelectorAll('.filter-tab').forEach(tab => {
             tab.addEventListener('click', function() {
@@ -324,11 +259,25 @@
 
         // Mark all as read
         document.querySelector('.mark-all').addEventListener('click', () => {
-            document.querySelectorAll('.notification-item.unread').forEach(item => {
-                item.classList.remove('unread');
-                const markBtn = item.querySelector('.mark-read-btn');
-                if (markBtn) markBtn.remove();
-            });
+             fetch("{{ route('parent.notifications.mark-all') }}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.querySelectorAll('.notification-item.unread').forEach(item => {
+                        item.classList.remove('unread');
+                        const markBtn = item.querySelector('.mark-read-btn');
+                        if (markBtn) markBtn.remove();
+                    });
+                    updateBadges(0);
+                }
+            })
+            .catch(error => console.error('Error:', error));
         });
 
         // Mark individual as read
@@ -336,8 +285,24 @@
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const notificationItem = this.closest('.notification-item');
-                notificationItem.classList.remove('unread');
-                this.remove();
+                const id = notificationItem.dataset.id;
+                
+                fetch(`/parent/notifications/${id}/mark-read`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        notificationItem.classList.remove('unread');
+                        this.remove();
+                        decrementUnreadCount();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
             });
         });
 
@@ -346,8 +311,28 @@
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const notificationItem = this.closest('.notification-item');
-                notificationItem.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => notificationItem.remove(), 300);
+                const id = notificationItem.dataset.id;
+
+                if (!confirm('Are you sure you want to delete this notification?')) return;
+
+                fetch(`/parent/notifications/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        if (notificationItem.classList.contains('unread')) {
+                            decrementUnreadCount();
+                        }
+                        notificationItem.style.animation = 'slideOut 0.3s ease';
+                        setTimeout(() => notificationItem.remove(), 300);
+                    }
+                })
+                .catch(error => console.error('Error:', error));
             });
         });
 

@@ -249,6 +249,9 @@ body {
     align-items: center;
     gap: 20px;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
 }
 
 .stat-card:hover {
@@ -467,6 +470,14 @@ body {
     background: #fef3c7;
     border-left: 4px solid #f59e0b;
     border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pending-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .pending-info h4 {

@@ -150,185 +150,48 @@
                             </tr>
                         </thead>
                         <tbody id="usersTableBody">
-                            <!-- Sample Users -->
-                            <tr data-role="admin" data-status="active">
+                            @forelse($users as $user)
+                            <tr data-role="{{ $user->role }}" data-status="{{ $user->status }}">
                                 <td>
                                     <div class="user-info-cell">
-                                        <div class="user-avatar-small">JD</div>
+                                        <div class="user-avatar-small" style="background: {{ '#' . substr(md5($user->name), 0, 6) }};">
+                                            {{ strtoupper(substr($user->name, 0, 2)) }}
+                                        </div>
                                         <div class="user-details-small">
-                                            <h4>John Doe</h4>
-                                            <p>ID: U001</p>
+                                            <h4>{{ $user->name }}</h4>
+                                            <p>ID: #{{ $user->id }}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td>john.doe@childcare.com</td>
-                                <td>+1 234-567-8901</td>
-                                <td><span class="role-badge admin">Admin</span></td>
-                                <td><span class="status-badge active">Active</span></td>
+                                <td>{{ $user->email }}</td>
+                                <td>{{ $user->phone }}</td>
+                                <td><span class="role-badge {{ $user->role }}">{{ ucfirst($user->role) }}</span></td>
+                                <td><span class="status-badge {{ $user->status }}">{{ ucfirst($user->status) }}</span></td>
                                 <td>
                                     <div class="action-buttons">
-                                        <button class="action-icon edit" title="Edit" onclick="editUser(1)">
+                                        <button class="action-icon edit" title="Edit" onclick="editUser({{ json_encode($user) }}, '{{ route('admin.users.update', $user->id) }}')">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="action-icon role" title="Assign Role">
-                                            <i class="fas fa-user-tag"></i>
-                                        </button>
-                                        <button class="action-icon delete" title="Delete" onclick="deleteUser(1)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        <form action="{{ route('admin.users.toggle', $user->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to {{ $user->status === 'active' ? 'deactivate' : 'activate' }} this user?');">
+                                            @csrf
+                                            <button type="submit" class="action-icon {{ $user->status === 'active' ? 'delete' : 'approve' }}" title="{{ $user->status === 'active' ? 'Deactivate' : 'Activate' }}">
+                                                <i class="fas fa-{{ $user->status === 'active' ? 'ban' : 'check' }}"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>
-                            <tr data-role="parent" data-status="active">
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-small" style="background: linear-gradient(135deg, #10b981, #059669);">SM</div>
-                                        <div class="user-details-small">
-                                            <h4>Sarah Martinez</h4>
-                                            <p>ID: U002</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>sarah.m@email.com</td>
-                                <td>+1 234-567-8902</td>
-                                <td><span class="role-badge parent">Parent</span></td>
-                                <td><span class="status-badge active">Active</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon edit" title="Edit" onclick="editUser(2)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon role" title="Assign Role">
-                                            <i class="fas fa-user-tag"></i>
-                                        </button>
-                                        <button class="action-icon delete" title="Delete" onclick="deleteUser(2)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
+                            @empty
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 20px;">No users found.</td>
                             </tr>
-                            <tr data-role="caregiver" data-status="active">
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-small" style="background: linear-gradient(135deg, #f59e0b, #d97706);">LJ</div>
-                                        <div class="user-details-small">
-                                            <h4>Lisa Johnson</h4>
-                                            <p>ID: U003</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>lisa.j@childcare.com</td>
-                                <td>+1 234-567-8903</td>
-                                <td><span class="role-badge caregiver">Caregiver</span></td>
-                                <td><span class="status-badge active">Active</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon edit" title="Edit" onclick="editUser(3)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon role" title="Assign Role">
-                                            <i class="fas fa-user-tag"></i>
-                                        </button>
-                                        <button class="action-icon delete" title="Delete" onclick="deleteUser(3)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-role="parent" data-status="active">
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-small" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">MJ</div>
-                                        <div class="user-details-small">
-                                            <h4>Michael Johnson</h4>
-                                            <p>ID: U004</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>michael.j@email.com</td>
-                                <td>+1 234-567-8904</td>
-                                <td><span class="role-badge parent">Parent</span></td>
-                                <td><span class="status-badge active">Active</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon edit" title="Edit" onclick="editUser(4)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon role" title="Assign Role">
-                                            <i class="fas fa-user-tag"></i>
-                                        </button>
-                                        <button class="action-icon delete" title="Delete" onclick="deleteUser(4)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-role="parent" data-status="inactive">
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-small" style="background: linear-gradient(135deg, #ef4444, #dc2626);">DB</div>
-                                        <div class="user-details-small">
-                                            <h4>David Brown</h4>
-                                            <p>ID: U005</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>david.b@email.com</td>
-                                <td>+1 234-567-8905</td>
-                                <td><span class="role-badge parent">Parent</span></td>
-                                <td><span class="status-badge inactive">Inactive</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon edit" title="Edit" onclick="editUser(5)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon role" title="Assign Role">
-                                            <i class="fas fa-user-tag"></i>
-                                        </button>
-                                        <button class="action-icon delete" title="Delete" onclick="deleteUser(5)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-role="caregiver" data-status="active">
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-small" style="background: linear-gradient(135deg, #ec4899, #db2777);">ED</div>
-                                        <div class="user-details-small">
-                                            <h4>Emily Davis</h4>
-                                            <p>ID: U006</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>emily.d@childcare.com</td>
-                                <td>+1 234-567-8906</td>
-                                <td><span class="role-badge caregiver">Caregiver</span></td>
-                                <td><span class="status-badge active">Active</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon edit" title="Edit" onclick="editUser(6)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon role" title="Assign Role">
-                                            <i class="fas fa-user-tag"></i>
-                                        </button>
-                                        <button class="action-icon delete" title="Delete" onclick="deleteUser(6)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
 
                     <!-- Pagination -->
                     <div class="pagination">
-                        <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
-                        <button class="page-btn active">1</button>
-                        <button class="page-btn">2</button>
-                        <button class="page-btn">3</button>
-                        <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+                        {{ $users->links() }}
                     </div>
                 </div>
             </div>
@@ -389,23 +252,48 @@
     <script>
         function openModal() {
             document.getElementById('userModal').classList.add('active');
+            document.getElementById('modalTitle').textContent = 'Add New User';
+            document.querySelector('#userModal form').action = "{{ route('admin.users.create') }}";
+            document.querySelector('#userModal form').reset();
+            
+            // Add method spoofing for PUT if it exists (remove it for create)
+            const methodInput = document.querySelector('input[name="_method"]');
+            if (methodInput) methodInput.remove();
         }
 
         function closeModal() {
             document.getElementById('userModal').classList.remove('active');
         }
 
-        function editUser(id) {
+
+
+        function editUser(user, updateUrl) {
             document.getElementById('userModal').classList.add('active');
             document.getElementById('modalTitle').textContent = 'Edit User';
-            console.log('Editing user:', id);
-        }
+            
+            // Update form action
+            const form = document.querySelector('#userModal form');
+            form.action = updateUrl;
 
-        function deleteUser(id) {
-            if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-                console.log('Deleting user:', id);
-                alert('User deleted successfully!');
+            // Add method spoofing for PUT
+            let methodInput = document.querySelector('input[name="_method"]');
+            if (!methodInput) {
+                methodInput = document.createElement('input');
+                methodInput.type = 'hidden';
+                methodInput.name = '_method';
+                methodInput.value = 'PUT';
+                form.appendChild(methodInput);
             }
+
+            // Prefill form
+            document.getElementById('name').value = user.name;
+            document.getElementById('email').value = user.email;
+            document.getElementById('phone').value = user.phone;
+            document.getElementById('role').value = user.role;
+            
+            // Password fields are usually left empty for updates unless changing
+            document.getElementById('password').required = false;
+            document.getElementById('password_confirmation').required = false;
         }
 
         function filterByRole(role) {

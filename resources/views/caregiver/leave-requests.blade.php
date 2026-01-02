@@ -158,43 +158,44 @@
                     <div class="card-header">
                         <h3>Submit New Leave Request</h3>
                     </div>
-                    <form style="display: grid; gap: 20px;">
+                    <form action="{{ route('caregiver.leave.store') }}" method="POST" style="display: grid; gap: 20px;">
+                        @csrf
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                             <div>
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">Leave Type</label>
-                                <select style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
-                                    <option>Select leave type</option>
-                                    <option>Vacation</option>
-                                    <option>Sick Leave</option>
-                                    <option>Personal</option>
-                                    <option>Emergency</option>
+                                <select name="leave_type" required style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                                    <option value="">Select leave type</option>
+                                    <option value="Vacation">Vacation</option>
+                                    <option value="Sick Leave">Sick Leave</option>
+                                    <option value="Personal">Personal</option>
+                                    <option value="Emergency">Emergency</option>
                                 </select>
                             </div>
                             <div>
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">Duration</label>
-                                <select style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
-                                    <option>Full Day</option>
-                                    <option>Half Day (Morning)</option>
-                                    <option>Half Day (Afternoon)</option>
+                                <select name="duration_type" required style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                                    <option value="Full Day">Full Day</option>
+                                    <option value="Half Day (Morning)">Half Day (Morning)</option>
+                                    <option value="Half Day (Afternoon)">Half Day (Afternoon)</option>
                                 </select>
                             </div>
                         </div>
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                             <div>
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">Start Date</label>
-                                <input type="date" style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                                <input type="date" name="start_date" required style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
                             </div>
                             <div>
                                 <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">End Date</label>
-                                <input type="date" style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                                <input type="date" name="end_date" required style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
                             </div>
                         </div>
                         <div>
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">Reason</label>
-                            <textarea rows="4" placeholder="Please provide a reason for your leave request..." style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">Reason <span style="color: #ef4444;">*</span></label>
+                            <textarea name="reason" required rows="4" placeholder="Please provide a reason for your leave request..." style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
                         </div>
                         <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                            <button type="button" style="padding: 12px 24px; background: #f3f4f6; color: #4b5563; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                            <button type="reset" style="padding: 12px 24px; background: #f3f4f6; color: #4b5563; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
                                 Cancel
                             </button>
                             <button type="submit" style="padding: 12px 24px; background: #059669; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
@@ -228,56 +229,32 @@
                                 </tr>
                             </thead>
                             <tbody>
+                                @forelse($leaveRequests as $request)
                                 <tr style="border-bottom: 1px solid #f3f4f6;">
-                                    <td style="padding: 12px; color: #4b5563;">Vacation</td>
-                                    <td style="padding: 12px; color: #4b5563;">Jan 15, 2026</td>
-                                    <td style="padding: 12px; color: #4b5563;">Jan 19, 2026</td>
-                                    <td style="padding: 12px; color: #4b5563;">5</td>
-                                    <td style="padding: 12px; color: #4b5563;">Family vacation</td>
+                                    <td style="padding: 12px; color: #4b5563;">{{ $request->leave_type }}</td>
+                                    <td style="padding: 12px; color: #4b5563;">{{ \Carbon\Carbon::parse($request->start_date)->format('M d, Y') }}</td>
+                                    <td style="padding: 12px; color: #4b5563;">{{ \Carbon\Carbon::parse($request->end_date)->format('M d, Y') }}</td>
+                                    <td style="padding: 12px; color: #4b5563;">
+                                        {{ \Carbon\Carbon::parse($request->start_date)->diffInDays(\Carbon\Carbon::parse($request->end_date)) + 1 }}
+                                    </td>
+                                    <td style="padding: 12px; color: #4b5563;">{{ Str::limit($request->reason, 30) }}</td>
                                     <td style="padding: 12px;">
-                                        <span style="padding: 6px 12px; background: #fef3c7; color: #92400e; border-radius: 20px; font-size: 12px; font-weight: 600;">Pending</span>
+                                        @php
+                                            $statusColors = [
+                                                'pending' => 'background: #fef3c7; color: #92400e;',
+                                                'approved' => 'background: #d1fae5; color: #065f46;',
+                                                'rejected' => 'background: #fee2e2; color: #991b1b;',
+                                            ];
+                                            $style = $statusColors[$request->status] ?? $statusColors['pending'];
+                                        @endphp
+                                        <span style="padding: 6px 12px; {{ $style }} border-radius: 20px; font-size: 12px; font-weight: 600;">{{ ucfirst($request->status) }}</span>
                                     </td>
                                 </tr>
-                                <tr style="border-bottom: 1px solid #f3f4f6;">
-                                    <td style="padding: 12px; color: #4b5563;">Personal</td>
-                                    <td style="padding: 12px; color: #4b5563;">Dec 28, 2025</td>
-                                    <td style="padding: 12px; color: #4b5563;">Dec 28, 2025</td>
-                                    <td style="padding: 12px; color: #4b5563;">1</td>
-                                    <td style="padding: 12px; color: #4b5563;">Personal appointment</td>
-                                    <td style="padding: 12px;">
-                                        <span style="padding: 6px 12px; background: #fef3c7; color: #92400e; border-radius: 20px; font-size: 12px; font-weight: 600;">Pending</span>
-                                    </td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #f3f4f6;">
-                                    <td style="padding: 12px; color: #4b5563;">Sick Leave</td>
-                                    <td style="padding: 12px; color: #4b5563;">Dec 10, 2025</td>
-                                    <td style="padding: 12px; color: #4b5563;">Dec 11, 2025</td>
-                                    <td style="padding: 12px; color: #4b5563;">2</td>
-                                    <td style="padding: 12px; color: #4b5563;">Flu symptoms</td>
-                                    <td style="padding: 12px;">
-                                        <span style="padding: 6px 12px; background: #d1fae5; color: #065f46; border-radius: 20px; font-size: 12px; font-weight: 600;">Approved</span>
-                                    </td>
-                                </tr>
-                                <tr style="border-bottom: 1px solid #f3f4f6;">
-                                    <td style="padding: 12px; color: #4b5563;">Vacation</td>
-                                    <td style="padding: 12px; color: #4b5563;">Nov 20, 2025</td>
-                                    <td style="padding: 12px; color: #4b5563;">Nov 22, 2025</td>
-                                    <td style="padding: 12px; color: #4b5563;">3</td>
-                                    <td style="padding: 12px; color: #4b5563;">Thanksgiving holiday</td>
-                                    <td style="padding: 12px;">
-                                        <span style="padding: 6px 12px; background: #d1fae5; color: #065f46; border-radius: 20px; font-size: 12px; font-weight: 600;">Approved</span>
-                                    </td>
-                                </tr>
+                                @empty
                                 <tr>
-                                    <td style="padding: 12px; color: #4b5563;">Personal</td>
-                                    <td style="padding: 12px; color: #4b5563;">Nov 5, 2025</td>
-                                    <td style="padding: 12px; color: #4b5563;">Nov 5, 2025</td>
-                                    <td style="padding: 12px; color: #4b5563;">1</td>
-                                    <td style="padding: 12px; color: #4b5563;">Doctor appointment</td>
-                                    <td style="padding: 12px;">
-                                        <span style="padding: 6px 12px; background: #fee2e2; color: #991b1b; border-radius: 20px; font-size: 12px; font-weight: 600;">Rejected</span>
-                                    </td>
+                                    <td colspan="6" style="padding: 20px; text-align: center; color: #6b7280;">No leave requests found.</td>
                                 </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>

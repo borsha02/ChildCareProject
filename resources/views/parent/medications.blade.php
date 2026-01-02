@@ -55,7 +55,7 @@
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
@@ -104,19 +104,30 @@
         <!-- Main Content -->
         <main class="main-content">
             <!-- Header -->
-            <header class="content-header">
-                <div class="header-left">
-                    <button class="mobile-toggle">
-                        <i class="fas fa-bars"></i>
-                    </button>
+            <div class="top-bar">
+                <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div style="display: flex; align-items: center;">
+                    <a href="{{ route('parent.health') }}" class="back-dashboard-icon">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
                     <h1><i class="fas fa-pills"></i> Current Medications</h1>
                 </div>
-                <div class="header-right">
-                    <a href="{{ route('parent.health') }}" class="btn-back">
-                        <i class="fas fa-arrow-left"></i> Back to Health
+                <div class="top-bar-actions">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <a href="{{ route('parent.notifications') }}" class="icon-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
                     </a>
+                    <button class="icon-btn">
+                        <i class="fas fa-envelope"></i>
+                    </button>
                 </div>
-            </header>
+            </div>
 
             <!-- Main Content Area -->
             <div class="content-body">
@@ -145,71 +156,88 @@
                         @endforelse
                     </div>
 
-                    <!-- Medications Table -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h2><i class="fas fa-pills"></i> All Medications</h2>
-                            <button class="add-btn" onclick="openMedicationModal()">
-                                <i class="fas fa-plus"></i> Add Medication
-                            </button>
+                    <!-- Pending Approval Message -->
+                    <div id="pendingMessageContainer" style="display: {{ $children->first() && $children->first()->status === 'pending' ? 'flex' : 'none' }}; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; background: white; border-radius: 12px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;">
+                        <div style="width: 80px; height: 80px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="fas fa-user-clock" style="font-size: 40px; color: #dc2626;"></i>
                         </div>
-                        <table class="medication-table">
-                            <thead>
-                                <tr>
-                                    <th>Medication</th>
-                                    <th>Dosage</th>
-                                    <th>Frequency</th>
-                                    <th>Start Date</th>
-                                    <th>End Date</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="medicationTableBody">
-                                @if($children->isNotEmpty() && $children->first()->medications->isNotEmpty())
-                                    @foreach($children->first()->medications as $medication)
+                        <h2 style="color: #1f2937; margin-bottom: 0.5rem; font-size: 24px;">Registration Pending</h2>
+                        <p style="color: #6b7280; max-width: 400px; margin-bottom: 2rem; font-size: 16px;">
+                            This child's registration is currently under review by the administration. Medication records will be available once the registration is approved.
+                        </p>
+                        <div style="display: flex; gap: 10px; font-size: 14px; color: #4b5563; background: #f3f4f6; padding: 10px 20px; border-radius: 20px;">
+                            <i class="fas fa-info-circle" style="color: #4f46e5; margin-top: 2px;"></i>
+                            <span>You will receive a notification when approved.</span>
+                        </div>
+                    </div>
+
+                    <!-- Medications Table -->
+                    <div id="medicationContentContainer" style="display: {{ !$children->first() || $children->first()->status !== 'pending' ? 'block' : 'none' }}">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2><i class="fas fa-pills"></i> All Medications</h2>
+                                <button class="add-btn" onclick="openMedicationModal()">
+                                    <i class="fas fa-plus"></i> Add Medication
+                                </button>
+                            </div>
+                            <table class="medication-table">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            <div class="medication-name">
-                                                <i class="fas fa-capsules"></i>
-                                                <span>{{ $medication->medication_name }}</span>
-                                            </div>
-                                        </td>
-                                        <td>{{ $medication->dosage }}</td>
-                                        <td>{{ $medication->frequency }}</td>
-                                        <td>{{ \Carbon\Carbon::parse($medication->start_date)->format('M j, Y') }}</td>
-                                        <td>{{ $medication->end_date ? \Carbon\Carbon::parse($medication->end_date)->format('M j, Y') : 'Ongoing' }}</td>
-                                        <td><span class="status-badge {{ $medication->status }}">{{ ucfirst($medication->status) }}</span></td>
-                                        <td>
-                                            <button class="action-icon-btn" title="Edit">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="action-icon-btn" title="Delete">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
+                                        <th>Medication</th>
+                                        <th>Dosage</th>
+                                        <th>Frequency</th>
+                                        <th>Start Date</th>
+                                        <th>End Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
                                     </tr>
-                                    @if($medication->notes)
-                                    <tr class="notes-row">
-                                        <td colspan="7">
-                                            <strong>Notes:</strong> {{ $medication->notes }}
-                                        </td>
-                                    </tr>
+                                </thead>
+                                <tbody id="medicationTableBody">
+                                    @if($children->isNotEmpty() && $children->first()->medications->isNotEmpty())
+                                        @foreach($children->first()->medications as $medication)
+                                        <tr>
+                                            <td>
+                                                <div class="medication-name">
+                                                    <i class="fas fa-capsules"></i>
+                                                    <span>{{ $medication->medication_name }}</span>
+                                                </div>
+                                            </td>
+                                            <td>{{ $medication->dosage }}</td>
+                                            <td>{{ $medication->frequency }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($medication->start_date)->format('M j, Y') }}</td>
+                                            <td>{{ $medication->end_date ? \Carbon\Carbon::parse($medication->end_date)->format('M j, Y') : 'Ongoing' }}</td>
+                                            <td><span class="status-badge {{ $medication->status }}">{{ ucfirst($medication->status) }}</span></td>
+                                            <td>
+                                                <button class="action-icon-btn" title="Edit" onclick="editMedication({{ $medication->id }})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="action-icon-btn" title="Delete" onclick="deleteMedication({{ $medication->id }})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        @if($medication->notes)
+                                        <tr class="notes-row">
+                                            <td colspan="7">
+                                                <strong>Notes:</strong> {{ $medication->notes }}
+                                            </td>
+                                        </tr>
+                                        @endif
+                                        @endforeach
+                                    @else
+                                        <tr>
+                                            <td colspan="7" style="text-align: center; padding: 2rem;">
+                                                <i class="fas fa-pills" style="font-size: 3rem; color: #9ca3af; margin-bottom: 1rem; display: block;"></i>
+                                                <p style="color: #6b7280;">No medications found</p>
+                                                <button class="add-btn" onclick="openMedicationModal()" style="margin-top: 1rem;">
+                                                    <i class="fas fa-plus"></i> Add First Medication
+                                                </button>
+                                            </td>
+                                        </tr>
                                     @endif
-                                    @endforeach
-                                @else
-                                    <tr>
-                                        <td colspan="7" style="text-align: center; padding: 2rem;">
-                                            <i class="fas fa-pills" style="font-size: 3rem; color: #9ca3af; margin-bottom: 1rem; display: block;"></i>
-                                            <p style="color: #6b7280;">No medications found</p>
-                                            <button class="add-btn" onclick="openMedicationModal()" style="margin-top: 1rem;">
-                                                <i class="fas fa-plus"></i> Add First Medication
-                                            </button>
-                                        </td>
-                                    </tr>
-                                @endif
-                            </tbody>
-                        </table>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -220,13 +248,15 @@
     <div class="modal" id="medicationModal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Add Medication</h2>
+                <h2 id="medicationModalTitle">Add Medication</h2>
                 <button class="close-modal" onclick="closeMedicationModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <form action="{{ route('parent.health.medication.store') }}" method="POST">
+            <form id="medicationForm" action="{{ route('parent.health.medication.store') }}" method="POST">
                 @csrf
+                <input type="hidden" name="_method" id="medication_method" value="POST">
+                <input type="hidden" name="medication_id" id="medication_id" value="">
                 <div class="modal-body">
                     <input type="hidden" name="child_id" id="medication_child_id" value="{{ $children->first()->id ?? '' }}">
                     
@@ -274,7 +304,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-cancel" onclick="closeMedicationModal()">Cancel</button>
-                    <button type="submit" class="btn-submit">
+                    <button type="submit" class="btn-submit" id="medicationSubmitBtn">
                         <i class="fas fa-save"></i> Save Medication
                     </button>
                 </div>
@@ -295,6 +325,18 @@
                 const child = childrenData.find(c => c.id === childId);
                 
                 if (child) {
+                    const pendingContainer = document.getElementById('pendingMessageContainer');
+                    const contentContainer = document.getElementById('medicationContentContainer');
+                    
+                    if (child.status === 'pending') {
+                        pendingContainer.style.display = 'flex';
+                        if (contentContainer) contentContainer.style.display = 'none';
+                        return;
+                    } else {
+                        pendingContainer.style.display = 'none';
+                        if (contentContainer) contentContainer.style.display = 'block';
+                    }
+
                     updateMedicationTable(child.medications);
                     document.getElementById('medication_child_id').value = childId;
                 }
@@ -339,10 +381,10 @@
                         <td>${endDate}</td>
                         <td><span class="status-badge ${medication.status}">${medication.status.charAt(0).toUpperCase() + medication.status.slice(1)}</span></td>
                         <td>
-                            <button class="action-icon-btn" title="Edit">
+                            <button class="action-icon-btn" title="Edit" onclick="editMedication(${medication.id})">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="action-icon-btn" title="Delete">
+                            <button class="action-icon-btn" title="Delete" onclick="deleteMedication(${medication.id})">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -368,15 +410,78 @@
                 alert('Please add a child profile first.');
                 return;
             }
+            
             const modal = document.getElementById('medicationModal');
+            const form = document.getElementById('medicationForm');
+            const title = document.getElementById('medicationModalTitle');
+            const submitBtn = document.getElementById('medicationSubmitBtn');
+            const methodInput = document.getElementById('medication_method');
+            const idInput = document.getElementById('medication_id');
+
+            // Reset form for "Add" mode
+            form.reset();
+            title.textContent = 'Add Medication';
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Medication';
+            methodInput.value = 'POST';
+            idInput.value = '';
+            form.action = "{{ route('parent.health.medication.store') }}";
+
             modal.style.display = 'flex';
-            modal.classList.add('active');
+            setTimeout(() => modal.classList.add('active'), 10);
+        }
+
+        function editMedication(medicationId) {
+            const childId = parseInt(document.querySelector('.child-tab.active').getAttribute('data-child'));
+            const child = childrenData.find(c => c.id === childId);
+            const medication = child.medications.find(m => m.id === medicationId);
+
+            if (!medication) return;
+
+            const modal = document.getElementById('medicationModal');
+            const form = document.getElementById('medicationForm');
+            const title = document.getElementById('medicationModalTitle');
+            const submitBtn = document.getElementById('medicationSubmitBtn');
+            const methodInput = document.getElementById('medication_method');
+            const idInput = document.getElementById('medication_id');
+
+            title.textContent = 'Edit Medication';
+            submitBtn.innerHTML = '<i class="fas fa-save"></i> Update Medication';
+            methodInput.value = 'PUT';
+            idInput.value = medication.id;
+            form.action = `/parent/health/medication/${medication.id}`;
+
+            document.getElementById('medication_name').value = medication.medication_name;
+            document.getElementById('dosage').value = medication.dosage;
+            document.getElementById('frequency').value = medication.frequency;
+            document.getElementById('start_date').value = medication.start_date;
+            document.getElementById('end_date').value = medication.end_date || '';
+            document.getElementById('medication_status').value = medication.status;
+            document.getElementById('medication_notes').value = medication.notes || '';
+
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+        }
+
+        function deleteMedication(medicationId) {
+            if (confirm('Are you sure you want to delete this medication record?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/parent/health/medication/${medicationId}`;
+                form.innerHTML = `
+                    @csrf
+                    @method('DELETE')
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
         }
 
         function closeMedicationModal() {
             const modal = document.getElementById('medicationModal');
-            modal.style.display = 'none';
             modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
         }
 
         window.addEventListener('click', function(e) {

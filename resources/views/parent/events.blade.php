@@ -55,7 +55,7 @@
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item active">
                         <i class="fas fa-calendar-alt"></i>
@@ -118,10 +118,10 @@
                         <input type="text" placeholder="Search events...">
                         <i class="fas fa-search"></i>
                     </div>
-                    <button class="icon-btn">
+                    <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
-                    </button>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
+                    </a>
                     <button class="icon-btn">
                         <i class="fas fa-envelope"></i>
                     </button>

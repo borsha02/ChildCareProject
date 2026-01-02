@@ -55,7 +55,7 @@
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="badge" style="{{ $unreadCount > 0 ? 'display:inline-block' : 'display:none' }}">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
@@ -118,10 +118,10 @@
                         <input type="text" placeholder="Search...">
                         <i class="fas fa-search"></i>
                     </div>
-                    <button class="icon-btn">
+                    <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
-                    </button>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
+                    </a>
                     <button class="icon-btn">
                         <i class="fas fa-envelope"></i>
                     </button>
@@ -147,7 +147,12 @@
                         {{ strtoupper(substr($child->first_name, 0, 1) . substr($child->last_name, 0, 1)) }}
                     </div>
                     <div class="child-info">
-                        <h3>{{ $child->first_name }} {{ $child->last_name }}</h3>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <h3>{{ $child->first_name }} {{ $child->last_name }}</h3>
+                            <span class="status-badge {{ $child->status ?? 'pending' }}" style="font-size: 0.7em; padding: 2px 8px; border-radius: 12px; background: {{ ($child->status == 'active') ? '#d1fae5' : (($child->status == 'rejected') ? '#fee2e2' : '#fef3c7') }}; color: {{ ($child->status == 'active') ? '#065f46' : (($child->status == 'rejected') ? '#991b1b' : '#92400e') }};">
+                                {{ ucfirst($child->status ?? 'Pending') }}
+                            </span>
+                        </div>
                         <p class="age">{{ \Carbon\Carbon::parse($child->dob)->age }} years old</p>
                     </div>
                 </div>
@@ -165,10 +170,20 @@
                         <i class="fas fa-school"></i>
                         <span><strong>Class:</strong> {{ $child->class ?? 'Not Assigned' }}</span>
                     </div>
-                    <div class="detail-item">
+                <div class="detail-item">
                         <i class="fas fa-heartbeat"></i>
                         <span><strong>Blood Group:</strong> {{ $child->blood_group ?? 'N/A' }}</span>
                     </div>
+                   <div class="detail-item">
+                        <i class="fas fa-box"></i>
+                        <span><strong>Package:</strong> {{ ucfirst($child->package ?? 'Monthly') }}</span>
+                    </div>
+                    @if($child->package === 'weekly')
+                    <div class="detail-item">
+                        <i class="fas fa-clock"></i>
+                        <span><strong>Duration:</strong> {{ $child->duration }} Weeks</span>
+                    </div>
+                    @endif
                 </div>
 
                 <div class="card-actions">
@@ -212,22 +227,22 @@
                 <div class="modal-body">
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="firstName">First Name *</label>
+                            <label for="firstName">First Name <span class="text-red-600">*</span></label>
                             <input type="text" id="firstName" name="first_name" required placeholder="Enter first name">
                         </div>
                         <div class="form-group">
-                            <label for="lastName">Last Name *</label>
+                            <label for="lastName">Last Name <span class="text-red-600">*</span></label>
                             <input type="text" id="lastName" name="last_name" required placeholder="Enter last name">
                         </div>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="dob">Date of Birth *</label>
+                            <label for="dob">Date of Birth <span class="text-red-600">*</span></label>
                             <input type="date" id="dob" name="dob" required>
                         </div>
                         <div class="form-group">
-                            <label for="gender">Gender *</label>
+                            <label for="gender">Gender <span class="text-red-600">*</span></label>
                             <select id="gender" name="gender" required>
                                 <option value="">Select gender</option>
                                 <option value="male">Male</option>
@@ -253,13 +268,29 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="class">Class *</label>
+                            <label for="class">Class <span class="text-red-600">*</span></label>
                             <select id="class" name="class" required>
                                 <option value="">Select class</option>
                                 <option value="Toddler">Toddler(1-2 years)</option>
                                 <option value="Preschool">Preschool(3-4 years)</option>
                                 <option value="Pre-K">Pre-K(4-5 years)</option>
                                 <option value="Young Learners">Young Learners(6-7 years)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="package">Package <span class="text-red-600">*</span></label>
+                            <select id="package" name="package" required>
+                                <option value="monthly">Monthly</option>
+                                <option value="weekly">Weekly</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="durationGroup" style="display: none;">
+                            <label for="duration">Duration (Weeks) <span class="text-red-600">*</span></label>
+                            <select id="duration" name="duration">
+                                <option value="">Select duration</option>
+                                <option value="1">1 Week</option>
+                                <option value="2">2 Weeks</option>
+                                <option value="3">3 Weeks</option>
                             </select>
                         </div>
                     </div>
@@ -275,7 +306,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="emergencyContact">Emergency Contact *</label>
+                        <label for="emergencyContact">Emergency Contact <span class="text-red-600">*</span></label>
                         <input type="tel" id="emergencyContact" name="emergency_contact" required placeholder="Emergency contact number">
                     </div>
                 </div>
@@ -327,6 +358,9 @@
             }
 
             document.getElementById('childModal').classList.add('active');
+            
+            // Reset duration visibility
+            document.getElementById('durationGroup').style.display = 'none';
         }
 
         function editChild(id) {
@@ -360,6 +394,13 @@
             
             document.getElementById('emergencyContact').value = child.emergency_contact;
             document.getElementById('class').value = child.class || ''; 
+            document.getElementById('package').value = child.package || 'monthly';
+            
+            // Handle duration visibility and value
+            toggleDuration();
+            if (child.package === 'weekly') {
+                document.getElementById('duration').value = child.duration || '';
+            }
             
             document.getElementById('childModal').classList.add('active');
         }
@@ -408,6 +449,15 @@
                         <i class="fas fa-heartbeat"></i>
                         <span><strong>Blood Group:</strong> ${child.blood_group || 'N/A'}</span>
                     </div>
+                    <div class="detail-item">
+                         <i class="fas fa-box"></i>
+                        <span><strong>Package:</strong> ${child.package ? child.package.charAt(0).toUpperCase() + child.package.slice(1) : 'Monthly'}</span>
+                    </div>
+                    ${child.package === 'weekly' ? `
+                    <div class="detail-item">
+                        <i class="fas fa-clock"></i>
+                        <span><strong>Duration:</strong> ${child.duration} Weeks</span>
+                    </div>` : ''}
                     <div class="detail-item">
                         <i class="fas fa-allergies"></i>
                         <span><strong>Allergies:</strong> ${child.allergies || 'None'}</span>
@@ -484,6 +534,24 @@
                 }
             }
         });
+
+        // Toggle Duration based on Package
+        function toggleDuration() {
+            const packageSelect = document.getElementById('package');
+            const durationGroup = document.getElementById('durationGroup');
+            const durationSelect = document.getElementById('duration');
+            
+            if (packageSelect.value === 'weekly') {
+                durationGroup.style.display = 'block';
+                durationSelect.required = true;
+            } else {
+                durationGroup.style.display = 'none';
+                durationSelect.required = false;
+                durationSelect.value = '';
+            }
+        }
+
+        document.getElementById('package').addEventListener('change', toggleDuration);
     </script>
 </body>
 </html>

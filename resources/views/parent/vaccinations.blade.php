@@ -55,7 +55,7 @@
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
@@ -104,19 +104,30 @@
         <!-- Main Content -->
         <main class="main-content">
             <!-- Header -->
-            <header class="content-header">
-                <div class="header-left">
-                    <button class="mobile-toggle">
-                        <i class="fas fa-bars"></i>
-                    </button>
+            <div class="top-bar">
+                <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div style="display: flex; align-items: center;">
+                    <a href="{{ route('parent.health') }}" class="back-dashboard-icon">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
                     <h1><i class="fas fa-syringe"></i> Vaccination Records</h1>
                 </div>
-                <div class="header-right">
-                    <a href="{{ route('parent.health') }}" class="btn-back">
-                        <i class="fas fa-arrow-left"></i> Back to Health
+                <div class="top-bar-actions">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <a href="{{ route('parent.notifications') }}" class="icon-btn">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
                     </a>
+                    <button class="icon-btn">
+                        <i class="fas fa-envelope"></i>
+                    </button>
                 </div>
-            </header>
+            </div>
 
             <!-- Main Content Area -->
             <div class="content-body">
@@ -145,47 +156,64 @@
                         @endforelse
                     </div>
 
-                    <!-- Vaccination Records -->
-                    <div class="card">
-                        <div class="card-header">
-                            <h2><i class="fas fa-syringe"></i> All Vaccination Records</h2>
-                            <button class="add-btn" onclick="openVaccinationModal()">
-                                <i class="fas fa-plus"></i> Add Record
-                            </button>
+                    <!-- Pending Approval Message -->
+                    <div id="pendingMessageContainer" style="display: {{ $children->first() && $children->first()->status === 'pending' ? 'flex' : 'none' }}; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; background: white; border-radius: 12px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;">
+                        <div style="width: 80px; height: 80px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+                            <i class="fas fa-user-clock" style="font-size: 40px; color: #dc2626;"></i>
                         </div>
-                        <div class="vaccination-list" id="vaccinationList">
-                            @if($children->isNotEmpty() && $children->first()->vaccinations->isNotEmpty())
-                                @foreach($children->first()->vaccinations as $vaccination)
-                                <div class="vaccination-item {{ $vaccination->status }}">
-                                    <div class="vaccine-icon">
-                                        <i class="fas {{ $vaccination->status === 'completed' ? 'fa-check-circle' : ($vaccination->status === 'upcoming' ? 'fa-clock' : 'fa-exclamation-triangle') }}"></i>
-                                    </div>
-                                    <div class="vaccine-info">
-                                        <h4>{{ $vaccination->vaccine_name }}</h4>
-                                        <p>{{ $vaccination->description ?? 'No description' }}</p>
-                                        <span class="vaccine-date">
-                                            @if($vaccination->administered_date)
-                                                Administered: {{ \Carbon\Carbon::parse($vaccination->administered_date)->format('F j, Y') }}
-                                            @elseif($vaccination->scheduled_date)
-                                                Scheduled: {{ \Carbon\Carbon::parse($vaccination->scheduled_date)->format('F j, Y') }}
+                        <h2 style="color: #1f2937; margin-bottom: 0.5rem; font-size: 24px;">Registration Pending</h2>
+                        <p style="color: #6b7280; max-width: 400px; margin-bottom: 2rem; font-size: 16px;">
+                            This child's registration is currently under review by the administration. Vaccination records will be available once the registration is approved.
+                        </p>
+                        <div style="display: flex; gap: 10px; font-size: 14px; color: #4b5563; background: #f3f4f6; padding: 10px 20px; border-radius: 20px;">
+                            <i class="fas fa-info-circle" style="color: #4f46e5; margin-top: 2px;"></i>
+                            <span>You will receive a notification when approved.</span>
+                        </div>
+                    </div>
+
+                    <!-- Vaccination Records -->
+                    <div id="vaccinationContentContainer" style="display: {{ !$children->first() || $children->first()->status !== 'pending' ? 'block' : 'none' }}">
+                        <div class="card">
+                            <div class="card-header">
+                                <h2><i class="fas fa-syringe"></i> All Vaccination Records</h2>
+                                <button class="add-btn" onclick="openVaccinationModal()">
+                                    <i class="fas fa-plus"></i> Add Record
+                                </button>
+                            </div>
+                            <div class="vaccination-list" id="vaccinationList">
+                                @if($children->isNotEmpty() && $children->first()->vaccinations->isNotEmpty())
+                                    @foreach($children->first()->vaccinations as $vaccination)
+                                    <div class="vaccination-item {{ $vaccination->status }}">
+                                        <div class="vaccine-icon">
+                                            <i class="fas {{ $vaccination->status === 'completed' ? 'fa-check-circle' : ($vaccination->status === 'upcoming' ? 'fa-clock' : 'fa-exclamation-triangle') }}"></i>
+                                        </div>
+                                        <div class="vaccine-info">
+                                            <h4>{{ $vaccination->vaccine_name }}</h4>
+                                            <p>{{ $vaccination->description ?? 'No description' }}</p>
+                                            <span class="vaccine-date">
+                                                @if($vaccination->administered_date)
+                                                    Administered: {{ \Carbon\Carbon::parse($vaccination->administered_date)->format('F j, Y') }}
+                                                @elseif($vaccination->scheduled_date)
+                                                    Scheduled: {{ \Carbon\Carbon::parse($vaccination->scheduled_date)->format('F j, Y') }}
+                                                @endif
+                                            </span>
+                                            @if($vaccination->notes)
+                                            <p class="vaccine-notes"><strong>Notes:</strong> {{ $vaccination->notes }}</p>
                                             @endif
-                                        </span>
-                                        @if($vaccination->notes)
-                                        <p class="vaccine-notes"><strong>Notes:</strong> {{ $vaccination->notes }}</p>
-                                        @endif
+                                        </div>
+                                        <span class="vaccine-status {{ $vaccination->status }}">{{ ucfirst($vaccination->status) }}</span>
                                     </div>
-                                    <span class="vaccine-status {{ $vaccination->status }}">{{ ucfirst($vaccination->status) }}</span>
-                                </div>
-                                @endforeach
-                            @else
-                                <div class="empty-state" style="padding: 2rem; text-align: center;">
-                                    <i class="fas fa-syringe" style="font-size: 3rem; color: #9ca3af; margin-bottom: 1rem;"></i>
-                                    <p style="color: #6b7280;">No vaccination records found</p>
-                                    <button class="add-btn" onclick="openVaccinationModal()" style="margin-top: 1rem;">
-                                        <i class="fas fa-plus"></i> Add First Record
-                                    </button>
-                                </div>
-                            @endif
+                                    @endforeach
+                                @else
+                                    <div class="empty-state" style="padding: 2rem; text-align: center;">
+                                        <i class="fas fa-syringe" style="font-size: 3rem; color: #9ca3af; margin-bottom: 1rem;"></i>
+                                        <p style="color: #6b7280;">No vaccination records found</p>
+                                        <button class="add-btn" onclick="openVaccinationModal()" style="margin-top: 1rem;">
+                                            <i class="fas fa-plus"></i> Add First Record
+                                        </button>
+                                    </div>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -268,6 +296,18 @@
                 const child = childrenData.find(c => c.id === childId);
                 
                 if (child) {
+                    const pendingContainer = document.getElementById('pendingMessageContainer');
+                    const contentContainer = document.getElementById('vaccinationContentContainer');
+                    
+                    if (child.status === 'pending') {
+                        pendingContainer.style.display = 'flex';
+                        if (contentContainer) contentContainer.style.display = 'none';
+                        return;
+                    } else {
+                        pendingContainer.style.display = 'none';
+                        if (contentContainer) contentContainer.style.display = 'block';
+                    }
+
                     // Update vaccination list
                     updateVaccinationList(child.vaccinations);
                     // Update hidden input

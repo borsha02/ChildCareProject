@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Models\JobApplication;
+use App\Models\Child;
+use App\Models\LeaveRequest;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 
@@ -17,15 +20,22 @@ class AdminController extends Controller
     {
         // Get system-wide statistics with error handling
         try {
+            $pendingApplications = \App\Models\JobApplication::where('status', 'pending')->count();
+            $pendingRegistrations = \App\Models\Child::where('status', 'pending')->count();
+            $pendingLeaveRequests = \App\Models\LeaveRequest::where('status', 'pending')->count();
+
             $stats = [
                 'total_users' => User::count(),
                 'total_parents' => User::where('role', 'parent')->count(),
                 'total_staff' => User::where('role', 'caregiver')->count(),
-                'total_children' => 0, // Will be updated when Child model is created
+                'total_children' => \App\Models\Child::where('status', '!=', 'pending')->count(), // Only enrolled/active/inactive items
                 'active_today' => 0, // Will be updated with attendance data
                 'pending_payments' => 0, // Will be updated with payment data
                 'total_revenue' => 0, // Will be updated with payment data
-                'pending_approvals' => 0, // Will be updated with payment approval data
+                'pending_approvals' => 0, // Reset to 0 as we use specific badges now
+                'pending_applications' => $pendingApplications,
+                'pending_registrations' => $pendingRegistrations,
+                'pending_leave_requests' => $pendingLeaveRequests,
             ];
         } catch (\Exception $e) {
             // If database connection fails, use default values
@@ -38,11 +48,50 @@ class AdminController extends Controller
                 'pending_payments' => 0,
                 'total_revenue' => 0,
                 'pending_approvals' => 0,
+                'pending_applications' => 0,
+                'pending_registrations' => 0,
             ];
         }
 
-        // Recent activities (placeholder for now)
-        $recentActivities = [];
+        // Recent activities aggregation
+        $recentUsers = User::latest()->take(5)->get()->map(function ($user) {
+            return [
+                'type' => 'user',
+                'title' => 'New User Registered',
+                'description' => $user->name . ' (' . ucfirst($user->role) . ') joined',
+                'time' => $user->created_at,
+                'icon' => 'fas fa-user-plus',
+                'color' => 'user' // css class for color
+            ];
+        });
+
+        $recentChildren = \App\Models\Child::latest()->take(5)->get()->map(function ($child) {
+            return [
+                'type' => 'child',
+                'title' => 'Child Registration',
+                'description' => $child->first_name . ' ' . $child->last_name . ' registered',
+                'time' => $child->created_at,
+                'icon' => 'fas fa-child',
+                'color' => 'success' // reusing payment/success color class or add new
+            ];
+        });
+
+        $recentApplications = \App\Models\JobApplication::latest()->take(5)->get()->map(function ($app) {
+            return [
+                'type' => 'application',
+                'title' => 'Job Application',
+                'description' => $app->full_name . ' applied for ' . $app->position,
+                'time' => $app->created_at,
+                'icon' => 'fas fa-briefcase',
+                'color' => 'orange' // orange/alert color
+            ];
+        });
+
+        // Merge, sort by time desc, and take top 5
+        $recentActivities = $recentUsers->merge($recentChildren)
+            ->merge($recentApplications)
+            ->sortByDesc('time')
+            ->take(5);
 
         // Upcoming events (placeholder for now)
         $upcomingEvents = [];
@@ -94,12 +143,26 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($id);
 
-        $validated = $request->validate([
+        $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
             'phone' => 'required|string|max:20',
             'role' => 'required|in:admin,caregiver,parent',
-        ]);
+        ];
+
+        // Only validate password if it's being updated
+        if ($request->filled('password')) {
+            $rules['password'] = 'required|string|min:8|confirmed';
+        }
+
+        $validated = $request->validate($rules);
+
+        // Remove password from validated if it's not set (handled by request->filled check but good for safety)
+        if (!$request->filled('password')) {
+            unset($validated['password']);
+        } else {
+            $validated['password'] = Hash::make($validated['password']);
+        }
 
         $user->update($validated);
 
@@ -108,15 +171,18 @@ class AdminController extends Controller
     }
 
     /**
-     * Feature #2: Deactivate user
+     * Feature #2: Toggle user status (Active <-> Inactive)
      */
-    public function deactivateUser($id)
+    public function toggleUserStatus($id)
     {
         $user = User::findOrFail($id);
-        $user->update(['status' => 'inactive']);
+        $newStatus = $user->status === 'active' ? 'inactive' : 'active';
+        $user->update(['status' => $newStatus]);
+
+        $message = $newStatus === 'active' ? 'User activated successfully!' : 'User deactivated successfully!';
 
         return redirect()->route('admin.users')
-            ->with('success', 'User deactivated successfully!');
+            ->with('success', $message);
     }
 
     /**
@@ -139,43 +205,138 @@ class AdminController extends Controller
     /**
      * Feature #4: Manage Child Records
      */
-    public function children()
+    public function children(Request $request)
     {
-        // Placeholder - will be implemented when Child model is created
-        $children = [];
+        $search = $request->input('search');
+        $classFilter = $request->input('class');
 
-        return view('admin.children', compact('children'));
+        $query = Child::with('parent');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('first_name', 'like', "%{$search}%")
+                  ->orWhere('last_name', 'like', "%{$search}%")
+                  ->orWhereHas('parent', function ($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($classFilter) {
+            $query->where('class', $classFilter);
+        }
+
+        // Separate pending and enrolled (active/inactive)
+        // Pending: status = 'pending'
+        // Enrolled: status != 'pending' (includes active, inactive, rejected? maybe filter rejected)
+        
+        $pendingChildren = (clone $query)->where('status', 'pending')->latest()->get();
+        // For enrolled, we might show active and inactive. Rejected are usually hidden or in a separate view, 
+        // but for now let's just say != pending.
+        $enrolledChildren = (clone $query)->where('status', '!=', 'pending')->latest()->paginate(10);
+
+        return view('admin.children', compact('pendingChildren', 'enrolledChildren'));
     }
 
-    /**
-     * Feature #4: Create child record
-     */
+    public function approveChild($id)
+    {
+        $child = Child::with('parent')->findOrFail($id);
+        $child->update(['status' => 'active']);
+        
+        if ($child->parent) {
+            $child->parent->notify(new \App\Notifications\ChildApproved($child));
+        }
+
+        return redirect()->back()->with('success', 'Child registration approved successfully.');
+    }
+
+    public function rejectChild($id)
+    {
+        $child = Child::findOrFail($id);
+        $child->update(['status' => 'rejected']);
+        return redirect()->back()->with('success', 'Child registration rejected.');
+    }
+
     public function createChild(Request $request)
     {
-        // Will be implemented when Child model is created
-        return redirect()->route('admin.children')
-            ->with('success', 'Child record created successfully!');
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'dob' => 'required|date',
+            'gender' => 'required|in:male,female,other',
+            'class' => 'required|in:Toddler,Preschool,Pre-K,Young Learners',
+            'package' => 'required|in:monthly,weekly',
+            'parent_email' => 'required|email',
+            'parent_name' => 'required|string',
+            'parent_phone' => 'required|string',
+            'medical_info' => 'nullable|string',
+            'address' => 'nullable|string',
+        ]);
+
+        $parent = User::where('email', $validated['parent_email'])->first();
+
+        if (!$parent) {
+            $parent = User::create([
+                'name' => $validated['parent_name'],
+                'email' => $validated['parent_email'],
+                'phone' => $validated['parent_phone'],
+                'password' => Hash::make('password123'),
+                'role' => 'parent',
+                'status' => 'active',
+            ]);
+        }
+
+        Child::create([
+            'parent_id' => $parent->id,
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'dob' => $validated['dob'],
+            'gender' => $validated['gender'],
+            'class' => $validated['class'],
+            'package' => $validated['package'],
+            'emergency_contact' => $validated['parent_phone'],
+            'medical_notes' => $validated['medical_info'] ?? null,
+            'status' => 'active', // Admin created children are auto-approved
+        ]);
+
+        return redirect()->route('admin.children')->with('success', 'Child record created successfully!');
     }
 
-    /**
-     * Feature #4: Update child record
-     */
     public function updateChild(Request $request, $id)
     {
-        // Will be implemented when Child model is created
-        return redirect()->route('admin.children')
-            ->with('success', 'Child record updated successfully!');
+        $child = Child::findOrFail($id);
+
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'dob' => 'required|date',
+            'gender' => 'required|in:male,female,other',
+            'class' => 'required|string',
+            'package' => 'required|in:monthly,weekly',
+            'medical_info' => 'nullable|string',
+        ]);
+
+        $child->update([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'dob' => $validated['dob'],
+            'gender' => $validated['gender'],
+            'class' => $validated['class'],
+            'package' => $validated['package'],
+            'medical_notes' => $validated['medical_info'] ?? $child->medical_notes,
+        ]);
+
+        return redirect()->route('admin.children')->with('success', 'Child record updated successfully!');
     }
 
-    /**
-     * Feature #4: Delete child record
-     */
     public function deleteChild($id)
     {
-        // Will be implemented when Child model is created
-        return redirect()->route('admin.children')
-            ->with('success', 'Child record deleted successfully!');
+        $child = Child::findOrFail($id);
+        $child->delete();
+
+        return redirect()->back()->with('success', 'Child record deleted successfully!');
     }
+
 
     /**
      * Feature #5: Manage Staff
@@ -186,7 +347,24 @@ class AdminController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        return view('admin.staff', compact('staff'));
+        $jobApplications = JobApplication::where('status', 'pending')->orderBy('created_at', 'desc')->get();
+        $leaveRequests = LeaveRequest::where('status', 'pending')->with('user')->orderBy('created_at', 'asc')->get();
+
+        return view('admin.staff', compact('staff', 'jobApplications', 'leaveRequests'));
+    }
+
+    public function approveLeave($id)
+    {
+        $leave = LeaveRequest::findOrFail($id);
+        $leave->update(['status' => 'approved']);
+        return redirect()->back()->with('success', 'Leave request approved successfully.');
+    }
+
+    public function denyLeave($id)
+    {
+        $leave = LeaveRequest::findOrFail($id);
+        $leave->update(['status' => 'rejected']);
+        return redirect()->back()->with('success', 'Leave request denied.');
     }
 
     /**
@@ -201,6 +379,7 @@ class AdminController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'specialization' => 'nullable|string|max:255',
             'shift' => 'nullable|in:morning,afternoon,evening,full-time',
+            'application_id' => 'nullable|exists:job_applications,id',
         ]);
 
         $staff = User::create([
@@ -210,10 +389,36 @@ class AdminController extends Controller
             'role' => 'caregiver',
             'password' => Hash::make($validated['password']),
             'status' => 'active',
+            'specialization' => $validated['specialization'] ?? null,
+            'shift' => $validated['shift'] ?? null,
         ]);
+
+        // If this was from a job application, update its status
+        if ($request->has('application_id')) {
+            $application = JobApplication::find($request->application_id);
+            if ($application) {
+                $application->update(['status' => 'approved']);
+            }
+        }
 
         return redirect()->route('admin.staff')
             ->with('success', 'Staff member added successfully!');
+    }
+
+    /**
+     * Feature #5: Reject job application
+     */
+    public function rejectJobApplication($id)
+    {
+        $application = JobApplication::findOrFail($id);
+        
+        // Optional: Delete resume file if needed, but primary request is database deletion
+        // if ($application->resume_path) { Storage::delete($application->resume_path); }
+
+        $application->delete();
+
+        return redirect()->back()
+            ->with('success', 'Job application deleted successfully.');
     }
 
     /**
@@ -227,12 +432,26 @@ class AdminController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $id,
             'phone' => 'required|string|max:20',
+            'specialization' => 'nullable|string|max:255',
+            'shift' => 'nullable|in:morning,afternoon,evening,full-time',
         ]);
 
         $staff->update($validated);
 
         return redirect()->route('admin.staff')
             ->with('success', 'Staff details updated successfully!');
+    }
+
+    /**
+     * Feature #5: Delete staff member
+     */
+    public function deleteStaff($id)
+    {
+        $staff = User::where('role', 'caregiver')->findOrFail($id);
+        $staff->delete();
+
+        return redirect()->route('admin.staff')
+            ->with('success', 'Staff member deleted successfully!');
     }
 
     /**
@@ -612,5 +831,66 @@ class AdminController extends Controller
         // Will be implemented when Message model is created
         return redirect()->route('admin.communication-logs')
             ->with('success', 'Message deleted successfully!');
+    }
+
+    /**
+     * Display the full list of system activities.
+     */
+    public function activities()
+    {
+        // Fetch larger dataset for the full view
+        $recentUsers = User::latest()->take(20)->get()->map(function ($user) {
+            return [
+                'type' => 'user',
+                'title' => 'New User Registered',
+                'description' => $user->name . ' (' . ucfirst($user->role) . ') joined',
+                'time' => $user->created_at,
+                'icon' => 'fas fa-user-plus',
+                'color' => 'user'
+            ];
+        });
+
+        $recentChildren = \App\Models\Child::latest()->take(20)->get()->map(function ($child) {
+            return [
+                'type' => 'child',
+                'title' => 'Child Registration',
+                'description' => $child->first_name . ' ' . $child->last_name . ' registered',
+                'time' => $child->created_at,
+                'icon' => 'fas fa-child',
+                'color' => 'success'
+            ];
+        });
+
+        $recentApplications = \App\Models\JobApplication::latest()->take(20)->get()->map(function ($app) {
+            return [
+                'type' => 'application',
+                'title' => 'Job Application',
+                'description' => $app->full_name . ' applied for ' . $app->position,
+                'time' => $app->created_at,
+                'icon' => 'fas fa-briefcase',
+                'color' => 'orange'
+            ];
+        });
+
+        // Merge, sort by time desc
+        $activities = $recentUsers->merge($recentChildren)
+            ->merge($recentApplications)
+            ->sortByDesc('time')
+            ->values(); // Reset keys for cleaner looping
+
+        return view('admin.activities', compact('activities'));
+    }
+
+    /**
+     * Display the consolidated pending actions page.
+     */
+    public function pendingActions()
+    {
+        $pendingChildren = \App\Models\Child::where('status', 'pending')->with('parent')->latest()->get();
+        $pendingApplications = \App\Models\JobApplication::where('status', 'pending')->latest()->get();
+        // Placeholder for payments until model exists
+        $pendingPayments = []; 
+
+        return view('admin.pending', compact('pendingChildren', 'pendingApplications', 'pendingPayments'));
     }
 }

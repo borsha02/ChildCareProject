@@ -52,10 +52,9 @@
                         <span>Messages</span>
                         <span class="badge">3</span>
                     </a>
-                    <a href="{{ route('parent.notifications') }}" class="nav-item">
+                    <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
-                        <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>

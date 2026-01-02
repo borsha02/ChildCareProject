@@ -34,10 +34,10 @@
                         <i class="fas fa-home"></i>
                         <span>Dashboard</span>
                     </a>
-                    <a href="{{ route('admin.analytics') }}" class="nav-item">
+                    {{-- <a href="{{ route('admin.analytics') }}" class="nav-item">
                         <i class="fas fa-chart-line"></i>
                         <span>Analytics</span>
-                    </a>
+                    </a> --}}
                 </div>
 
                 <div class="nav-section">
@@ -49,10 +49,16 @@
                     <a href="{{ route('admin.children') }}" class="nav-item">
                         <i class="fas fa-child"></i>
                         <span>Child Records</span>
+                        @if(($stats['pending_registrations'] ?? 0) > 0)
+                            <span class="badge">{{ $stats['pending_registrations'] }}</span>
+                        @endif
                     </a>
                     <a href="{{ route('admin.staff') }}" class="nav-item">
                         <i class="fas fa-user-tie"></i>
                         <span>Staff Management</span>
+                        @if(($stats['pending_applications'] ?? 0) > 0)
+                            <span class="badge">{{ $stats['pending_applications'] }}</span>
+                        @endif
                     </a>
                 </div>
 
@@ -73,7 +79,7 @@
                     <a href="{{ route('admin.payments.pending') }}" class="nav-item">
                         <i class="fas fa-credit-card"></i>
                         <span>Payment Approvals</span>
-                        <span class="badge">{{ $stats['pending_approvals'] ?? 0 }}</span>
+                        <span class="badge">{{ $stats['pending_payments'] ?? 0 }}</span>
                     </a>
                 </div>
 
@@ -83,22 +89,22 @@
                         <i class="fas fa-bullhorn"></i>
                         <span>Announcements</span>
                     </a>
-                    <a href="{{ route('admin.communication') }}" class="nav-item">
+                    {{-- <a href="{{ route('admin.communication') }}" class="nav-item">
                         <i class="fas fa-comments"></i>
                         <span>Communication Logs</span>
-                    </a>
+                    </a> --}}
                 </div>
 
                 <div class="nav-section">
                     <div class="nav-section-title">System</div>
-                    <a href="{{ route('admin.settings') }}" class="nav-item">
+                    {{-- <a href="{{ route('admin.settings') }}" class="nav-item">
                         <i class="fas fa-cog"></i>
                         <span>Settings</span>
-                    </a>
-                    <a href="{{ route('admin.backup') }}" class="nav-item">
+                    </a> --}}
+                    {{-- <a href="{{ route('admin.backup') }}" class="nav-item">
                         <i class="fas fa-database"></i>
                         <span>Backup & Restore</span>
-                    </a>
+                    </a> --}}
                     <a href="{{ route('logout') }}" class="nav-item"
                         onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                         <i class="fas fa-sign-out-alt"></i>
@@ -135,8 +141,9 @@
 
             <div class="content-area">
                 <!-- Stats Grid -->
+                <!-- Stats Grid -->
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <a href="{{ route('admin.users') }}" class="stat-card">
                         <div class="stat-icon blue">
                             <i class="fas fa-users"></i>
                         </div>
@@ -144,8 +151,8 @@
                             <h3>{{ $stats['total_users'] ?? 0 }}</h3>
                             <p>Total Users</p>
                         </div>
-                    </div>
-                    <div class="stat-card">
+                    </a>
+                    <a href="{{ route('admin.children') }}" class="stat-card">
                         <div class="stat-icon green">
                             <i class="fas fa-child"></i>
                         </div>
@@ -153,8 +160,8 @@
                             <h3>{{ $stats['total_children'] ?? 0 }}</h3>
                             <p>Enrolled Children</p>
                         </div>
-                    </div>
-                    <div class="stat-card">
+                    </a>
+                    <a href="{{ route('admin.staff') }}" class="stat-card">
                         <div class="stat-icon orange">
                             <i class="fas fa-user-tie"></i>
                         </div>
@@ -162,8 +169,8 @@
                             <h3>{{ $stats['total_staff'] ?? 0 }}</h3>
                             <p>Staff Members</p>
                         </div>
-                    </div>
-                    <div class="stat-card">
+                    </a>
+                    <a href="{{ route('admin.attendance') }}" class="stat-card">
                         <div class="stat-icon purple">
                             <i class="fas fa-calendar-check"></i>
                         </div>
@@ -171,8 +178,8 @@
                             <h3>{{ $stats['active_today'] ?? 0 }}</h3>
                             <p>Present Today</p>
                         </div>
-                    </div>
-                    <div class="stat-card">
+                    </a>
+                    <a href="{{ route('admin.payments.pending') }}" class="stat-card">
                         <div class="stat-icon red">
                             <i class="fas fa-dollar-sign"></i>
                         </div>
@@ -180,8 +187,8 @@
                             <h3>${{ number_format($stats['pending_payments'] ?? 0) }}</h3>
                             <p>Pending Payments</p>
                         </div>
-                    </div>
-                    <div class="stat-card">
+                    </a>
+                    <a href="{{ route('admin.analytics') }}" class="stat-card">
                         <div class="stat-icon teal">
                             <i class="fas fa-chart-line"></i>
                         </div>
@@ -189,7 +196,7 @@
                             <h3>${{ number_format($stats['total_revenue'] ?? 0) }}</h3>
                             <p>Total Revenue</p>
                         </div>
-                    </div>
+                    </a>
                 </div>
 
                 <!-- Content Grid -->
@@ -198,49 +205,25 @@
                     <div class="card">
                         <div class="card-header">
                             <h3>Recent Activities</h3>
-                            <a href="#" class="view-all">View All</a>
+                            <a href="{{ route('admin.activities') }}" class="view-all">View All</a>
                         </div>
                         <div class="activity-list">
+                            @forelse($recentActivities as $activity)
                             <div class="activity-item">
-                                <div class="activity-icon user">
-                                    <i class="fas fa-user-plus"></i>
+                                <div class="activity-icon {{ $activity['color'] == 'success' ? 'payment' : ($activity['color'] == 'orange' ? 'alert' : 'user') }}">
+                                    <i class="{{ $activity['icon'] }}"></i>
                                 </div>
                                 <div class="activity-content">
-                                    <h4>New Parent Registered</h4>
-                                    <p>Sarah Johnson created an account</p>
+                                    <h4>{{ $activity['title'] }}</h4>
+                                    <p>{{ $activity['description'] }}</p>
                                 </div>
-                                <div class="activity-time">10 min ago</div>
+                                <div class="activity-time">{{ $activity['time']->diffForHumans() }}</div>
                             </div>
-                            <div class="activity-item">
-                                <div class="activity-icon payment">
-                                    <i class="fas fa-check-circle"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <h4>Payment Received</h4>
-                                    <p>Invoice #1234 paid by John Doe</p>
-                                </div>
-                                <div class="activity-time">1 hour ago</div>
+                            @empty
+                            <div class="empty-state" style="text-align: center; padding: 20px; color: #6b7280;">
+                                <p>No recent activities found.</p>
                             </div>
-                            <div class="activity-item">
-                                <div class="activity-icon user">
-                                    <i class="fas fa-user-tie"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <h4>Staff Member Added</h4>
-                                    <p>Emily Brown joined as caregiver</p>
-                                </div>
-                                <div class="activity-time">2 hours ago</div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon alert">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <h4>Payment Overdue</h4>
-                                    <p>Invoice #1230 is 5 days overdue</p>
-                                </div>
-                                <div class="activity-time">3 hours ago</div>
-                            </div>
+                            @endforelse
                         </div>
                     </div>
 
@@ -248,30 +231,37 @@
                     <div class="card">
                         <div class="card-header">
                             <h3>Pending Actions</h3>
-                            <a href="{{ route('admin.payments.pending') }}" class="view-all">View All</a>
+                            <a href="{{ route('admin.pending') }}" class="view-all">View All</a>
                         </div>
                         <div class="pending-list">
-                            <div class="pending-item">
+                            <a href="{{ route('admin.children') }}" class="pending-item">
+                                <div class="pending-info">
+                                    <h4>Child Registrations</h4>
+                                    <p>New pupil requests</p>
+                                </div>
+                                <span class="pending-badge">{{ $stats['pending_registrations'] ?? 0 }}</span>
+                            </a>
+                            <a href="{{ route('admin.staff') }}" class="pending-item">
+                                <div class="pending-info">
+                                    <h4>Staff Applications</h4>
+                                    <p>New job applicants</p>
+                                </div>
+                                <span class="pending-badge">{{ $stats['pending_applications'] ?? 0 }}</span>
+                            </a>
+                            <a href="{{ route('admin.payments.pending') }}" class="pending-item">
                                 <div class="pending-info">
                                     <h4>Payment Approvals</h4>
                                     <p>Requires review</p>
                                 </div>
-                                <span class="pending-badge">{{ $stats['pending_approvals'] ?? 0 }}</span>
-                            </div>
-                            <div class="pending-item">
+                                <span class="pending-badge">{{ $stats['pending_payments'] ?? 0 }}</span>
+                            </a>
+                            <a href="{{ route('admin.staff') }}" class="pending-item">
                                 <div class="pending-info">
-                                    <h4>Staff Applications</h4>
-                                    <p>New applications</p>
+                                    <h4>Leave Requests</h4>
+                                    <p>Staff time off</p>
                                 </div>
-                                <span class="pending-badge">3</span>
-                            </div>
-                            <div class="pending-item">
-                                <div class="pending-info">
-                                    <h4>Overdue Invoices</h4>
-                                    <p>Needs follow-up</p>
-                                </div>
-                                <span class="pending-badge">7</span>
-                            </div>
+                                <span class="pending-badge">{{ $stats['pending_leave_requests'] ?? 0 }}</span>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -300,19 +290,19 @@
                                 <i class="fas fa-bullhorn"></i>
                                 <p>Send Announcement</p>
                             </a>
-                            <a href="{{ route('admin.reports') }}" class="action-btn">
+                            {{-- <a href="{{ route('admin.reports') }}" class="action-btn">
                                 <i class="fas fa-download"></i>
                                 <p>Export Reports</p>
                             </a>
                             <a href="{{ route('admin.backup') }}" class="action-btn">
                                 <i class="fas fa-database"></i>
                                 <p>Backup System</p>
-                            </a>
+                            </a> --}}
                         </div>
                     </div>
 
                     <!-- System Status -->
-                    <div class="card">
+                    {{-- <div class="card">
                         <div class="card-header">
                             <h3>System Status</h3>
                         </div>
@@ -345,7 +335,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> --}}
                 </div>
             </div>
         </main>

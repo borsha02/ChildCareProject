@@ -9,8 +9,12 @@ class ParentController extends Controller
 {
     public function dashboard()
     {
-        $childrenCount = \App\Models\Child::where('parent_id', auth()->id())->count();
-        return view('parent.dashboard', compact('childrenCount'));
+        $children = \App\Models\Child::where('parent_id', auth()->id())->get();
+        $childrenCount = $children->count();
+        $healthRecordsCount = \App\Models\HealthRecord::whereHas('child', function($query) {
+            $query->where('parent_id', auth()->id());
+        })->count();
+        return view('parent.dashboard', compact('children', 'childrenCount', 'healthRecordsCount'));
     }
 
 
@@ -32,9 +36,12 @@ class ParentController extends Controller
             'medical_notes' => 'nullable|string',
             'emergency_contact' => 'required|string|max:255',
             'class' => 'required|in:Toddler,Preschool,Pre-K,Young Learners',
+            'package' => 'required|in:monthly,weekly',
+            'duration' => 'nullable|integer|between:1,3|required_if:package,weekly',
         ]);
 
         $child = new \App\Models\Child($validated);
+        $child->status = 'pending'; // Explicitly set to pending for approval workflow
         $child->parent_id = auth()->id();
         $child->save();
 
@@ -55,6 +62,8 @@ class ParentController extends Controller
             'medical_notes' => 'nullable|string',
             'emergency_contact' => 'required|string|max:255',
             'class' => 'required|in:Toddler,Preschool,Pre-K,Young Learners',
+            'package' => 'required|in:monthly,weekly',
+            'duration' => 'nullable|integer|between:1,3|required_if:package,weekly',
         ]);
 
         $child->update($validated);
@@ -127,7 +136,29 @@ class ParentController extends Controller
 
     public function notifications()
     {
-        return view('parent.notifications');
+        $notifications = auth()->user()->notifications()->latest()->get();
+        $unreadCount = auth()->user()->unreadNotifications->count();
+        return view('parent.notifications', compact('notifications', 'unreadCount'));
+    }
+
+    public function markNotificationRead($id)
+    {
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+        return response()->json(['success' => true]);
+    }
+
+    public function markAllNotificationsRead()
+    {
+        auth()->user()->unreadNotifications->markAsRead();
+        return response()->json(['success' => true]);
+    }
+
+    public function deleteNotification($id)
+    {
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->delete();
+        return response()->json(['success' => true]);
     }
 
     public function events()
@@ -258,6 +289,127 @@ class ParentController extends Controller
         $healthRecord->update($validated);
 
         return redirect()->route('parent.health')->with('success', 'Health record updated successfully!');
+    }
+
+    public function deleteHealthRecord($id)
+    {
+        $healthRecord = \App\Models\HealthRecord::findOrFail($id);
+        
+        // Verify ownership via child relationship
+        $child = \App\Models\Child::where('parent_id', auth()->id())->findOrFail($healthRecord->child_id);
+
+        $healthRecord->delete();
+
+        return redirect()->route('parent.health')->with('success', 'Health record deleted successfully!');
+    }
+
+    public function updateMedication(Request $request, $id)
+    {
+        $medication = \App\Models\Medication::whereHas('child', function($query) {
+            $query->where('parent_id', auth()->id());
+        })->findOrFail($id);
+
+        $validated = $request->validate([
+            'medication_name' => 'required|string|max:255',
+            'dosage' => 'required|string|max:255',
+            'frequency' => 'required|string|max:255',
+            'start_date' => 'required|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+            'status' => 'required|in:active,completed,discontinued',
+            'notes' => 'nullable|string',
+        ]);
+
+        $medication->update($validated);
+
+        return redirect()->route('parent.medications')->with('success', 'Medication record updated successfully!');
+    }
+
+    public function deleteMedication($id)
+    {
+        $medication = \App\Models\Medication::whereHas('child', function($query) {
+            $query->where('parent_id', auth()->id());
+        })->findOrFail($id);
+
+        $medication->delete();
+
+        return redirect()->route('parent.medications')->with('success', 'Medication record deleted successfully!');
+    }
+
+    public function updateAllergies(Request $request)
+    {
+        $validated = $request->validate([
+            'child_id' => 'required|exists:children,id',
+            'allergies' => 'nullable|string',
+            'medical_notes' => 'nullable|string',
+            'emergency_contact' => 'nullable|string|max:255',
+        ]);
+
+        $child = \App\Models\Child::where('id', $validated['child_id'])
+            ->where('parent_id', auth()->id())
+            ->firstOrFail();
+
+        $child->update([
+            'allergies' => $validated['allergies'],
+            'medical_notes' => $validated['medical_notes'],
+            'emergency_contact' => $validated['emergency_contact'],
+        ]);
+
+        return redirect()->route('parent.health')->with('success', 'Allergies and medical conditions updated successfully!');
+    }
+
+    public function storeCheckup(Request $request)
+    {
+        $validated = $request->validate([
+            'child_id' => 'required|exists:children,id',
+            'checkup_type' => 'required|string|max:255',
+            'checkup_date' => 'required|date|before_or_equal:today',
+            'doctor_name' => 'nullable|string|max:255',
+            'doctor_specialty' => 'nullable|string|max:255',
+            'weight' => 'nullable|numeric|min:0|max:999.99',
+            'height' => 'nullable|numeric|min:0|max:999.99',
+            'bmi' => 'nullable|numeric|min:0|max:99.99',
+            'notes' => 'nullable|string',
+        ]);
+
+        // Verify child belongs to authenticated parent
+        \App\Models\Child::where('parent_id', auth()->id())->findOrFail($validated['child_id']);
+
+        \App\Models\Checkup::create($validated);
+
+        return redirect()->route('parent.health')->with('success', 'Checkup record added successfully!');
+    }
+
+    public function updateCheckup(Request $request, $id)
+    {
+        $checkup = \App\Models\Checkup::whereHas('child', function($query) {
+            $query->where('parent_id', auth()->id());
+        })->findOrFail($id);
+
+        $validated = $request->validate([
+            'checkup_type' => 'required|string|max:255',
+            'checkup_date' => 'required|date|before_or_equal:today',
+            'doctor_name' => 'nullable|string|max:255',
+            'doctor_specialty' => 'nullable|string|max:255',
+            'weight' => 'nullable|numeric|min:0|max:999.99',
+            'height' => 'nullable|numeric|min:0|max:999.99',
+            'bmi' => 'nullable|numeric|min:0|max:99.99',
+            'notes' => 'nullable|string',
+        ]);
+
+        $checkup->update($validated);
+
+        return redirect()->route('parent.health')->with('success', 'Checkup record updated successfully!');
+    }
+
+    public function deleteCheckup($id)
+    {
+        $checkup = \App\Models\Checkup::whereHas('child', function($query) {
+            $query->where('parent_id', auth()->id());
+        })->findOrFail($id);
+
+        $checkup->delete();
+
+        return redirect()->route('parent.health')->with('success', 'Checkup record deleted successfully!');
     }
 
 }

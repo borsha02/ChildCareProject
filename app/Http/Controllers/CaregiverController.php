@@ -53,6 +53,28 @@ class CaregiverController extends Controller
 
     public function leaveRequests()
     {
-        return view('caregiver.leave-requests');
+        $leaveRequests = \App\Models\LeaveRequest::where('user_id', auth()->id())
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        return view('caregiver.leave-requests', compact('leaveRequests'));
+    }
+
+    public function storeLeaveRequest(Request $request)
+    {
+        $validated = $request->validate([
+            'leave_type' => 'required|string',
+            'duration_type' => 'required|string',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $validated['user_id'] = auth()->id();
+        $validated['status'] = 'pending';
+
+        \App\Models\LeaveRequest::create($validated);
+
+        return redirect()->route('caregiver.leave')->with('success', 'Leave request submitted successfully!');
     }
 }

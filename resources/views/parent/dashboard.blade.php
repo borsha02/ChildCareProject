@@ -57,7 +57,7 @@
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
@@ -115,10 +115,10 @@
                         <input type="text" placeholder="Search...">
                         <i class="fas fa-search"></i>
                     </div>
-                    <button class="icon-btn">
+                    <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
-                    </button>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
+                    </a>
                     <button class="icon-btn">
                         <i class="fas fa-envelope"></i>
                     </button>
@@ -178,7 +178,7 @@
                             <i class="fas fa-heartbeat"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>2</h3>
+                            <h3>{{ $healthRecordsCount }}</h3>
                             <p>Health Records</p>
                         </div>
                     </a>
@@ -193,23 +193,27 @@
                             <a href="{{ route('parent.child-profile') }}" class="view-all">View All</a>
                         </div>
                         <div class="children-list">
-                            <div class="child-item">
-                                <div class="child-avatar">EM</div>
-                                <div class="child-info">
-                                    <h4>Emma Doe</h4>
-                                    <p>Age: 4 years • Class: Preschool A</p>
+                            @forelse($children as $child)
+                                <div class="child-item" onclick="window.location='{{ route('parent.child-profile') }}'">
+                                    @php
+                                        $initials = strtoupper(substr($child->first_name, 0, 1) . substr($child->last_name, 0, 1));
+                                        $bgStyle = $loop->iteration % 2 == 0 ? 'background: linear-gradient(135deg, #3b82f6, #2563eb);' : '';
+                                        $age = \Carbon\Carbon::parse($child->dob)->age;
+                                        $statusClass = in_array($child->status, ['approved', 'enrolled']) ? 'present' : 'absent';
+                                        $statusLabel = ucfirst($child->status);
+                                    @endphp
+                                    <div class="child-avatar" style="{{ $bgStyle }}">{{ $initials }}</div>
+                                    <div class="child-info">
+                                        <h4>{{ $child->first_name }} {{ $child->last_name }}</h4>
+                                        <p>Age: {{ $age }} years • Class: {{ $child->class ?? 'N/A' }}</p>
+                                    </div>
+                                    <span class="status-badge {{ $statusClass }}">{{ $statusLabel }}</span>
                                 </div>
-                                <span class="status-badge present">Present</span>
-                            </div>
-                            <div class="child-item">
-                                <div class="child-avatar"
-                                    style="background: linear-gradient(135deg, #3b82f6, #2563eb);">LJ</div>
-                                <div class="child-info">
-                                    <h4>Lucas James</h4>
-                                    <p>Age: 3 years • Class: Toddler B</p>
+                            @empty
+                                <div class="child-item" style="justify-content: center; background: transparent; cursor: default;">
+                                    <p style="color: var(--text-muted);">No children registered yet.</p>
                                 </div>
-                                <span class="status-badge present">Present</span>
-                            </div>
+                            @endforelse
                         </div>
                     </div>
 
@@ -326,6 +330,16 @@
     </div>
 
     <script>
+        // Apply theme from local storage
+        const savedTheme = localStorage.getItem('theme') || 'auto';
+        if (savedTheme === 'auto') {
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.body.classList.add('dark-mode');
+            }
+        } else if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
         // Mobile menu toggle
         const mobileToggle = document.querySelector('.mobile-toggle');
         const sidebar = document.getElementById('sidebar');

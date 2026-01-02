@@ -55,7 +55,7 @@
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
@@ -120,7 +120,7 @@
                     </div>
                     <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
                     </a>
                     <a href="{{ route('parent.messages') }}" class="icon-btn">
                         <i class="fas fa-envelope"></i>
@@ -346,10 +346,10 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Theme</label>
-                                    <select class="form-input">
-                                        <option>Light Mode</option>
-                                        <option>Dark Mode</option>
-                                        <option>Auto (System)</option>
+                                    <select class="form-input" id="themeSelect">
+                                        <option value="light">Light Mode</option>
+                                        <option value="dark">Dark Mode</option>
+                                        <option value="auto">Auto (System)</option>
                                     </select>
                                 </div>
                             </div>
@@ -360,22 +360,22 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Language</label>
-                                    <select class="form-input">
-                                        <option>English (US)</option>
-                                        <option>Bangla</option>
+                                    <select class="form-input" id="languageSelect">
+                                        <option value="en-US">English (US)</option>
+                                        <option value="bn">Bangla</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
                                     <label>Timezone</label>
-                                    <select class="form-input">
-                                        <option>Bangladesh Standard Time (BST)</option>
-                                        <option>Indian Standard Time (IST)</option>
-                                        <option>Coordinated Universal Time (UTC)</option>
-                                        <option>Eastern Standard Time (EST)</option>
+                                    <select class="form-input" id="timezoneSelect">
+                                        <option value="BST">Bangladesh Standard Time (BST)</option>
+                                        <option value="IST">Indian Standard Time (IST)</option>
+                                        <option value="UTC">Coordinated Universal Time (UTC)</option>
+                                        <option value="EST">Eastern Standard Time (EST)</option>
                                     </select>
                                 </div>
                                 <div class="form-actions">
-                                    <button type="submit" class="btn-save">Save Preferences</button>
+                                    <button type="button" class="btn-save" id="savePreferencesBtn">Save Preferences</button>
                                 </div>
                             </div>
                         </div>
@@ -386,6 +386,77 @@
     </div>
 
     <script>
+        // Theme Management
+        const themeSelect = document.getElementById('themeSelect');
+        const languageSelect = document.getElementById('languageSelect');
+        const timezoneSelect = document.getElementById('timezoneSelect');
+        const savePreferencesBtn = document.getElementById('savePreferencesBtn');
+
+        // Load saved preferences
+        const savedTheme = localStorage.getItem('theme') || 'auto';
+        const savedLanguage = localStorage.getItem('language') || 'en-US';
+        const savedTimezone = localStorage.getItem('timezone') || 'BST';
+        
+        // Initial setup
+        applyTheme(savedTheme);
+        themeSelect.value = savedTheme;
+        if(languageSelect) languageSelect.value = savedLanguage;
+        if(timezoneSelect) timezoneSelect.value = savedTimezone;
+
+        // Theme Event listener
+        themeSelect.addEventListener('change', function() {
+            const theme = this.value;
+            localStorage.setItem('theme', theme);
+            applyTheme(theme);
+            // Optional: Show toast for immediate feedback, or rely on Save button
+            // showToast(`Theme changed to ${theme} mode`, 'success'); 
+        });
+
+        // Save Preferences Button Listener
+        if(savePreferencesBtn) {
+            savePreferencesBtn.addEventListener('click', function() {
+                // Save Language
+                if(languageSelect) {
+                    localStorage.setItem('language', languageSelect.value);
+                }
+                
+                // Save Timezone
+                if(timezoneSelect) {
+                    localStorage.setItem('timezone', timezoneSelect.value);
+                }
+
+                // Theme is already saved on change, but we can confirm it here too if needed.
+                // localStorage.setItem('theme', themeSelect.value);
+
+                showToast('Preferences saved successfully', 'success');
+            });
+        }
+
+        function applyTheme(theme) {
+            if (theme === 'auto') {
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                }
+            } else if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        }
+
+        // Listen for system changes if in auto mode
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (localStorage.getItem('theme') === 'auto') {
+                if (e.matches) {
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                }
+            }
+        });
+
         // Show toast notification
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');

@@ -24,12 +24,13 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     // Dashboard & Analytics
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/analytics', [AdminController::class, 'analytics'])->name('admin.analytics');
+    Route::get('/activities', [AdminController::class, 'activities'])->name('admin.activities');
 
     // User Management (Feature #2, #3)
     Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
     Route::post('/users/create', [AdminController::class, 'createUser'])->name('admin.users.create');
     Route::put('/users/{id}', [AdminController::class, 'updateUser'])->name('admin.users.update');
-    Route::post('/users/{id}/deactivate', [AdminController::class, 'deactivateUser'])->name('admin.users.deactivate');
+    Route::post('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus'])->name('admin.users.toggle');
     Route::post('/users/{id}/assign-role', [AdminController::class, 'assignRole'])->name('admin.users.assign-role');
 
     // Child Records (Feature #4)
@@ -37,13 +38,20 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     Route::post('/children/create', [AdminController::class, 'createChild'])->name('admin.children.create');
     Route::put('/children/{id}', [AdminController::class, 'updateChild'])->name('admin.children.update');
     Route::delete('/children/{id}', [AdminController::class, 'deleteChild'])->name('admin.children.delete');
+    Route::post('/children/{id}/approve', [AdminController::class, 'approveChild'])->name('admin.children.approve');
+    Route::post('/children/{id}/reject', [AdminController::class, 'rejectChild'])->name('admin.children.reject');
+
 
     // Staff Management (Feature #5)
     Route::get('/staff', [AdminController::class, 'staff'])->name('admin.staff');
     Route::post('/staff/create', [AdminController::class, 'createStaff'])->name('admin.staff.create');
     Route::put('/staff/{id}', [AdminController::class, 'updateStaff'])->name('admin.staff.update');
+    Route::delete('/staff/{id}', [AdminController::class, 'deleteStaff'])->name('admin.staff.delete');
     Route::post('/staff/assign', [AdminController::class, 'assignStaffToChild'])->name('admin.staff.assign');
+    Route::post('/job-applications/{id}/reject', [AdminController::class, 'rejectJobApplication'])->name('admin.jobs.reject');
     Route::get('/staff/{id}/ratings', [AdminController::class, 'staffRatings'])->name('admin.staff.ratings');
+    Route::post('/leave-requests/{id}/approve', [AdminController::class, 'approveLeave'])->name('admin.leave.approve');
+    Route::post('/leave-requests/{id}/deny', [AdminController::class, 'denyLeave'])->name('admin.leave.deny');
 
     // Attendance (Feature #6)
     Route::get('/attendance', [AdminController::class, 'attendance'])->name('admin.attendance');
@@ -65,6 +73,7 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     Route::delete('/announcements/{id}', [AdminController::class, 'deleteAnnouncement'])->name('admin.announcements.delete');
 
     // Payment Approvals (Feature #11)
+    Route::get('/pending', [AdminController::class, 'pendingActions'])->name('admin.pending');
     Route::get('/pending-payments', [AdminController::class, 'pendingPayments'])->name('admin.payments.pending');
     Route::post('/payments/{id}/approve', [AdminController::class, 'approvePayment'])->name('admin.payments.approve');
     Route::post('/payments/{id}/reject', [AdminController::class, 'rejectPayment'])->name('admin.payments.reject');
@@ -99,6 +108,7 @@ Route::middleware('auth')->prefix('caregiver')->group(function () {
     Route::get('/events', [CaregiverController::class, 'events'])->name('caregiver.events');
     Route::get('/notifications', [CaregiverController::class, 'notifications'])->name('caregiver.notifications');
     Route::get('/leave-requests', [CaregiverController::class, 'leaveRequests'])->name('caregiver.leave');
+    Route::post('/leave-requests/store', [CaregiverController::class, 'storeLeaveRequest'])->name('caregiver.leave.store');
 });
 
 
@@ -118,10 +128,20 @@ Route::middleware('auth')->prefix('parent')->group(function (){
     Route::get('/health/medications', [ParentController::class, 'medications'])->name('parent.medications');
     Route::post('/health/vaccination', [ParentController::class, 'storeVaccination'])->name('parent.health.vaccination.store');
     Route::post('/health/medication', [ParentController::class, 'storeMedication'])->name('parent.health.medication.store');
+    Route::put('/health/medication/{id}', [ParentController::class, 'updateMedication'])->name('parent.health.medication.update');
+    Route::delete('/health/medication/{id}', [ParentController::class, 'deleteMedication'])->name('parent.health.medication.delete');
     Route::post('/health/record', [ParentController::class, 'storeHealthRecord'])->name('parent.health.record.store');
     Route::put('/health/record/{id}', [ParentController::class, 'updateHealthRecord'])->name('parent.health.record.update');
+    Route::delete('/health/record/{id}', [ParentController::class, 'deleteHealthRecord'])->name('parent.health.record.delete');
+    Route::put('/health/allergies', [ParentController::class, 'updateAllergies'])->name('parent.health.allergies.update');
+    Route::post('/health/checkup', [ParentController::class, 'storeCheckup'])->name('parent.health.checkup.store');
+    Route::put('/health/checkup/{id}', [ParentController::class, 'updateCheckup'])->name('parent.health.checkup.update');
+    Route::delete('/health/checkup/{id}', [ParentController::class, 'deleteCheckup'])->name('parent.health.checkup.delete');
     Route::get('/messages', [ParentController::class, 'messages'])->name('parent.messages');
     Route::get('/notifications', [ParentController::class, 'notifications'])->name('parent.notifications');
+    Route::post('/notifications/mark-read', [ParentController::class, 'markAllNotificationsRead'])->name('parent.notifications.mark-all');
+    Route::post('/notifications/{id}/mark-read', [ParentController::class, 'markNotificationRead'])->name('parent.notifications.mark-read');
+    Route::delete('/notifications/{id}', [ParentController::class, 'deleteNotification'])->name('parent.notifications.delete');
     Route::get('/events', [ParentController::class, 'events'])->name('parent.events');
     Route::get('/settings', [ParentController::class, 'settings'])->name('parent.settings');
     Route::post('/settings', [ParentController::class, 'updateSettings'])->name('parent.settings.update');

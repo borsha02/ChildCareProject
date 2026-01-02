@@ -131,284 +131,160 @@
             </div>
 
             <div class="content-area">
-                <!-- Search and Filter Controls -->
-                <div class="controls-bar">
-                    <input type="text" class="search-input" id="searchInput" placeholder="Search by name, ID, or parent...">
-                    <select class="filter-select" id="classFilter">
-                        <option value="">All Classes</option>
-                        <option value="toddler-a">Toddler A</option>
-                        <option value="toddler-b">Toddler B</option>
-                        <option value="preschool-a">Preschool A</option>
-                        <option value="preschool-b">Preschool B</option>
-                        <option value="kindergarten">Kindergarten</option>
-                    </select>
-                    <select class="filter-select" id="statusFilter">
-                        <option value="">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </select>
+                
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('requests')">
+                        Registration Requests
+                        @if($pendingChildren->count() > 0)
+                            <span class="badge">{{ $pendingChildren->count() }}</span>
+                        @endif
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('enrolled')">Enrolled Children</button>
                 </div>
 
-                <!-- Children Grid -->
-                <div class="children-grid" id="childrenGrid">
-                    <!-- Sample Child Cards -->
-                    <div class="child-card" data-class="preschool-a" data-status="active">
-                        <div class="child-header">
-                            <div class="child-photo">EM</div>
-                            <div class="child-info">
-                                <h3>Emma Martinez</h3>
-                                <div class="child-id">ID: CH001</div>
-                                <span class="status-badge active">Active</span>
+                <!-- Registration Requests Section -->
+                <div id="requestsTab" class="tab-content">
+                    @if($pendingChildren->count() > 0)
+                    <div class="children-grid">
+                        @foreach($pendingChildren as $child)
+                        <div class="child-card request-card" data-class="{{ $child->class }}">
+                            <div class="child-header">
+                                <div class="child-photo" style="background: {{ '#' . substr(md5($child->first_name . $child->last_name), 0, 6) }};">
+                                    {{ strtoupper(substr($child->first_name, 0, 1) . substr($child->last_name, 0, 1)) }}
+                                </div>
+                                <div class="child-info">
+                                    <h3>{{ $child->first_name }} {{ $child->last_name }}</h3>
+                                    <div class="child-id">Applied: {{ $child->created_at->diffForHumans() }}</div>
+                                    <span class="status-badge pending">Pending</span>
+                                </div>
+                            </div>
+                            <div class="child-details">
+                                <div class="detail-item">
+                                    <div class="detail-label">Age</div>
+                                    <div class="detail-value">{{ \Carbon\Carbon::parse($child->dob)->age }} years</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Class</div>
+                                    <div class="detail-value">{{ ucfirst($child->class) }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Parent</div>
+                                    <div class="detail-value">{{ $child->parent->name ?? 'N/A' }}</div>
+                                </div>
+                            </div>
+                            <div class="child-actions">
+                                <form action="{{ route('admin.children.approve', $child->id) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="action-btn approve">
+                                        <i class="fas fa-check"></i> Approve
+                                    </button>
+                                </form>
+                                <form action="{{ route('admin.children.reject', $child->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to reject this registration?');">
+                                    @csrf
+                                    <button type="submit" class="action-btn delete">
+                                        <i class="fas fa-times"></i> Reject
+                                    </button>
+                                </form>
+                                <button class="action-btn view" onclick="viewChild({{ json_encode($child) }})">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
                             </div>
                         </div>
-                        <div class="child-details">
-                            <div class="detail-item">
-                                <div class="detail-label">Age</div>
-                                <div class="detail-value">4 years</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Class</div>
-                                <div class="detail-value">Preschool A</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Parent</div>
-                                <div class="detail-value">Sarah Martinez</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Enrollment</div>
-                                <div class="detail-value">Jan 2024</div>
-                            </div>
-                        </div>
-                        <div class="child-actions">
-                            <button class="action-btn view">
-                                <i class="fas fa-eye"></i>
-                                View
-                            </button>
-                            <button class="action-btn edit" onclick="editChild(1)">
-                                <i class="fas fa-edit"></i>
-                                Edit
-                            </button>
-                            <button class="action-btn delete" onclick="deleteChild(1)">
-                                <i class="fas fa-trash"></i>
-                                Delete
-                            </button>
-                        </div>
+                        @endforeach
+                    </div>
+                    @else
+                    <div class="empty-state">
+                        <i class="fas fa-check-circle"></i>
+                        <p>No pending registration requests.</p>
+                    </div>
+                    @endif
+                </div>
+
+                <!-- Enrolled Children Section -->
+                <div id="enrolledTab" class="tab-content" style="display: none;">
+                    <!-- Search and Filter Controls -->
+                    <div class="controls-bar">
+                        <input type="text" class="search-input" id="searchInput" placeholder="Search by name, ID, or parent...">
+                        <select class="filter-select" id="classFilter">
+                            <option value="">All Classes</option>
+                            <option value="Toddler">Toddler</option>
+                            <option value="Preschool">Preschool</option>
+                            <option value="Pre-K">Pre-K</option>
+                            <option value="Young Learners">Young Learners</option>
+                        </select>
+                         <select class="filter-select" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                        <select class="filter-select" id="packageFilter">
+                            <option value="">All Packages</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
                     </div>
 
-                    <div class="child-card" data-class="toddler-b" data-status="active">
-                        <div class="child-header">
-                            <div class="child-photo" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">LJ</div>
-                            <div class="child-info">
-                                <h3>Lucas Johnson</h3>
-                                <div class="child-id">ID: CH002</div>
-                                <span class="status-badge active">Active</span>
+                    <div class="children-grid" id="childrenGrid">
+                        @forelse($enrolledChildren as $child)
+                        <div class="child-card" data-class="{{ $child->class }}" data-status="{{ $child->status }}" data-package="{{ $child->package ?? 'monthly' }}">
+                            <div class="child-header">
+                                <div class="child-photo" style="background: {{ '#' . substr(md5($child->first_name . $child->last_name), 0, 6) }};">
+                                    {{ strtoupper(substr($child->first_name, 0, 1) . substr($child->last_name, 0, 1)) }}
+                                </div>
+                                <div class="child-info">
+                                    <h3>{{ $child->first_name }} {{ $child->last_name }}</h3>
+                                    <div class="child-id">ID: CH{{ str_pad($child->id, 3, '0', STR_PAD_LEFT) }}</div>
+                                    <span class="status-badge {{ $child->status }}">{{ ucfirst($child->status) }}</span>
+                                </div>
+                            </div>
+                            <div class="child-details">
+                                <div class="detail-item">
+                                    <div class="detail-label">Age</div>
+                                    <div class="detail-value">{{ \Carbon\Carbon::parse($child->dob)->age }} years</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Class</div>
+                                    <div class="detail-value">{{ ucfirst($child->class) }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Parent</div>
+                                    <div class="detail-value">{{ $child->parent->name ?? 'N/A' }}</div>
+                                </div>
+                                <div class="detail-item">
+                                    <div class="detail-label">Enrollment</div>
+                                    <div class="detail-value">{{ $child->created_at->format('M Y') }}</div>
+                                </div>
+                            </div>
+                            <div class="child-actions">
+                                <button class="action-btn view" onclick="viewChild({{ json_encode($child) }})">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button class="action-btn edit" onclick="editChild({{ json_encode($child) }}, '{{ route('admin.children.update', $child->id) }}')">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <form action="{{ route('admin.children.delete', $child->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this child record?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="action-btn delete">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
                             </div>
                         </div>
-                        <div class="child-details">
-                            <div class="detail-item">
-                                <div class="detail-label">Age</div>
-                                <div class="detail-value">3 years</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Class</div>
-                                <div class="detail-value">Toddler B</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Parent</div>
-                                <div class="detail-value">Michael Johnson</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Enrollment</div>
-                                <div class="detail-value">Mar 2024</div>
-                            </div>
+                        @empty
+                        <div class="empty-state">
+                            <p>No enrolled children found.</p>
                         </div>
-                        <div class="child-actions">
-                            <button class="action-btn view">
-                                <i class="fas fa-eye"></i>
-                                View
-                            </button>
-                            <button class="action-btn edit" onclick="editChild(2)">
-                                <i class="fas fa-edit"></i>
-                                Edit
-                            </button>
-                            <button class="action-btn delete" onclick="deleteChild(2)">
-                                <i class="fas fa-trash"></i>
-                                Delete
-                            </button>
-                        </div>
+                        @endforelse
                     </div>
-
-                    <div class="child-card" data-class="kindergarten" data-status="active">
-                        <div class="child-header">
-                            <div class="child-photo" style="background: linear-gradient(135deg, #10b981, #059669);">SW</div>
-                            <div class="child-info">
-                                <h3>Sophia Williams</h3>
-                                <div class="child-id">ID: CH003</div>
-                                <span class="status-badge active">Active</span>
-                            </div>
+                    
+                    <!-- Pagination if needed -->
+                    @if($enrolledChildren->hasPages())
+                        <div style="margin-top: 20px;">
+                            {{ $enrolledChildren->links() }}
                         </div>
-                        <div class="child-details">
-                            <div class="detail-item">
-                                <div class="detail-label">Age</div>
-                                <div class="detail-value">5 years</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Class</div>
-                                <div class="detail-value">Kindergarten</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Parent</div>
-                                <div class="detail-value">Jennifer Williams</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Enrollment</div>
-                                <div class="detail-value">Sep 2023</div>
-                            </div>
-                        </div>
-                        <div class="child-actions">
-                            <button class="action-btn view">
-                                <i class="fas fa-eye"></i>
-                                View
-                            </button>
-                            <button class="action-btn edit" onclick="editChild(3)">
-                                <i class="fas fa-edit"></i>
-                                Edit
-                            </button>
-                            <button class="action-btn delete" onclick="deleteChild(3)">
-                                <i class="fas fa-trash"></i>
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="child-card" data-class="preschool-b" data-status="inactive">
-                        <div class="child-header">
-                            <div class="child-photo" style="background: linear-gradient(135deg, #f59e0b, #d97706);">OB</div>
-                            <div class="child-info">
-                                <h3>Oliver Brown</h3>
-                                <div class="child-id">ID: CH004</div>
-                                <span class="status-badge inactive">Inactive</span>
-                            </div>
-                        </div>
-                        <div class="child-details">
-                            <div class="detail-item">
-                                <div class="detail-label">Age</div>
-                                <div class="detail-value">4 years</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Class</div>
-                                <div class="detail-value">Preschool B</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Parent</div>
-                                <div class="detail-value">David Brown</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Enrollment</div>
-                                <div class="detail-value">Jun 2023</div>
-                            </div>
-                        </div>
-                        <div class="child-actions">
-                            <button class="action-btn view">
-                                <i class="fas fa-eye"></i>
-                                View
-                            </button>
-                            <button class="action-btn edit" onclick="editChild(4)">
-                                <i class="fas fa-edit"></i>
-                                Edit
-                            </button>
-                            <button class="action-btn delete" onclick="deleteChild(4)">
-                                <i class="fas fa-trash"></i>
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="child-card" data-class="toddler-a" data-status="active">
-                        <div class="child-header">
-                            <div class="child-photo" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">AD</div>
-                            <div class="child-info">
-                                <h3>Ava Davis</h3>
-                                <div class="child-id">ID: CH005</div>
-                                <span class="status-badge active">Active</span>
-                            </div>
-                        </div>
-                        <div class="child-details">
-                            <div class="detail-item">
-                                <div class="detail-label">Age</div>
-                                <div class="detail-value">2 years</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Class</div>
-                                <div class="detail-value">Toddler A</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Parent</div>
-                                <div class="detail-value">Emily Davis</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Enrollment</div>
-                                <div class="detail-value">Feb 2024</div>
-                            </div>
-                        </div>
-                        <div class="child-actions">
-                            <button class="action-btn view">
-                                <i class="fas fa-eye"></i>
-                                View
-                            </button>
-                            <button class="action-btn edit" onclick="editChild(5)">
-                                <i class="fas fa-edit"></i>
-                                Edit
-                            </button>
-                            <button class="action-btn delete" onclick="deleteChild(5)">
-                                <i class="fas fa-trash"></i>
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="child-card" data-class="preschool-a" data-status="active">
-                        <div class="child-header">
-                            <div class="child-photo" style="background: linear-gradient(135deg, #ef4444, #dc2626);">NM</div>
-                            <div class="child-info">
-                                <h3>Noah Miller</h3>
-                                <div class="child-id">ID: CH006</div>
-                                <span class="status-badge active">Active</span>
-                            </div>
-                        </div>
-                        <div class="child-details">
-                            <div class="detail-item">
-                                <div class="detail-label">Age</div>
-                                <div class="detail-value">4 years</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Class</div>
-                                <div class="detail-value">Preschool A</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Parent</div>
-                                <div class="detail-value">Robert Miller</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">Enrollment</div>
-                                <div class="detail-value">Apr 2024</div>
-                            </div>
-                        </div>
-                        <div class="child-actions">
-                            <button class="action-btn view">
-                                <i class="fas fa-eye"></i>
-                                View
-                            </button>
-                            <button class="action-btn edit" onclick="editChild(6)">
-                                <i class="fas fa-edit"></i>
-                                Edit
-                            </button>
-                            <button class="action-btn delete" onclick="deleteChild(6)">
-                                <i class="fas fa-trash"></i>
-                                Delete
-                            </button>
-                        </div>
-                    </div>
+                    @endif
                 </div>
             </div>
         </main>
@@ -427,19 +303,19 @@
                 @csrf
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="first_name">First Name *</label>
+                        <label for="first_name">First Name <span style="color: red">*</span></label>
                         <input type="text" id="first_name" name="first_name" required placeholder="Enter first name">
                     </div>
                     <div class="form-group">
-                        <label for="last_name">Last Name *</label>
+                        <label for="last_name">Last Name <span style="color: red">*</span></label>
                         <input type="text" id="last_name" name="last_name" required placeholder="Enter last name">
                     </div>
                     <div class="form-group">
-                        <label for="date_of_birth">Date of Birth *</label>
+                        <label for="date_of_birth">Date of Birth <span style="color: red">*</span></label>
                         <input type="date" id="date_of_birth" name="date_of_birth" required>
                     </div>
                     <div class="form-group">
-                        <label for="gender">Gender *</label>
+                        <label for="gender">Gender <span style="color: red">*</span></label>
                         <select id="gender" name="gender" required>
                             <option value="">Select gender</option>
                             <option value="male">Male</option>
@@ -448,30 +324,37 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="class">Class *</label>
+                        <label for="class">Class <span style="color: red">*</span></label>
                         <select id="class" name="class" required>
                             <option value="">Select class</option>
-                            <option value="toddler-a">Toddler A</option>
-                            <option value="toddler-b">Toddler B</option>
-                            <option value="preschool-a">Preschool A</option>
-                            <option value="preschool-b">Preschool B</option>
-                            <option value="kindergarten">Kindergarten</option>
+                            <option value="Toddler">Toddler</option>
+                            <option value="Preschool">Preschool</option>
+                            <option value="Pre-K">Pre-K</option>
+                            <option value="Young Learners">Young Learners</option>
+                            <option value="Young Learners">Young Learners</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="enrollment_date">Enrollment Date *</label>
+                        <label for="package">Package <span style="color: red">*</span></label>
+                        <select id="package" name="package" required>
+                            <option value="monthly">Monthly</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="enrollment_date">Enrollment Date <span style="color: red">*</span></label>
                         <input type="date" id="enrollment_date" name="enrollment_date" required>
                     </div>
                     <div class="form-group">
-                        <label for="parent_name">Parent/Guardian Name *</label>
+                        <label for="parent_name">Parent/Guardian Name <span style="color: red">*</span></label>
                         <input type="text" id="parent_name" name="parent_name" required placeholder="Enter parent name">
                     </div>
                     <div class="form-group">
-                        <label for="parent_phone">Parent Phone *</label>
+                        <label for="parent_phone">Parent Phone <span style="color: red">*</span></label>
                         <input type="tel" id="parent_phone" name="parent_phone" required placeholder="Enter phone number">
                     </div>
                     <div class="form-group full-width">
-                        <label for="parent_email">Parent Email *</label>
+                        <label for="parent_email">Parent Email <span style="color: red">*</span></label>
                         <input type="email" id="parent_email" name="parent_email" required placeholder="Enter email address">
                     </div>
                     <div class="form-group full-width">
@@ -493,31 +376,98 @@
             </form>
         </div>
     </div>
+    <!-- View Child Details Modal -->
+    <div class="modal-overlay" id="viewChildModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Child Details</h2>
+                <button class="close-modal" onclick="closeViewModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="viewModalBody">
+                <!-- Details populated via JS -->
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeViewModal()">Close</button>
+            </div>
+        </div>
+    </div>
 
     <script>
+        // Tab Switcher
+        function switchTab(tabName) {
+            // Update Tab Buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            // Update Tab Content
+            document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+            
+            if (tabName === 'requests') {
+                document.getElementById('requestsTab').style.display = 'block';
+            } else {
+                document.getElementById('enrolledTab').style.display = 'block';
+            }
+        }
+
         // Modal functions
         function openModal() {
             document.getElementById('childModal').classList.add('active');
             document.getElementById('modalTitle').textContent = 'Add New Child';
-            document.getElementById('childForm').reset();
+            const form = document.getElementById('childForm');
+            form.action = "{{ route('admin.children.create') }}";
+            form.reset();
+            
+            // Remove method spoofing if exists
+            const methodInput = form.querySelector('input[name="_method"]');
+            if (methodInput) methodInput.remove();
         }
 
         function closeModal() {
             document.getElementById('childModal').classList.remove('active');
         }
 
-        function editChild(id) {
+        function editChild(child, updateUrl) {
             document.getElementById('childModal').classList.add('active');
             document.getElementById('modalTitle').textContent = 'Edit Child Record';
-            // In real app, load child data here
-            console.log('Editing child:', id);
-        }
+            
+            const form = document.getElementById('childForm');
+            form.action = updateUrl;
 
-        function deleteChild(id) {
-            if (confirm('Are you sure you want to delete this child record? This action cannot be undone.')) {
-                console.log('Deleting child:', id);
-                alert('Child record deleted successfully!');
+            // Add method spoofing for PUT
+            let methodInput = form.querySelector('input[name="_method"]');
+            if (!methodInput) {
+                methodInput = document.createElement('input');
+                methodInput.type = 'hidden';
+                methodInput.name = '_method';
+                methodInput.value = 'PUT';
+                form.appendChild(methodInput);
             }
+
+            // Populate fields
+            document.getElementById('first_name').value = child.first_name;
+            document.getElementById('last_name').value = child.last_name;
+            document.getElementById('date_of_birth').value = child.dob ? child.dob.split('T')[0] : '';
+            document.getElementById('gender').value = child.gender;
+            document.getElementById('class').value = child.class;
+            document.getElementById('package').value = child.package || 'monthly';
+            
+            // Enrollment date from created_at
+            if (child.created_at) {
+                document.getElementById('enrollment_date').value = child.created_at.split('T')[0];
+            }
+
+            // Parent info
+            if (child.parent) {
+                document.getElementById('parent_name').value = child.parent.name;
+                document.getElementById('parent_email').value = child.parent.email;
+                document.getElementById('parent_phone').value = child.parent.phone;
+            }
+
+            document.getElementById('medical_info').value = child.medical_notes || '';
+            // Address is not in DB currently
+            document.getElementById('address').value = ''; 
         }
 
         // Search functionality
@@ -559,6 +509,20 @@
             });
         });
 
+        // Package filter
+        document.getElementById('packageFilter').addEventListener('change', function(e) {
+            const packageValue = e.target.value;
+            const cards = document.querySelectorAll('.child-card');
+
+            cards.forEach(card => {
+                if (!packageValue || card.dataset.package === packageValue) {
+                    card.style.display = '';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
         // Close modal when clicking outside
         document.getElementById('childModal').addEventListener('click', function(e) {
             if (e.target === this) {
@@ -582,6 +546,87 @@
                 if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
                     sidebar.classList.remove('active');
                 }
+            }
+        });
+
+        // View Modal Functions
+        function viewChild(child) {
+            const modal = document.getElementById('viewChildModal');
+            const body = document.getElementById('viewModalBody');
+            
+            // Calculate age
+            const dob = new Date(child.dob);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+
+            body.innerHTML = `
+                <div class="view-details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="detail-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Full Name</label>
+                        <p>${child.first_name} ${child.last_name}</p>
+                    </div>
+                    <div class="detail-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Status</label>
+                        <span class="status-badge ${child.status}" style="padding: 2px 8px; border-radius: 4px; background: #eee;">${child.status.charAt(0).toUpperCase() + child.status.slice(1)}</span>
+                    </div>
+                    <div class="detail-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Date of Birth</label>
+                        <p>${new Date(child.dob).toLocaleDateString()}</p>
+                    </div>
+                    <div class="detail-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Age</label>
+                        <p>${age} years</p>
+                    </div>
+                    <div class="detail-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Gender</label>
+                        <p>${child.gender.charAt(0).toUpperCase() + child.gender.slice(1)}</p>
+                    </div>
+                    <div class="detail-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Class</label>
+                        <p>${child.class}</p>
+                    </div>
+                     <div class="detail-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Package</label>
+                        <p>${child.package ? child.package.charAt(0).toUpperCase() + child.package.slice(1) : 'Monthly'}</p>
+                    </div>
+                    <div class="detail-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Blood Group</label>
+                        <p>${child.blood_group || 'N/A'}</p>
+                    </div>
+                     <div class="detail-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Parent Name</label>
+                        <p>${child.parent ? child.parent.name : 'N/A'}</p>
+                    </div>
+                    <div class="detail-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Parent Phone</label>
+                        <p>${child.parent ? child.parent.phone : 'N/A'}</p>
+                    </div>
+                    <div class="detail-group" style="grid-column: 1 / -1;">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Medical Notes</label>
+                        <p style="background: #f9f9f9; padding: 10px; border-radius: 4px;">${child.medical_notes || 'No medical notes available.'}</p>
+                    </div>
+                     <div class="detail-group" style="grid-column: 1 / -1;">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Allergies</label>
+                        <p style="background: #f9f9f9; padding: 10px; border-radius: 4px;">${child.allergies || 'No allergies listed.'}</p>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        function closeViewModal() {
+            document.getElementById('viewChildModal').classList.remove('active');
+        }
+
+        // Close view modal on outside click
+        document.getElementById('viewChildModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeViewModal();
             }
         });
     </script>

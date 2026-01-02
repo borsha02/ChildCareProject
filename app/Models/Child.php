@@ -20,6 +20,9 @@ class Child extends Model
         'medical_notes',
         'emergency_contact',
         'class',
+        'package',
+        'duration',
+        'status',
     ];
 
     protected $casts = [
