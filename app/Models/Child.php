@@ -23,6 +23,7 @@ class Child extends Model
         'package',
         'duration',
         'status',
+        'enrollment_date',
     ];
 
     protected $casts = [
@@ -52,5 +53,9 @@ class Child extends Model
     public function checkups()
     {
         return $this->hasMany(Checkup::class);
+    }
+    public function caregivers()
+    {
+        return $this->belongsToMany(User::class, 'child_assignments', 'child_id', 'caregiver_id');
     }
 }

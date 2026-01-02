@@ -233,9 +233,37 @@ class AdminController extends Controller
         $pendingChildren = (clone $query)->where('status', 'pending')->latest()->get();
         // For enrolled, we might show active and inactive. Rejected are usually hidden or in a separate view, 
         // but for now let's just say != pending.
-        $enrolledChildren = (clone $query)->where('status', '!=', 'pending')->latest()->paginate(10);
+        $enrolledChildren = (clone $query)->where('status', '!=', 'pending')->with('caregivers')->latest()->paginate(10);
+        $caregivers = User::where('role', 'caregiver')->where('status', 'active')->get();
 
-        return view('admin.children', compact('pendingChildren', 'enrolledChildren'));
+        return view('admin.children', compact('pendingChildren', 'enrolledChildren', 'caregivers'));
+    }
+
+    public function assignCaregiver(Request $request, $id)
+    {
+        $child = Child::findOrFail($id);
+        $validated = $request->validate([
+            'caregiver_id' => 'required|exists:users,id',
+        ]);
+        
+        // Check if already assigned
+        if (!$child->caregivers->contains($validated['caregiver_id'])) {
+            $child->caregivers()->attach($validated['caregiver_id']);
+             return redirect()->back()->with('success', 'Caregiver assigned successfully.');
+        }
+
+        return redirect()->back()->with('warning', 'Caregiver already assigned.');
+    }
+
+    public function removeCaregiver(Request $request, $id)
+    {
+        $child = Child::findOrFail($id);
+        $validated = $request->validate([
+            'caregiver_id' => 'required|exists:users,id',
+        ]);
+        
+        $child->caregivers()->detach($validated['caregiver_id']);
+        return redirect()->back()->with('success', 'Caregiver removed successfully.');
     }
 
     public function approveChild($id)
@@ -263,14 +291,17 @@ class AdminController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'dob' => 'required|date',
+            'enrollment_date' => 'nullable|date',
             'gender' => 'required|in:male,female,other',
+            'blood_group' => 'nullable|string|max:10',
+            'allergies' => 'nullable|string',
             'class' => 'required|in:Toddler,Preschool,Pre-K,Young Learners',
             'package' => 'required|in:monthly,weekly',
             'parent_email' => 'required|email',
             'parent_name' => 'required|string',
             'parent_phone' => 'required|string',
             'medical_info' => 'nullable|string',
-            'address' => 'nullable|string',
+            'caregiver_id' => 'nullable|exists:users,id',
         ]);
 
         $parent = User::where('email', $validated['parent_email'])->first();
@@ -286,18 +317,25 @@ class AdminController extends Controller
             ]);
         }
 
-        Child::create([
+        $child = Child::create([
             'parent_id' => $parent->id,
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
             'dob' => $validated['dob'],
+            'enrollment_date' => $validated['enrollment_date'] ?? now(),
             'gender' => $validated['gender'],
+            'blood_group' => $validated['blood_group'] ?? null,
+            'allergies' => $validated['allergies'] ?? null,
             'class' => $validated['class'],
             'package' => $validated['package'],
             'emergency_contact' => $validated['parent_phone'],
             'medical_notes' => $validated['medical_info'] ?? null,
             'status' => 'active', // Admin created children are auto-approved
         ]);
+
+        if ($request->filled('caregiver_id')) {
+            $child->caregivers()->attach($request->caregiver_id);
+        }
 
         return redirect()->route('admin.children')->with('success', 'Child record created successfully!');
     }
@@ -310,6 +348,7 @@ class AdminController extends Controller
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
             'dob' => 'required|date',
+            'enrollment_date' => 'required|date',
             'gender' => 'required|in:male,female,other',
             'class' => 'required|string',
             'package' => 'required|in:monthly,weekly',
@@ -320,6 +359,7 @@ class AdminController extends Controller
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
             'dob' => $validated['dob'],
+            'enrollment_date' => $validated['enrollment_date'],
             'gender' => $validated['gender'],
             'class' => $validated['class'],
             'package' => $validated['package'],
@@ -327,6 +367,17 @@ class AdminController extends Controller
         ]);
 
         return redirect()->route('admin.children')->with('success', 'Child record updated successfully!');
+    }
+
+    public function reactivate($id)
+    {
+        $child = \App\Models\Child::findOrFail($id);
+        
+        $child->status = 'active';
+        $child->enrollment_date = now(); // Reset enrollment date to today
+        $child->save();
+
+        return redirect()->route('admin.children')->with('success', 'Child reactivated successfully. Enrollment date reset to today.');
     }
 
     public function deleteChild($id)

@@ -50,4 +50,8 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function assignedChildren()
+    {
+        return $this->belongsToMany(Child::class, 'child_assignments', 'caregiver_id', 'child_id');
+    }
 }

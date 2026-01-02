@@ -296,6 +296,16 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="enrollmentDate">Enrollment Date <span class="text-red-600">*</span></label>
+                        <input type="date" id="enrollmentDate" name="enrollment_date" required onchange="checkWorkingDay(this); calculateEndDate()">
+                    </div>
+                    
+                    <div class="form-group" id="endDateGroup" style="display: none;">
+                        <label for="endDate">End Date</label>
+                        <input type="date" id="endDate" readonly disabled style="background-color: #f3f4f6; cursor: not-allowed;">
+                    </div>
+
+                    <div class="form-group">
                         <label for="allergies">Allergies</label>
                         <textarea id="allergies" name="allergies" placeholder="List any allergies (e.g., peanuts, dairy, etc.)"></textarea>
                     </div>
@@ -359,6 +369,9 @@
 
             document.getElementById('childModal').classList.add('active');
             
+            // Set default enrollment date to today
+            document.getElementById('enrollmentDate').value = new Date().toISOString().split('T')[0];
+
             // Reset duration visibility
             document.getElementById('durationGroup').style.display = 'none';
         }
@@ -401,6 +414,11 @@
             if (child.package === 'weekly') {
                 document.getElementById('duration').value = child.duration || '';
             }
+
+            // Enrollment Date
+            document.getElementById('enrollmentDate').value = child.enrollment_date 
+                ? child.enrollment_date.substring(0, 10) 
+                : (child.created_at ? child.created_at.substring(0, 10) : new Date().toISOString().split('T')[0]);
             
             document.getElementById('childModal').classList.add('active');
         }
@@ -440,6 +458,10 @@
                     <div class="detail-item">
                         <i class="fas fa-venus-mars"></i>
                         <span><strong>Gender:</strong> ${child.gender.charAt(0).toUpperCase() + child.gender.slice(1)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <i class="fas fa-calendar-check"></i>
+                        <span><strong>Enrollment Date:</strong> ${child.enrollment_date ? new Date(child.enrollment_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : (child.created_at ? new Date(child.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'N/A')}</span>
                     </div>
                     <div class="detail-item">
                         <i class="fas fa-school"></i>
@@ -540,18 +562,71 @@
             const packageSelect = document.getElementById('package');
             const durationGroup = document.getElementById('durationGroup');
             const durationSelect = document.getElementById('duration');
+            const endDateGroup = document.getElementById('endDateGroup');
             
             if (packageSelect.value === 'weekly') {
                 durationGroup.style.display = 'block';
                 durationSelect.required = true;
+                endDateGroup.style.display = 'block';
+                calculateEndDate();
             } else {
                 durationGroup.style.display = 'none';
                 durationSelect.required = false;
                 durationSelect.value = '';
+                endDateGroup.style.display = 'none';
+                document.getElementById('endDate').value = '';
             }
         }
 
+        function calculateEndDate() {
+            const duration = parseInt(document.getElementById('duration').value);
+            const enrollmentDateVal = document.getElementById('enrollmentDate').value;
+            const endDateInput = document.getElementById('endDate');
+
+            if (duration && enrollmentDateVal) {
+                const startDate = new Date(enrollmentDateVal);
+                // Calculate raw end date: Start + (Weeks * 7) - 1 day (to be inclusive)
+                const endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + (duration * 7) - 1);
+
+                // Adjust for weekends (Friday = 5, Saturday = 6)
+                // If End Date lands on Friday (5), move back to Thursday (4)
+                if (endDate.getDay() === 5) {
+                    endDate.setDate(endDate.getDate() - 1);
+                } 
+                // If End Date lands on Saturday (6), move back to Thursday (4)
+                else if (endDate.getDay() === 6) {
+                    endDate.setDate(endDate.getDate() - 2);
+                }
+                
+                // Format to YYYY-MM-DD
+                const year = endDate.getFullYear();
+                const month = String(endDate.getMonth() + 1).padStart(2, '0');
+                const day = String(endDate.getDate()).padStart(2, '0');
+                
+                endDateInput.value = `${year}-${month}-${day}`;
+            } else {
+                endDateInput.value = '';
+            }
+        }
+
+        // Add event listener to duration
+        document.getElementById('duration').addEventListener('change', calculateEndDate);
+
         document.getElementById('package').addEventListener('change', toggleDuration);
+
+        function checkWorkingDay(input) {
+            if (!input.value) return;
+            const parts = input.value.split('-');
+            const myDate = new Date(parts[0], parts[1] - 1, parts[2]); 
+            const day = myDate.getDay();
+            
+            if (day === 5 || day === 6) {
+                 alert('Please select a working day (Sunday to Thursday). Fridays and Saturdays are off days.');
+                 input.value = '';
+                 document.getElementById('endDate').value = '';
+            }
+        }
     </script>
 </body>
 </html>

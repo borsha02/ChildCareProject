@@ -169,6 +169,15 @@
                                     <div class="detail-value">{{ ucfirst($child->class) }}</div>
                                 </div>
                                 <div class="detail-item">
+                                    <div class="detail-label">Package</div>
+                                    <div class="detail-value">
+                                        {{ ucfirst($child->package) }}
+                                        @if($child->package === 'weekly' && $child->duration)
+                                            ({{ $child->duration }} wks)
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="detail-item">
                                     <div class="detail-label">Parent</div>
                                     <div class="detail-value">{{ $child->parent->name ?? 'N/A' }}</div>
                                 </div>
@@ -233,7 +242,10 @@
                                     {{ strtoupper(substr($child->first_name, 0, 1) . substr($child->last_name, 0, 1)) }}
                                 </div>
                                 <div class="child-info">
-                                    <h3>{{ $child->first_name }} {{ $child->last_name }}</h3>
+                                    <h3>
+                                        {{ $child->first_name }} {{ $child->last_name }} 
+                                        <span style="font-size: 0.8em; color: #666; font-weight: normal;">({{ ucfirst($child->package ?? 'Monthly') }})</span>
+                                    </h3>
                                     <div class="child-id">ID: CH{{ str_pad($child->id, 3, '0', STR_PAD_LEFT) }}</div>
                                     <span class="status-badge {{ $child->status }}">{{ ucfirst($child->status) }}</span>
                                 </div>
@@ -248,28 +260,48 @@
                                     <div class="detail-value">{{ ucfirst($child->class) }}</div>
                                 </div>
                                 <div class="detail-item">
+                                    <div class="detail-label">Assigned Caregiver</div>
+                                    <div class="detail-value">
+                                        @if($child->caregivers->count() > 0)
+                                            {{ $child->caregivers->pluck('name')->join(', ') }}
+                                        @else
+                                            <span style="color: #9ca3af; font-style: italic;">Unassigned</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="detail-item">
                                     <div class="detail-label">Parent</div>
                                     <div class="detail-value">{{ $child->parent->name ?? 'N/A' }}</div>
                                 </div>
-                                <div class="detail-item">
-                                    <div class="detail-label">Enrollment</div>
-                                    <div class="detail-value">{{ $child->created_at->format('M Y') }}</div>
-                                </div>
                             </div>
                             <div class="child-actions">
+                                @if($child->caregivers->count() > 0)
+                                    <button class="action-btn approve" onclick="assignCaregiver({{ json_encode($child) }})" title="Manage Assignments">
+                                        <i class="fas fa-user-check"></i> Assigned
+                                    </button>
+                                @else
+                                    <button class="action-btn view" onclick="assignCaregiver({{ json_encode($child) }})">
+                                        <i class="fas fa-user-plus"></i> Assign
+                                    </button>
+                                @endif
                                 <button class="action-btn view" onclick="viewChild({{ json_encode($child) }})">
                                     <i class="fas fa-eye"></i> View
                                 </button>
                                 <button class="action-btn edit" onclick="editChild({{ json_encode($child) }}, '{{ route('admin.children.update', $child->id) }}')">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
-                                <form action="{{ route('admin.children.delete', $child->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this child record?');">
-                                    @csrf
-                                    @method('DELETE')
                                     <button type="submit" class="action-btn delete">
                                         <i class="fas fa-trash"></i> Delete
                                     </button>
                                 </form>
+                                @if($child->status === 'inactive')
+                                <form action="{{ route('admin.children.reactivate', $child->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Reactivating will reset the enrollment date to today. Continue?');">
+                                    @csrf
+                                    <button type="submit" class="action-btn approve" title="Reactivate Child">
+                                        <i class="fas fa-redo"></i> Reactivate
+                                    </button>
+                                </form>
+                                @endif
                             </div>
                         </div>
                         @empty
@@ -336,14 +368,27 @@
                     </div>
                     <div class="form-group">
                         <label for="package">Package <span style="color: red">*</span></label>
-                        <select id="package" name="package" required>
+                        <select id="package" name="package" required onchange="toggleDuration()">
                             <option value="monthly">Monthly</option>
                             <option value="weekly">Weekly</option>
                         </select>
                     </div>
+                    <div class="form-group" id="durationGroup" style="display: none;">
+                        <label for="duration">Duration (Weeks) <span style="color: red">*</span></label>
+                        <select id="duration" name="duration">
+                            <option value="">Select duration</option>
+                            <option value="1">1 Week</option>
+                            <option value="2">2 Weeks</option>
+                            <option value="3">3 Weeks</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label for="enrollment_date">Enrollment Date <span style="color: red">*</span></label>
-                        <input type="date" id="enrollment_date" name="enrollment_date" required>
+                        <input type="date" id="enrollment_date" name="enrollment_date" required onchange="checkWorkingDay(this); calculateEndDate()">
+                    </div>
+                    <div class="form-group" id="endDateGroup" style="display: none;">
+                        <label for="end_date">End Date</label>
+                        <input type="date" id="end_date" readonly disabled style="background-color: #f3f4f6;">
                     </div>
                     <div class="form-group">
                         <label for="parent_name">Parent/Guardian Name <span style="color: red">*</span></label>
@@ -357,13 +402,36 @@
                         <label for="parent_email">Parent Email <span style="color: red">*</span></label>
                         <input type="email" id="parent_email" name="parent_email" required placeholder="Enter email address">
                     </div>
+                    <div class="form-group">
+                        <label for="blood_group">Blood Group</label>
+                        <select id="blood_group" name="blood_group">
+                            <option value="">Select blood group</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="caregiver_id">Assign Caregiver</label>
+                        <select id="caregiver_id" name="caregiver_id">
+                            <option value="">Select caregiver (optional)</option>
+                            @foreach($caregivers as $caregiver)
+                                <option value="{{ $caregiver->id }}">{{ $caregiver->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="form-group full-width">
-                        <label for="address">Address</label>
-                        <textarea id="address" name="address" placeholder="Enter home address"></textarea>
+                        <label for="allergies">Allergies</label>
+                        <textarea id="allergies" name="allergies" placeholder="List any allergies..."></textarea>
                     </div>
                     <div class="form-group full-width">
                         <label for="medical_info">Medical Information</label>
-                        <textarea id="medical_info" name="medical_info" placeholder="Allergies, medications, special needs, etc."></textarea>
+                        <textarea id="medical_info" name="medical_info" placeholder="Medications, special needs, etc."></textarea>
                     </div>
                 </div>
                 <div class="form-actions">
@@ -391,6 +459,45 @@
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" onclick="closeViewModal()">Close</button>
             </div>
+        </div>
+    </div>
+    
+     <!-- Assign Caregiver Modal -->
+     <div class="modal-overlay" id="assignCaregiverModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Assign Caregiver</h2>
+                <button class="close-modal" onclick="closeAssignModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="assignCaregiverForm" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <p style="margin-bottom: 20px;">Assign a caregiver to <strong id="assignChildName"></strong></p>
+                    
+                    <div class="form-group full-width">
+                        <label for="caregiver">Select Caregiver</label>
+                        <select id="caregiverSelect" name="caregiver_id" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                            <option value="">-- Choose Caregiver --</option>
+                            @foreach($caregivers as $caregiver)
+                                <option value="{{ $caregiver->id }}">{{ $caregiver->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div id="currentCaregiversList" style="margin-top: 20px;">
+                         <!-- List of currently assigned caregivers -->
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAssignModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i>
+                        Assign
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -422,6 +529,9 @@
             // Remove method spoofing if exists
             const methodInput = form.querySelector('input[name="_method"]');
             if (methodInput) methodInput.remove();
+            
+            // Reset duration visibility
+            toggleDuration();
         }
 
         function closeModal() {
@@ -453,8 +563,17 @@
             document.getElementById('class').value = child.class;
             document.getElementById('package').value = child.package || 'monthly';
             
-            // Enrollment date from created_at
-            if (child.created_at) {
+            // Trigger toggle to show/hide duration
+            toggleDuration();
+            
+            if (child.package === 'weekly' && child.duration) {
+                document.getElementById('duration').value = child.duration;
+            }
+            
+            // Enrollment date
+            if (child.enrollment_date) {
+                document.getElementById('enrollment_date').value = child.enrollment_date.split('T')[0];
+            } else if (child.created_at) {
                 document.getElementById('enrollment_date').value = child.created_at.split('T')[0];
             }
 
@@ -466,8 +585,14 @@
             }
 
             document.getElementById('medical_info').value = child.medical_notes || '';
-            // Address is not in DB currently
-            document.getElementById('address').value = ''; 
+            document.getElementById('blood_group').value = child.blood_group || '';
+            document.getElementById('allergies').value = child.allergies || '';
+            
+            // Caregiver select might need special handling if multiple assignments are allowed, 
+            // but for editing one child, we can just select the first one if exists or leave empty
+             if (document.getElementById('caregiver_id')) {
+                document.getElementById('caregiver_id').value = (child.caregivers && child.caregivers.length > 0) ? child.caregivers[0].id : '';
+            } 
         }
 
         // Search functionality
@@ -570,6 +695,10 @@
                         <p>${child.first_name} ${child.last_name}</p>
                     </div>
                     <div class="detail-group">
+                        <label style="font-weight: bold; display: block; margin-bottom: 5px;">Enrollment Date</label>
+                        <p>${child.enrollment_date ? new Date(child.enrollment_date).toLocaleDateString() : (child.created_at ? new Date(child.created_at).toLocaleDateString() : 'N/A')}</p>
+                    </div>
+                    <div class="detail-group">
                         <label style="font-weight: bold; display: block; margin-bottom: 5px;">Status</label>
                         <span class="status-badge ${child.status}" style="padding: 2px 8px; border-radius: 4px; background: #eee;">${child.status.charAt(0).toUpperCase() + child.status.slice(1)}</span>
                     </div>
@@ -602,6 +731,10 @@
                         <p>${child.parent ? child.parent.name : 'N/A'}</p>
                     </div>
                     <div class="detail-group">
+                         <label style="font-weight: bold; display: block; margin-bottom: 5px;">Assigned Caregivers</label>
+                         <p>${(child.caregivers && child.caregivers.length > 0) ? child.caregivers.map(c => c.name).join(', ') : 'None'}</p>
+                    </div>
+                    <div class="detail-group">
                         <label style="font-weight: bold; display: block; margin-bottom: 5px;">Parent Phone</label>
                         <p>${child.parent ? child.parent.phone : 'N/A'}</p>
                     </div>
@@ -629,6 +762,154 @@
                 closeViewModal();
             }
         });
+        
+         // Assign Caregiver Modal Functions
+        function assignCaregiver(child) {
+            const modal = document.getElementById('assignCaregiverModal');
+            document.getElementById('assignChildName').textContent = child.first_name + ' ' + child.last_name;
+            const form = document.getElementById('assignCaregiverForm');
+            form.action = `/admin/children/${child.id}/assign-caregiver`;
+
+            // Reset select
+            document.getElementById('caregiverSelect').value = '';
+
+            // Show current assignments
+            const listContainer = document.getElementById('currentCaregiversList');
+            if (child.caregivers && child.caregivers.length > 0) {
+                let html = '<label style="font-weight: bold; display: block; margin-bottom: 8px;">Currently Assigned:</label>';
+                html += '<ul style="list-style: none; padding: 0;">';
+                child.caregivers.forEach(cg => {
+                    html += `
+                        <li style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f3f4f6; margin-bottom: 5px; border-radius: 4px;">
+                            <span>${cg.name}</span>
+                            <button type="button" onclick="removeCaregiver(${child.id}, ${cg.id})" style="background: none; border: none; color: #ef4444; cursor: pointer;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </li>
+                    `;
+                });
+                html += '</ul>';
+                listContainer.innerHTML = html;
+            } else {
+                listContainer.innerHTML = '<p style="color: #6b7280; font-style: italic;">No caregivers currently assigned.</p>';
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeAssignModal() {
+            document.getElementById('assignCaregiverModal').classList.remove('active');
+        }
+        
+        function removeCaregiver(childId, caregiverId) {
+            if(confirm('Are you sure you want to remove this caregiver assignment?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/admin/children/${childId}/remove-caregiver`;
+                
+                const csrfToken = document.querySelector('input[name="_token"]').value;
+                
+                const methodField = document.createElement('input');
+                methodField.type = 'hidden';
+                methodField.name = '_method';
+                methodField.value = 'DELETE';
+                form.appendChild(methodField);
+                
+                const tokenField = document.createElement('input');
+                tokenField.type = 'hidden';
+                tokenField.name = '_token';
+                tokenField.value = csrfToken;
+                form.appendChild(tokenField);
+
+                const idField = document.createElement('input');
+                idField.type = 'hidden';
+                idField.name = 'caregiver_id';
+                idField.value = caregiverId;
+                form.appendChild(idField);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+        
+        document.getElementById('assignCaregiverModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeAssignModal();
+            }
+        });
+
+        function toggleDuration() {
+            const packageSelect = document.getElementById('package');
+            const durationGroup = document.getElementById('durationGroup');
+            const durationSelect = document.getElementById('duration');
+            const endDateGroup = document.getElementById('endDateGroup');
+
+            if (packageSelect.value === 'weekly') {
+                durationGroup.style.display = 'block';
+                durationSelect.required = true;
+                endDateGroup.style.display = 'block';
+                calculateEndDate();
+            } else {
+                durationGroup.style.display = 'none';
+                durationSelect.required = false;
+                durationSelect.value = '';
+                endDateGroup.style.display = 'none';
+                document.getElementById('end_date').value = '';
+            }
+        }
+
+        function calculateEndDate() {
+            const duration = parseInt(document.getElementById('duration').value);
+            const enrollmentDateVal = document.getElementById('enrollment_date').value;
+            const endDateInput = document.getElementById('end_date');
+
+            if (duration && enrollmentDateVal) {
+                const startDate = new Date(enrollmentDateVal);
+                // Calculate raw end date: Start + (Weeks * 7) - 1 day (to be inclusive)
+                const endDate = new Date(startDate);
+                endDate.setDate(startDate.getDate() + (duration * 7) - 1);
+
+                // Adjust for weekends (Friday = 5, Saturday = 6 in JS getDay())
+                // In Bangladesh/Middle East checks: Fri/Sat are off.
+                // JS getDay(): 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+                
+                // If End Date lands on Friday (5), move back to Thursday (4)
+                if (endDate.getDay() === 5) {
+                    endDate.setDate(endDate.getDate() - 1);
+                } 
+                // If End Date lands on Saturday (6), move back to Thursday (4)
+                else if (endDate.getDay() === 6) {
+                    endDate.setDate(endDate.getDate() - 2);
+                }
+
+                // Format to YYYY-MM-DD
+                const year = endDate.getFullYear();
+                const month = String(endDate.getMonth() + 1).padStart(2, '0');
+                const day = String(endDate.getDate()).padStart(2, '0');
+                
+                endDateInput.value = `${year}-${month}-${day}`;
+            } else {
+                endDateInput.value = '';
+            }
+        }
+
+        document.getElementById('duration').addEventListener('change', calculateEndDate);
+
+        function checkWorkingDay(input) {
+            if (!input.value) return;
+            // Parse explicitly as local date to avoid timezone issues
+            const parts = input.value.split('-');
+            const myDate = new Date(parts[0], parts[1] - 1, parts[2]); 
+            const day = myDate.getDay();
+            
+            // 5 = Friday, 6 = Saturday
+            if (day === 5 || day === 6) {
+                 alert('Please select a working day (Sunday to Thursday). Fridays and Saturdays are off days.');
+                 input.value = '';
+                 // Also clear end date if it depends on this
+                 document.getElementById('end_date').value = '';
+            }
+        }
     </script>
 </body>
 

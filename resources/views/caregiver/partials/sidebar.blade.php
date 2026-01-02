@@ -5,9 +5,9 @@
             <h2>Childcare</h2>
         </div>
         <div class="user-info">
-            <div class="user-avatar">SC</div>
+            <div class="user-avatar">{{ substr(Auth::user()->name ?? 'User', 0, 2) }}</div>
             <div class="user-details">
-                <h4>Sarah Connor</h4>
+                <h4>{{ Auth::user()->name }}</h4>
                 <p>Caregiver</p>
             </div>
         </div>

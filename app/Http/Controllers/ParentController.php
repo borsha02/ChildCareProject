@@ -38,10 +38,12 @@ class ParentController extends Controller
             'class' => 'required|in:Toddler,Preschool,Pre-K,Young Learners',
             'package' => 'required|in:monthly,weekly',
             'duration' => 'nullable|integer|between:1,3|required_if:package,weekly',
+            'enrollment_date' => 'required|date',
         ]);
 
         $child = new \App\Models\Child($validated);
         $child->status = 'pending'; // Explicitly set to pending for approval workflow
+        $child->enrollment_date = $validated['enrollment_date'];
         $child->parent_id = auth()->id();
         $child->save();
 
@@ -64,6 +66,7 @@ class ParentController extends Controller
             'class' => 'required|in:Toddler,Preschool,Pre-K,Young Learners',
             'package' => 'required|in:monthly,weekly',
             'duration' => 'nullable|integer|between:1,3|required_if:package,weekly',
+            'enrollment_date' => 'required|date',
         ]);
 
         $child->update($validated);

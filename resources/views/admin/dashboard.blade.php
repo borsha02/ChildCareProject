@@ -34,10 +34,10 @@
                         <i class="fas fa-home"></i>
                         <span>Dashboard</span>
                     </a>
-                    {{-- <a href="{{ route('admin.analytics') }}" class="nav-item">
+                    <a href="{{ route('admin.analytics') }}" class="nav-item">
                         <i class="fas fa-chart-line"></i>
                         <span>Analytics</span>
-                    </a> --}}
+                    </a>
                 </div>
 
                 <div class="nav-section">
@@ -89,22 +89,22 @@
                         <i class="fas fa-bullhorn"></i>
                         <span>Announcements</span>
                     </a>
-                    {{-- <a href="{{ route('admin.communication') }}" class="nav-item">
+                    <a href="{{ route('admin.communication') }}" class="nav-item">
                         <i class="fas fa-comments"></i>
                         <span>Communication Logs</span>
-                    </a> --}}
+                    </a> 
                 </div>
 
                 <div class="nav-section">
                     <div class="nav-section-title">System</div>
-                    {{-- <a href="{{ route('admin.settings') }}" class="nav-item">
+                    <a href="{{ route('admin.settings') }}" class="nav-item">
                         <i class="fas fa-cog"></i>
                         <span>Settings</span>
-                    </a> --}}
-                    {{-- <a href="{{ route('admin.backup') }}" class="nav-item">
+                    </a> 
+                    <a href="{{ route('admin.backup') }}" class="nav-item">
                         <i class="fas fa-database"></i>
                         <span>Backup & Restore</span>
-                    </a> --}}
+                    </a> 
                     <a href="{{ route('logout') }}" class="nav-item"
                         onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                         <i class="fas fa-sign-out-alt"></i>
