@@ -47,6 +47,8 @@ Route::middleware('auth')->prefix('admin')->group(function (){
 
     // Staff Management (Feature #5)
     Route::get('/staff', [AdminController::class, 'staff'])->name('admin.staff');
+    Route::get('/job-applications', [AdminController::class, 'jobApplications'])->name('admin.job-applications');
+    Route::delete('/job-applications/{id}', [AdminController::class, 'deleteJobApplication'])->name('admin.job-applications.delete');
     Route::post('/staff/create', [AdminController::class, 'createStaff'])->name('admin.staff.create');
     Route::put('/staff/{id}', [AdminController::class, 'updateStaff'])->name('admin.staff.update');
     Route::delete('/staff/{id}', [AdminController::class, 'deleteStaff'])->name('admin.staff.delete');

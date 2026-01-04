@@ -56,8 +56,12 @@
                     <a href="{{ route('admin.staff') }}" class="nav-item">
                         <i class="fas fa-user-tie"></i>
                         <span>Staff Management</span>
-                        @if(($stats['pending_applications'] ?? 0) > 0)
-                            <span class="badge">{{ $stats['pending_applications'] }}</span>
+                    </a>
+                    <a href="{{ route('admin.job-applications') }}" class="nav-item">
+                        <i class="fas fa-briefcase"></i>
+                        <span>Job Applications</span>
+                        @if(isset($pendingJobAppsCount) && $pendingJobAppsCount > 0)
+                            <span class="badge" style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: auto;">{{ $pendingJobAppsCount }}</span>
                         @endif
                     </a>
                 </div>

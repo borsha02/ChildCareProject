@@ -50,6 +50,13 @@
                         <i class="fas fa-user-tie"></i>
                         <span>Staff Management</span>
                     </a>
+                    <a href="{{ route('admin.job-applications') }}" class="nav-item">
+                        <i class="fas fa-briefcase"></i>
+                        <span>Job Applications</span>
+                        @if(isset($pendingJobAppsCount) && $pendingJobAppsCount > 0)
+                            <span class="badge" style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: auto;">{{ $pendingJobAppsCount }}</span>
+                        @endif
+                    </a>
                 </div>
                 <div class="nav-section">
                     <div class="nav-section-title">Operations</div>
@@ -121,58 +128,7 @@
             </div>
 
             <div class="content-area">
-                <!-- Job Applications Section -->
-                <div class="job-applications-section">
-                    <div class="section-header">
-                        <h2>Job Applications</h2>
-                        <span class="pending-badge" style="background: #e0f2fe; color: #0369a1;">{{ $jobApplications->where('status', 'pending')->count() }} Pending</span>
-                    </div>
-                    <div class="job-applications-grid">
-                        @forelse($jobApplications as $application)
-                            <div class="job-application-card">
-                                <div class="application-header">
-                                    <div class="applicant-info">
-                                        <h3>{{ $application->full_name }}</h3>
-                                        <p>{{ $application->position }}</p>
-                                    </div>
-                                    <span class="status-badge {{ $application->status }}">{{ ucfirst($application->status) }}</span>
-                                </div>
-                                <div class="application-details">
-                                    <div class="detail-item">
-                                        <div class="detail-label">Email</div>
-                                        <div class="detail-value">{{ $application->email }}</div>
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">Phone</div>
-                                        <div class="detail-value">{{ $application->phone_number }}</div>
-                                    </div>
-                                    <div class="detail-item">
-                                        <div class="detail-label">Applied On</div>
-                                        <div class="detail-value">{{ $application->created_at->format('M d, Y') }}</div>
-                                    </div>
-                                </div>
-                                <div class="application-actions">
-                                    <a href="{{ asset('storage/' . $application->resume_path) }}" target="_blank" class="view-resume-btn">
-                                        <i class="fas fa-file-alt"></i> View Resume
-                                    </a>
-                                    @if($application->status === 'pending')
-                                        <button class="approve-app-btn" onclick='openAddStaffModal(@json($application))'>
-                                            <i class="fas fa-check"></i> Approve
-                                        </button>
-                                        <form action="{{ route('admin.jobs.reject', $application->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to decline this application?');">
-                                            @csrf
-                                            <button type="submit" class="reject-app-btn">
-                                                <i class="fas fa-times"></i> Decline
-                                            </button>
-                                        </form>
-                                    @endif
-                                </div>
-                            </div>
-                        @empty
-                            <div style="text-align: center; color: #6b7280; padding: 20px;">No job applications found.</div>
-                        @endforelse
-                    </div>
-                </div>
+
 
                 <!-- Leave Requests Section -->
                 <div class="leave-requests-section">

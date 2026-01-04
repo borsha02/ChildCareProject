@@ -402,10 +402,24 @@ class AdminController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        $jobApplications = JobApplication::where('status', 'pending')->orderBy('created_at', 'desc')->get();
+        // Job applications moved to dedicated page
         $leaveRequests = LeaveRequest::where('status', 'pending')->with('user')->orderBy('created_at', 'asc')->get();
 
-        return view('admin.staff', compact('staff', 'jobApplications', 'leaveRequests'));
+        return view('admin.staff', compact('staff', 'leaveRequests'));
+    }
+
+    public function jobApplications()
+    {
+        $jobApplications = \App\Models\JobApplication::orderBy('created_at', 'desc')->get();
+        return view('admin.job-applications', compact('jobApplications'));
+    }
+
+    public function deleteJobApplication($id)
+    {
+        $application = \App\Models\JobApplication::findOrFail($id);
+        $application->delete();
+
+        return redirect()->back()->with('success', 'Job application deleted successfully.');
     }
 
     public function approveLeave($id)
