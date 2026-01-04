@@ -113,6 +113,9 @@ Route::middleware('auth')->prefix('caregiver')->group(function () {
     Route::get('/health-records', [CaregiverController::class, 'healthRecords'])->name('caregiver.health');
     Route::get('/health-records/{id}', [CaregiverController::class, 'showChildHealth'])->name('caregiver.health.show');
     Route::get('/messages', [CaregiverController::class, 'messages'])->name('caregiver.messages');
+    Route::post('/messages/send', [CaregiverController::class, 'sendMessage'])->name('caregiver.messages.send');
+    Route::get('/messages/conversation/{parentId}', [CaregiverController::class, 'getConversation'])->name('caregiver.messages.conversation');
+    Route::post('/messages/{id}/mark-read', [CaregiverController::class, 'markAsRead'])->name('caregiver.messages.mark-read');
     Route::get('/schedule', [CaregiverController::class, 'schedule'])->name('caregiver.schedule');
     Route::get('/events', [CaregiverController::class, 'events'])->name('caregiver.events');
     Route::get('/notifications', [CaregiverController::class, 'notifications'])->name('caregiver.notifications');
@@ -147,6 +150,9 @@ Route::middleware('auth')->prefix('parent')->group(function (){
     Route::put('/health/checkup/{id}', [ParentController::class, 'updateCheckup'])->name('parent.health.checkup.update');
     Route::delete('/health/checkup/{id}', [ParentController::class, 'deleteCheckup'])->name('parent.health.checkup.delete');
     Route::get('/messages', [ParentController::class, 'messages'])->name('parent.messages');
+    Route::post('/messages/send', [ParentController::class, 'sendMessage'])->name('parent.messages.send');
+    Route::get('/messages/conversation/{caregiverId}', [ParentController::class, 'getConversation'])->name('parent.messages.conversation');
+    Route::post('/messages/{id}/mark-read', [ParentController::class, 'markAsRead'])->name('parent.messages.mark-read');
     Route::get('/notifications', [ParentController::class, 'notifications'])->name('parent.notifications');
     Route::post('/notifications/mark-read', [ParentController::class, 'markAllNotificationsRead'])->name('parent.notifications.mark-all');
     Route::post('/notifications/{id}/mark-read', [ParentController::class, 'markNotificationRead'])->name('parent.notifications.mark-read');

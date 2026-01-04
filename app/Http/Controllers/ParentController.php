@@ -303,7 +303,59 @@ class ParentController extends Controller
 
     public function messages()
     {
-        return view('parent.messages');
+        $unreadCount = auth()->user()->unreadNotifications->count();
+        
+        // Get all children belonging to the authenticated parent
+        $children = \App\Models\Child::where('parent_id', auth()->id())
+            ->where('status', '!=', 'pending')
+            ->get();
+        
+        // Get all unique caregivers assigned to these children
+        $caregivers = \App\Models\Child::where('parent_id', auth()->id())
+            ->with('caregivers')
+            ->get()
+            ->pluck('caregivers')
+            ->flatten()
+            ->unique('id');
+        
+        // Build conversations array with latest message and unread count
+        $conversations = [];
+        foreach ($caregivers as $caregiver) {
+            // Get latest message between parent and caregiver
+            $latestMessage = \App\Models\Message::where(function($query) use ($caregiver) {
+                $query->where('sender_id', auth()->id())
+                      ->where('receiver_id', $caregiver->id);
+            })->orWhere(function($query) use ($caregiver) {
+                $query->where('sender_id', $caregiver->id)
+                      ->where('receiver_id', auth()->id());
+            })->latest()->first();
+            
+            // Count unread messages from this caregiver
+            $unreadMessagesCount = \App\Models\Message::where('sender_id', $caregiver->id)
+                ->where('receiver_id', auth()->id())
+                ->where('is_read', false)
+                ->count();
+            
+            $conversations[] = [
+                'caregiver' => $caregiver,
+                'latest_message' => $latestMessage,
+                'unread_count' => $unreadMessagesCount,
+            ];
+        }
+        
+        // Sort conversations by latest message time
+        usort($conversations, function($a, $b) {
+            $timeA = $a['latest_message'] ? $a['latest_message']->created_at : null;
+            $timeB = $b['latest_message'] ? $b['latest_message']->created_at : null;
+            
+            if (!$timeA && !$timeB) return 0;
+            if (!$timeA) return 1;
+            if (!$timeB) return -1;
+            
+            return $timeB <=> $timeA;
+        });
+        
+        return view('parent.messages', compact('unreadCount', 'conversations'));
     }
 
     public function notifications()
@@ -593,6 +645,85 @@ class ParentController extends Controller
         $checkup->delete();
 
         return redirect()->route('parent.health')->with('success', 'Checkup record deleted successfully!');
+    }
+
+    public function sendMessage(Request $request)
+    {
+        $validated = $request->validate([
+            'receiver_id' => 'required|exists:users,id',
+            'message' => 'required|string',
+            'child_id' => 'nullable|exists:children,id',
+        ]);
+
+        // Create the message
+        $message = \App\Models\Message::create([
+            'sender_id' => auth()->id(),
+            'receiver_id' => $validated['receiver_id'],
+            'child_id' => $validated['child_id'] ?? null,
+            'message' => $validated['message'],
+            'is_read' => false,
+        ]);
+
+        // Load relationships for response
+        $message->load('sender', 'receiver');
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+        ]);
+    }
+
+    public function getConversation(Request $request, $caregiverId)
+    {
+        // Verify the caregiver is assigned to one of the parent's children
+        $isAssigned = \App\Models\Child::where('parent_id', auth()->id())
+            ->whereHas('caregivers', function($query) use ($caregiverId) {
+                $query->where('users.id', $caregiverId);
+            })
+            ->exists();
+
+        if (!$isAssigned) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        // Fetch all messages between parent and caregiver
+        $messages = \App\Models\Message::where(function($query) use ($caregiverId) {
+            $query->where('sender_id', auth()->id())
+                  ->where('receiver_id', $caregiverId);
+        })->orWhere(function($query) use ($caregiverId) {
+            $query->where('sender_id', $caregiverId)
+                  ->where('receiver_id', auth()->id());
+        })
+        ->with(['sender', 'receiver', 'child'])
+        ->orderBy('created_at', 'asc')
+        ->get();
+
+        // Mark unread messages from caregiver as read
+        \App\Models\Message::where('sender_id', $caregiverId)
+            ->where('receiver_id', auth()->id())
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+            ]);
+
+        return response()->json([
+            'success' => true,
+            'messages' => $messages,
+        ]);
+    }
+
+    public function markAsRead(Request $request, $messageId)
+    {
+        $message = \App\Models\Message::where('receiver_id', auth()->id())
+            ->findOrFail($messageId);
+
+        $message->update([
+            'is_read' => true,
+            'read_at' => now(),
+        ]);
+
+        return response()->json(['success' => true]);
     }
 
 }

@@ -51,7 +51,14 @@
             <a href="{{ route('caregiver.messages') }}" class="nav-item {{ request()->routeIs('caregiver.messages') ? 'active' : '' }}">
                 <i class="fas fa-comments"></i>
                 <span>Messages</span>
-                <span class="badge">4</span>
+                @php
+                    $unreadMessages = \App\Models\Message::where('receiver_id', Auth::id())
+                        ->where('is_read', false)
+                        ->count();
+                @endphp
+                @if($unreadMessages > 0)
+                    <span class="badge">{{ $unreadMessages }}</span>
+                @endif
             </a>
             <a href="{{ route('caregiver.notifications') }}" class="nav-item {{ request()->routeIs('caregiver.notifications') ? 'active' : '' }}">
                 <i class="fas fa-bell"></i>

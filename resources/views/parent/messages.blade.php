@@ -50,7 +50,12 @@
                     <a href="{{ route('parent.messages') }}" class="nav-item active">
                         <i class="fas fa-comments"></i>
                         <span>Messages</span>
-                        <span class="badge">3</span>
+                        @php
+                            $totalUnreadMessages = collect($conversations)->sum('unread_count');
+                        @endphp
+                        @if($totalUnreadMessages > 0)
+                            <span class="badge">{{ $totalUnreadMessages }}</span>
+                        @endif
                     </a>
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
@@ -140,152 +145,99 @@
                                 </button>
                             </div>
                             <div class="conversations-list">
-                                <div class="conversation-item active">
-                                    <div class="conversation-avatar">
-                                        <img src="https://ui-avatars.com/api/?name=Sarah+Johnson&background=4f46e5&color=fff" alt="Sarah Johnson">
-                                        <span class="online-indicator"></span>
+                                @forelse($conversations as $index => $conversation)
+                                    @php
+                                        $caregiver = $conversation['caregiver'];
+                                        $latestMessage = $conversation['latest_message'];
+                                        $unreadCount = $conversation['unread_count'];
+                                        $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($caregiver->name) . '&background=4f46e5&color=fff';
+                                        $messagePreview = $latestMessage ? Str::limit($latestMessage->message, 40) : 'No messages yet';
+                                        $timeAgo = $latestMessage ? $latestMessage->created_at->diffForHumans() : '';
+                                    @endphp
+                                    <div class="conversation-item {{ $index === 0 ? 'active' : '' }}" 
+                                         data-caregiver-id="{{ $caregiver->id }}"
+                                         data-caregiver-name="{{ $caregiver->name }}">
+                                        <div class="conversation-avatar">
+                                            <img src="{{ $avatarUrl }}" alt="{{ $caregiver->name }}">
+                                        </div>
+                                        <div class="conversation-info">
+                                            <h4>{{ $caregiver->name }}</h4>
+                                            <p>{{ $messagePreview }}</p>
+                                        </div>
+                                        <div class="conversation-meta">
+                                            <span class="time">{{ $timeAgo }}</span>
+                                            @if($unreadCount > 0)
+                                                <span class="unread-badge">{{ $unreadCount }}</span>
+                                            @endif
+                                        </div>
                                     </div>
-                                    <div class="conversation-info">
-                                        <h4>Ms. Sarah Johnson</h4>
-                                        <p>Great! I'll make sure Emma brings...</p>
+                                @empty
+                                    <div class="no-conversations">
+                                        <p>No caregivers assigned yet. Please contact the admin to assign a caregiver to your child.</p>
                                     </div>
-                                    <div class="conversation-meta">
-                                        <span class="time">2m</span>
-                                        <span class="unread-badge">2</span>
-                                    </div>
-                                </div>
-
-                                <div class="conversation-item">
-                                    <div class="conversation-avatar">
-                                        <img src="https://ui-avatars.com/api/?name=Michael+Chen&background=10b981&color=fff" alt="Michael Chen">
-                                    </div>
-                                    <div class="conversation-info">
-                                        <h4>Mr. Michael Chen</h4>
-                                        <p>Lucas did great in today's activity!</p>
-                                    </div>
-                                    <div class="conversation-meta">
-                                        <span class="time">1h</span>
-                                        <span class="unread-badge">1</span>
-                                    </div>
-                                </div>
-
-                                <div class="conversation-item">
-                                    <div class="conversation-avatar">
-                                        <img src="https://ui-avatars.com/api/?name=Admin+Office&background=f59e0b&color=fff" alt="Admin Office">
-                                    </div>
-                                    <div class="conversation-info">
-                                        <h4>Admin Office</h4>
-                                        <p>Reminder: Payment due on Dec 31</p>
-                                    </div>
-                                    <div class="conversation-meta">
-                                        <span class="time">3h</span>
-                                    </div>
-                                </div>
-
-                                <div class="conversation-item">
-                                    <div class="conversation-avatar">
-                                        <img src="https://ui-avatars.com/api/?name=Emily+Rodriguez&background=ec4899&color=fff" alt="Emily Rodriguez">
-                                    </div>
-                                    <div class="conversation-info">
-                                        <h4>Ms. Emily Rodriguez</h4>
-                                        <p>Thank you for the update!</p>
-                                    </div>
-                                    <div class="conversation-meta">
-                                        <span class="time">1d</span>
-                                    </div>
-                                </div>
+                                @endforelse
                             </div>
                         </div>
 
                         <!-- Chat Area -->
-                        <div class="chat-panel">
-                            <div class="chat-header">
-                                <div class="chat-user-info">
-                                    <div class="chat-avatar">
-                                        <img src="https://ui-avatars.com/api/?name=Sarah+Johnson&background=4f46e5&color=fff" alt="Sarah Johnson">
-                                        <span class="online-indicator"></span>
+                        <div class="chat-panel" id="chatPanel">
+                            @if(count($conversations) > 0)
+                                @php
+                                    $firstCaregiver = $conversations[0]['caregiver'];
+                                    $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($firstCaregiver->name) . '&background=4f46e5&color=fff';
+                                @endphp
+                                <div class="chat-header">
+                                    <div class="chat-user-info">
+                                        <div class="chat-avatar">
+                                            <img src="{{ $avatarUrl }}" alt="{{ $firstCaregiver->name }}" id="chatAvatarImg">
+                                        </div>
+                                        <div class="chat-user-details">
+                                            <h3 id="chatUserName">{{ $firstCaregiver->name }}</h3>
+                                            <p id="chatUserRole">Caregiver</p>
+                                        </div>
                                     </div>
-                                    <div class="chat-user-details">
-                                        <h3>Ms. Sarah Johnson</h3>
-                                        <p>Emma's Teacher • Online</p>
+                                    <div class="chat-actions">
+                                        <button class="chat-action-btn" title="More">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="chat-actions">
-                                    <button class="chat-action-btn" title="More">
-                                        <i class="fas fa-ellipsis-v"></i>
+                            @else
+                                <div class="chat-header">
+                                    <div class="chat-user-info">
+                                        <div class="chat-user-details">
+                                            <h3>No Conversations</h3>
+                                            <p>Select a caregiver to start messaging</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="chat-messages" id="chatMessages">
+                                @if(count($conversations) > 0)
+                                    <div class="message-date">Loading messages...</div>
+                                @else
+                                    <div class="empty-chat">
+                                        <i class="fas fa-comments" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+                                        <p>No conversations yet</p>
+                                    </div>
+                                @endif
+                            </div>
+
+                            @if(count($conversations) > 0)
+                                <div class="chat-input-area">
+                                    <button class="attach-btn" title="Attach file">
+                                        <i class="fas fa-paperclip"></i>
+                                    </button>
+                                    <input type="text" class="chat-input" id="messageInput" placeholder="Type a message...">
+                                    <button class="emoji-btn" title="Emoji">
+                                        <i class="fas fa-smile"></i>
+                                    </button>
+                                    <button class="send-btn" id="sendMessageBtn">
+                                        <i class="fas fa-paper-plane"></i>
                                     </button>
                                 </div>
-                            </div>
-
-                            <div class="chat-messages">
-                                <div class="message-date">Today</div>
-
-                                <div class="message received">
-                                    <div class="message-avatar">
-                                        <img src="https://ui-avatars.com/api/?name=Sarah+Johnson&background=4f46e5&color=fff" alt="Sarah Johnson">
-                                    </div>
-                                    <div class="message-content">
-                                        <div class="message-bubble">
-                                            <p>Good morning! Just wanted to let you know that Emma did wonderfully in today's art class. She created a beautiful painting!</p>
-                                        </div>
-                                        <span class="message-time">9:30 AM</span>
-                                    </div>
-                                </div>
-
-                                <div class="message sent">
-                                    <div class="message-content">
-                                        <div class="message-bubble">
-                                            <p>That's wonderful to hear! She's been talking about art class all week. Thank you for the update!</p>
-                                        </div>
-                                        <span class="message-time">9:35 AM</span>
-                                    </div>
-                                </div>
-
-                                <div class="message received">
-                                    <div class="message-avatar">
-                                        <img src="https://ui-avatars.com/api/?name=Sarah+Johnson&background=4f46e5&color=fff" alt="Sarah Johnson">
-                                    </div>
-                                    <div class="message-content">
-                                        <div class="message-bubble">
-                                            <p>She's very talented! Also, just a reminder that we have the parent-teacher conference scheduled for next week. Please bring Emma's art supplies for the upcoming project.</p>
-                                        </div>
-                                        <span class="message-time">9:40 AM</span>
-                                    </div>
-                                </div>
-
-                                <div class="message sent">
-                                    <div class="message-content">
-                                        <div class="message-bubble">
-                                            <p>Great! I'll make sure Emma brings her supplies. Looking forward to the conference!</p>
-                                        </div>
-                                        <span class="message-time">Just now</span>
-                                    </div>
-                                </div>
-
-                                <div class="typing-indicator">
-                                    <div class="typing-avatar">
-                                        <img src="https://ui-avatars.com/api/?name=Sarah+Johnson&background=4f46e5&color=fff" alt="Sarah Johnson">
-                                    </div>
-                                    <div class="typing-dots">
-                                        <span></span>
-                                        <span></span>
-                                        <span></span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="chat-input-area">
-                                <button class="attach-btn" title="Attach file">
-                                    <i class="fas fa-paperclip"></i>
-                                </button>
-                                <input type="text" class="chat-input" placeholder="Type a message...">
-                                <button class="emoji-btn" title="Emoji">
-                                    <i class="fas fa-smile"></i>
-                                </button>
-                                <button class="send-btn">
-                                    <i class="fas fa-paper-plane"></i>
-                                </button>
-                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -294,75 +246,40 @@
     </div>
 
     <script>
-        // Conversation data
-        const conversations = {
-            'sarah': {
-                name: 'Ms. Sarah Johnson',
-                role: "Emma's Teacher",
-                status: 'Online',
-                avatar: 'https://ui-avatars.com/api/?name=Sarah+Johnson&background=4f46e5&color=fff',
-                online: true
-            },
-            'michael': {
-                name: 'Mr. Michael Chen',
-                role: "Lucas's Teacher",
-                status: 'Online',
-                avatar: 'https://ui-avatars.com/api/?name=Michael+Chen&background=10b981&color=fff',
-                online: true
-            },
-            'admin': {
-                name: 'Admin Office',
-                role: 'Administration',
-                status: 'Offline',
-                avatar: 'https://ui-avatars.com/api/?name=Admin+Office&background=f59e0b&color=fff',
-                online: false
-            },
-            'emily': {
-                name: 'Ms. Emily Rodriguez',
-                role: 'Assistant Teacher',
-                status: 'Offline',
-                avatar: 'https://ui-avatars.com/api/?name=Emily+Rodriguez&background=ec4899&color=fff',
-                online: false
+        // Global variables
+        let currentCaregiverId = null;
+        const csrfToken = '{{ csrf_token() }}';
+
+        // Load conversation on page load if there are conversations
+        document.addEventListener('DOMContentLoaded', function() {
+            const firstConversation = document.querySelector('.conversation-item');
+            if (firstConversation) {
+                currentCaregiverId = firstConversation.dataset.caregiverId;
+                loadConversation(currentCaregiverId);
             }
-        };
+        });
 
         // Conversation switching
-        document.querySelectorAll('.conversation-item').forEach((item, index) => {
+        document.querySelectorAll('.conversation-item').forEach(item => {
             item.addEventListener('click', function() {
                 // Remove active class from all items
                 document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
                 // Add active class to clicked item
                 this.classList.add('active');
 
-                // Get conversation key based on index
-                const conversationKeys = ['sarah', 'michael', 'admin', 'emily'];
-                const conversationKey = conversationKeys[index];
-                const conversation = conversations[conversationKey];
+                // Get caregiver info
+                currentCaregiverId = this.dataset.caregiverId;
+                const caregiverName = this.dataset.caregiverName;
+                const avatarUrl = this.querySelector('.conversation-avatar img').src;
 
                 // Update chat header
-                const chatAvatar = document.querySelector('.chat-avatar img');
-                const chatName = document.querySelector('.chat-user-details h3');
-                const chatStatus = document.querySelector('.chat-user-details p');
-                const onlineIndicator = document.querySelector('.chat-avatar .online-indicator');
+                document.getElementById('chatUserName').textContent = caregiverName;
+                document.getElementById('chatAvatarImg').src = avatarUrl;
 
-                chatAvatar.src = conversation.avatar;
-                chatName.textContent = conversation.name;
-                chatStatus.textContent = conversation.role + ' • ' + conversation.status;
+                // Load conversation messages
+                loadConversation(currentCaregiverId);
 
-                // Show/hide online indicator
-                if (conversation.online) {
-                    if (!onlineIndicator) {
-                        const indicator = document.createElement('span');
-                        indicator.className = 'online-indicator';
-                        document.querySelector('.chat-avatar').appendChild(indicator);
-                    }
-                } else {
-                    if (onlineIndicator) {
-                        onlineIndicator.remove();
-                    }
-                }
-
-                // Remove unread badge from clicked conversation
+                // Remove unread badge
                 const unreadBadge = this.querySelector('.unread-badge');
                 if (unreadBadge) {
                     unreadBadge.remove();
@@ -370,23 +287,236 @@
             });
         });
 
+        // Load conversation messages
+        function loadConversation(caregiverId) {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '<div class="message-date">Loading messages...</div>';
+
+            fetch(`/parent/messages/conversation/${caregiverId}`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayMessages(data.messages);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading conversation:', error);
+                chatMessages.innerHTML = '<div class="message-date">Error loading messages</div>';
+            });
+        }
+
+        // Display messages in chat area
+        function displayMessages(messages) {
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.innerHTML = '';
+
+            if (messages.length === 0) {
+                chatMessages.innerHTML = `
+                    <div class="empty-chat" style="text-align: center; padding: 40px;">
+                        <i class="fas fa-comments" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+                        <p style="color: #999;">No messages yet. Start the conversation!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let currentDate = null;
+
+            messages.forEach(message => {
+                const messageDate = new Date(message.created_at).toLocaleDateString();
+                
+                // Add date separator if date changed
+                if (messageDate !== currentDate) {
+                    currentDate = messageDate;
+                    const dateDiv = document.createElement('div');
+                    dateDiv.className = 'message-date';
+                    dateDiv.textContent = formatDate(message.created_at);
+                    chatMessages.appendChild(dateDiv);
+                }
+
+                // Create message element
+                const messageDiv = document.createElement('div');
+                const isSent = message.sender_id == {{ auth()->id() }};
+                messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+
+                const messageTime = new Date(message.created_at).toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit' 
+                });
+
+                if (isSent) {
+                    messageDiv.innerHTML = `
+                        <div class="message-content">
+                            <div class="message-bubble">
+                                <p>${escapeHtml(message.message)}</p>
+                            </div>
+                            <span class="message-time">${messageTime}</span>
+                        </div>
+                    `;
+                } else {
+                    const senderAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender.name)}&background=4f46e5&color=fff`;
+                    messageDiv.innerHTML = `
+                        <div class="message-avatar">
+                            <img src="${senderAvatar}" alt="${escapeHtml(message.sender.name)}">
+                        </div>
+                        <div class="message-content">
+                            <div class="message-bubble">
+                                <p>${escapeHtml(message.message)}</p>
+                            </div>
+                            <span class="message-time">${messageTime}</span>
+                        </div>
+                    `;
+                }
+
+                chatMessages.appendChild(messageDiv);
+            });
+
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
         // Send message
-        const chatInput = document.querySelector('.chat-input');
-        const sendBtn = document.querySelector('.send-btn');
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendMessageBtn');
 
-        sendBtn.addEventListener('click', () => {
-            if (chatInput.value.trim()) {
-                // Send message logic
-                chatInput.value = '';
-            }
-        });
+        if (sendBtn) {
+            sendBtn.addEventListener('click', sendMessage);
+        }
 
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && chatInput.value.trim()) {
-                // Send message logic
-                chatInput.value = '';
+        if (messageInput) {
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+        }
+
+        function sendMessage() {
+            if (!messageInput || !messageInput.value.trim() || !currentCaregiverId) {
+                return;
             }
-        });
+
+            const messageText = messageInput.value.trim();
+            messageInput.value = '';
+
+            fetch('/parent/messages/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    receiver_id: currentCaregiverId,
+                    message: messageText,
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Add message to chat
+                    appendMessage(data.message, true);
+                    
+                    // Update conversation preview
+                    updateConversationPreview(currentCaregiverId, messageText);
+                }
+            })
+            .catch(error => {
+                console.error('Error sending message:', error);
+                alert('Failed to send message. Please try again.');
+                messageInput.value = messageText; // Restore message
+            });
+        }
+
+        // Append message to chat area
+        function appendMessage(message, isSent) {
+            const chatMessages = document.getElementById('chatMessages');
+            
+            // Remove empty chat message if exists
+            const emptyChat = chatMessages.querySelector('.empty-chat');
+            if (emptyChat) {
+                emptyChat.remove();
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+
+            const messageTime = new Date(message.created_at).toLocaleTimeString('en-US', { 
+                hour: 'numeric', 
+                minute: '2-digit' 
+            });
+
+            if (isSent) {
+                messageDiv.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-bubble">
+                            <p>${escapeHtml(message.message)}</p>
+                        </div>
+                        <span class="message-time">${messageTime}</span>
+                    </div>
+                `;
+            } else {
+                const senderAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender.name)}&background=4f46e5&color=fff`;
+                messageDiv.innerHTML = `
+                    <div class="message-avatar">
+                        <img src="${senderAvatar}" alt="${escapeHtml(message.sender.name)}">
+                    </div>
+                    <div class="message-content">
+                        <div class="message-bubble">
+                            <p>${escapeHtml(message.message)}</p>
+                        </div>
+                        <span class="message-time">${messageTime}</span>
+                    </div>
+                `;
+            }
+
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Update conversation preview
+        function updateConversationPreview(caregiverId, messageText) {
+            const conversation = document.querySelector(`[data-caregiver-id="${caregiverId}"]`);
+            if (conversation) {
+                const preview = conversation.querySelector('.conversation-info p');
+                if (preview) {
+                    preview.textContent = messageText.substring(0, 40) + (messageText.length > 40 ? '...' : '');
+                }
+                const time = conversation.querySelector('.time');
+                if (time) {
+                    time.textContent = 'Just now';
+                }
+            }
+        }
+
+        // Helper functions
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            if (date.toDateString() === today.toDateString()) {
+                return 'Today';
+            } else if (date.toDateString() === yesterday.toDateString()) {
+                return 'Yesterday';
+            } else {
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
         // Mobile menu toggle
         const mobileToggle = document.querySelector('.mobile-toggle');

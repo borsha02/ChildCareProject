@@ -52,7 +52,12 @@
                     <a href="{{ route('parent.messages') }}" class="nav-item">
                         <i class="fas fa-comments"></i>
                         <span>Messages</span>
-                        <span class="badge">3</span>
+                        @php
+                            $unreadMessages = \App\Models\Message::where('receiver_id', Auth::id())->where('is_read', false)->count();
+                        @endphp
+                        @if($unreadMessages > 0)
+                            <span class="badge">{{ $unreadMessages }}</span>
+                        @endif
                     </a>
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
