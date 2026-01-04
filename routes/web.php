@@ -58,10 +58,11 @@ Route::middleware('auth')->prefix('admin')->group(function (){
 
     // Attendance (Feature #6)
     Route::get('/attendance', [AdminController::class, 'attendance'])->name('admin.attendance');
-    Route::post('/attendance/export', [AdminController::class, 'exportAttendance'])->name('admin.attendance.export');
+    Route::get('/attendance/export', [AdminController::class, 'exportAttendance'])->name('admin.attendance.export');
 
     // Daily Reports (Feature #7)
     Route::get('/reports', [AdminController::class, 'reports'])->name('admin.reports');
+    Route::get('/reports/export-pdf', [AdminController::class, 'exportReportsPdf'])->name('admin.reports.export.pdf');
     Route::get('/reports/{id}', [AdminController::class, 'viewDailyReport'])->name('admin.reports.view');
 
     // Billing & Invoices (Feature #8)

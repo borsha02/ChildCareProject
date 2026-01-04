@@ -61,7 +61,8 @@ class AdminController extends Controller
                 'description' => $user->name . ' (' . ucfirst($user->role) . ') joined',
                 'time' => $user->created_at,
                 'icon' => 'fas fa-user-plus',
-                'color' => 'user' // css class for color
+                'color' => 'user', // css class for color
+                'link' => route('admin.users')
             ];
         });
 
@@ -72,7 +73,8 @@ class AdminController extends Controller
                 'description' => $child->first_name . ' ' . $child->last_name . ' registered',
                 'time' => $child->created_at,
                 'icon' => 'fas fa-child',
-                'color' => 'success' // reusing payment/success color class or add new
+                'color' => 'success', // reusing payment/success color class or add new
+                'link' => route('admin.children')
             ];
         });
 
@@ -83,7 +85,8 @@ class AdminController extends Controller
                 'description' => $app->full_name . ' applied for ' . $app->position,
                 'time' => $app->created_at,
                 'icon' => 'fas fa-briefcase',
-                'color' => 'orange' // orange/alert color
+                'color' => 'orange', // orange/alert color
+                'link' => route('admin.staff')
             ];
         });
 
@@ -105,9 +108,10 @@ class AdminController extends Controller
      */
     public function users()
     {
-        $users = User::orderBy('created_at', 'desc')->paginate(20);
+        $users = User::with('children')->orderBy('created_at', 'desc')->paginate(20);
+        $enrolledChildren = Child::where('status', '!=', 'pending')->with(['parent', 'caregivers'])->latest()->get();
 
-        return view('admin.users', compact('users'));
+        return view('admin.users', compact('users', 'enrolledChildren'));
     }
 
     /**
@@ -530,18 +534,51 @@ class AdminController extends Controller
     /**
      * Feature #6: Monitor Attendance
      */
-    public function attendance()
+    public function attendance(\Illuminate\Http\Request $request)
     {
-        // Placeholder - will be implemented when Attendance model is created
-        $attendanceRecords = [];
+        $date = $request->input('date', date('Y-m-d'));
+
+        // Fetch all enrolled children with their attendance for the specific date
+        $children = \App\Models\Child::where('status', '!=', 'pending')
+            ->with(['attendance' => function($query) use ($date) {
+                $query->whereDate('date', $date);
+            }, 'parent'])
+            ->orderBy('first_name')
+            ->get();
+
+        // Calculate stats
+        $totalChildren = $children->count();
+        $present = 0;
+        $late = 0;
+        $absent = 0;
+
+        foreach ($children as $child) {
+            $attendance = $child->attendance->first();
+            if ($attendance) {
+                if ($attendance->status === 'late') {
+                    $late++;
+                    $present++; // Late counts as present usually, or handle separately. Let's count as present for "Present Today" stat
+                } elseif ($attendance->status === 'present') {
+                    $present++;
+                } else {
+                    $absent++; // explicitly marked absent
+                }
+            } else {
+                $absent++; // No record = absent
+            }
+        }
+
+        // Attendance Rate
+        $attendanceRate = $totalChildren > 0 ? round(($present / $totalChildren) * 100) : 0;
+
         $stats = [
-            'present_today' => 0,
-            'absent_today' => 0,
-            'late_today' => 0,
-            'attendance_rate' => 0,
+            'present_today' => $present,
+            'absent_today' => $absent,
+            'late_today' => $late,
+            'attendance_rate' => $attendanceRate,
         ];
 
-        return view('admin.attendance', compact('attendanceRecords', 'stats'));
+        return view('admin.attendance', compact('children', 'stats', 'date'));
     }
 
     /**
@@ -549,34 +586,100 @@ class AdminController extends Controller
      */
     public function exportAttendance(Request $request)
     {
-        // Will implement CSV/Excel export functionality
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+        $date = $request->input('date', date('Y-m-d'));
+        $filename = "attendance_report_{$date}.csv";
 
-        // Placeholder for export logic
-        return redirect()->back()
-            ->with('success', 'Attendance report exported successfully!');
+        $children = \App\Models\Child::where('status', '!=', 'pending')
+            ->with(['attendance' => function($query) use ($date) {
+                $query->whereDate('date', $date);
+            }])
+            ->orderBy('class')
+            ->orderBy('first_name')
+            ->get();
+
+        $headers = array(
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        );
+
+        $columns = array('Child Name', 'ID', 'Class', 'Status', 'Check In', 'Check Out', 'Notes');
+
+        $callback = function() use($children, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($children as $child) {
+                $attendance = $child->attendance->first();
+                
+                $status = $attendance ? ucfirst($attendance->status) : 'Absent';
+                $checkIn = $attendance && $attendance->check_in_time ? \Carbon\Carbon::parse($attendance->check_in_time)->format('g:i A') : '-';
+                $checkOut = $attendance && $attendance->check_out_time ? \Carbon\Carbon::parse($attendance->check_out_time)->format('g:i A') : '-';
+                $notes = $attendance ? $attendance->notes : '';
+
+                $row = array(
+                    $child->first_name . ' ' . $child->last_name,
+                    'CH' . str_pad($child->id, 3, '0', STR_PAD_LEFT),
+                    $child->class,
+                    $status,
+                    $checkIn,
+                    $checkOut,
+                    $notes
+                );
+
+                fputcsv($file, $row);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**
      * Feature #7: Daily Reports - Monitor daily activity logs
      */
-    public function reports()
+    public function reports(Request $request)
     {
-        // Placeholder - will be implemented when DailyReport model is created
-        $dailyReports = [];
+        $date = $request->input('date', date('Y-m-d'));
 
-        return view('admin.reports', compact('dailyReports'));
+        // Fetch reports for the selected date
+        $dailyReports = \App\Models\DailyReport::whereDate('report_date', $date)
+            ->with(['child', 'caregiver'])
+            ->latest()
+            ->get();
+
+        // Fetch all children for filter (active only)
+        $children = \App\Models\Child::where('status', '!=', 'pending')
+            ->orderBy('first_name')
+            ->get();
+
+        return view('admin.reports', compact('dailyReports', 'children', 'date'));
     }
 
-    /**
-     * Feature #7: View specific daily report
-     */
     public function viewDailyReport($id)
     {
-        // Will be implemented when DailyReport model is created
-        return view('admin.report-detail');
+        $report = \App\Models\DailyReport::with(['child', 'caregiver'])->findOrFail($id);
+        return response()->json($report);
     }
+
+    public function exportReportsPdf(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+        
+        $dailyReports = \App\Models\DailyReport::whereDate('report_date', $date)
+            ->with(['child', 'caregiver'])
+            ->join('children', 'daily_reports.child_id', '=', 'children.id')
+            ->orderBy('children.first_name')
+            ->select('daily_reports.*')
+            ->get();
+
+        return view('admin.reports-pdf', compact('dailyReports', 'date'));
+    }
+
+
 
     /**
      * Feature #8: Billing & Invoices

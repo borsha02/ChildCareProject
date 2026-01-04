@@ -407,7 +407,12 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="position">Position/Role</label>
-                            <input type="text" id="position" name="specialization" placeholder="e.g. Senior Caregiver">
+                            <select id="position" name="specialization" required>
+                                <option value="" disabled selected>Select Position</option>
+                                <option value="Senior teacher">Senior teacher</option>
+                                <option value="Assistant teacher">Assistant teacher</option>
+                                <option value="Junior teacher">Junior teacher</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label for="shift">Shift</label>

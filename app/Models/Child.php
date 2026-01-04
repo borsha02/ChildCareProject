@@ -59,7 +59,7 @@ class Child extends Model
         return $this->belongsToMany(User::class, 'child_assignments', 'child_id', 'caregiver_id');
     }
 
-    public function attendances()
+    public function attendance()
     {
         return $this->hasMany(Attendance::class);
     }

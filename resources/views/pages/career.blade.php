@@ -161,10 +161,9 @@
                     <select name="position" required
                         class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition">
                         <option value="" disabled selected>Choose a position</option>
-                        <option value="toddlers" {{ old('position') == 'toddlers' ? 'selected' : '' }}>Toddlers (1-2 years)</option>
-                        <option value="preschool" {{ old('position') == 'preschool' ? 'selected' : '' }}>Preschool (3-4 years)</option>
-                        <option value="pre-k" {{ old('position') == 'pre-k' ? 'selected' : '' }}>Pre-K (5 years)</option>
-                        <option value="young-learners" {{ old('position') == 'young-learners' ? 'selected' : '' }}>Young Learners (6-7 years)</option>
+                        <option value="Senior teacher" {{ old('position') == 'Senior teacher' ? 'selected' : '' }}>Senior teacher</option>
+                        <option value="Assistant teacher" {{ old('position') == 'Assistant teacher' ? 'selected' : '' }}>Assistant teacher</option>
+                        <option value="Junior teacher" {{ old('position') == 'Junior teacher' ? 'selected' : '' }}>Junior teacher</option>
                     </select>
                 </div>
 

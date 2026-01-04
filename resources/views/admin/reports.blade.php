@@ -6,6 +6,69 @@
     <title>Daily Reports - Childcare Management</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     @vite(['resources/css/admin/reports.css'])
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-body {
+            padding: 20px;
+        }
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: right;
+        }
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: black;
+        }
+        .detail-row {
+            margin-bottom: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .detail-label {
+            font-weight: 600;
+            min-width: 120px;
+        }
+        .badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-present { background: #dcfce7; color: #166534; }
+        .badge-absent { background: #fee2e2; color: #991b1b; }
+        .badge-late { background: #fef3c7; color: #92400e; }
+    </style>
 </head>
 <body>
     <div class="dashboard-container">
@@ -36,22 +99,8 @@
                         <span>Analytics</span>
                     </a>
                 </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">User Management</div>
-                    <a href="{{ route('admin.users') }}" class="nav-item">
-                        <i class="fas fa-users"></i>
-                        <span>Manage Users</span>
-                    </a>
-                    <a href="{{ route('admin.children') }}" class="nav-item">
-                        <i class="fas fa-child"></i>
-                        <span>Child Records</span>
-                    </a>
-                    <a href="{{ route('admin.staff') }}" class="nav-item">
-                        <i class="fas fa-user-tie"></i>
-                        <span>Staff Management</span>
-                    </a>
-                </div>
-                <div class="nav-section">
+                <!-- ... existing menu items ... -->
+                 <div class="nav-section">
                     <div class="nav-section-title">Operations</div>
                     <a href="{{ route('admin.attendance') }}" class="nav-item">
                         <i class="fas fa-calendar-check"></i>
@@ -61,7 +110,8 @@
                         <i class="fas fa-file-alt"></i>
                         <span>Daily Reports</span>
                     </a>
-                    <a href="{{ route('admin.invoices') }}" class="nav-item">
+                     <!-- ... other items ... -->
+                     <a href="{{ route('admin.invoices') }}" class="nav-item">
                         <i class="fas fa-file-invoice-dollar"></i>
                         <span>Billing & Invoices</span>
                     </a>
@@ -70,28 +120,10 @@
                         <span>Payment Approvals</span>
                     </a>
                 </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">Communication</div>
-                    <a href="{{ route('admin.announcements') }}" class="nav-item">
-                        <i class="fas fa-bullhorn"></i>
-                        <span>Announcements</span>
-                    </a>
-                    <a href="{{ route('admin.communication') }}" class="nav-item">
-                        <i class="fas fa-comments"></i>
-                        <span>Communication Logs</span>
-                    </a>
-                </div>
-                <div class="nav-section">
+                 <!-- ... other sections ... -->
+                  <div class="nav-section">
                     <div class="nav-section-title">System</div>
-                    <a href="{{ route('admin.settings') }}" class="nav-item">
-                        <i class="fas fa-cog"></i>
-                        <span>Settings</span>
-                    </a>
-                    <a href="{{ route('admin.backup') }}" class="nav-item">
-                        <i class="fas fa-database"></i>
-                        <span>Backup & Restore</span>
-                    </a>
-                    <a href="{{ route('logout') }}" class="nav-item" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                     <a href="{{ route('logout') }}" class="nav-item" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Logout</span>
                     </a>
@@ -113,8 +145,8 @@
                     <h1>Daily Activity Reports</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <input type="date" class="date-picker" value="{{ date('Y-m-d') }}">
-                    <button class="export-btn">
+                    <input type="date" class="date-picker" value="{{ $date }}" onchange="window.location.href='{{ route('admin.reports') }}?date=' + this.value">
+                    <button class="export-btn" onclick="window.open('{{ route('admin.reports.export.pdf') }}?date={{ $date }}', '_blank')">
                         <i class="fas fa-download"></i>
                         Export Reports
                     </button>
@@ -124,249 +156,245 @@
             <div class="content-area">
                 <!-- Filter Bar -->
                 <div class="filter-bar">
-                    <select class="filter-select" id="childFilter">
+                    <select class="filter-select" id="childFilter" onchange="filterReports()">
                         <option value="">All Children</option>
-                        <option value="1">Emma Martinez</option>
-                        <option value="2">Lucas Johnson</option>
-                        <option value="3">Sophia Williams</option>
+                        @foreach($children as $child)
+                            <option value="{{ $child->id }}">{{ $child->first_name }} {{ $child->last_name }}</option>
+                        @endforeach
                     </select>
-                    <select class="filter-select" id="typeFilter">
+                    <select class="filter-select" id="typeFilter" onchange="filterReports()">
                         <option value="">All Types</option>
                         <option value="meal">Meals</option>
                         <option value="nap">Naps</option>
-                        <option value="health">Health</option>
                         <option value="activity">Activities</option>
+                    </select>
+                    <select class="filter-select" id="packageFilter" onchange="filterReports()">
+                        <option value="">All Packages</option>
+                        <option value="weekly">Weekly Students</option>
+                        <option value="monthly">Monthly Students</option>
                     </select>
                 </div>
 
                 <!-- Reports Grid -->
-                <div class="reports-grid">
-                    <!-- Meal Report -->
-                    <div class="report-card meal" data-type="meal">
-                        <div class="report-header">
-                            <div class="report-title">
-                                <h3>Lunch - Emma Martinez</h3>
-                                <div class="report-meta">Today, 12:30 PM</div>
-                            </div>
-                            <div class="report-icon meal">
-                                <i class="fas fa-utensils"></i>
-                            </div>
-                        </div>
-                        <div class="report-content">
-                            <div class="report-item">
-                                <span class="report-label">Food Served</span>
-                                <span class="report-value">Chicken, Rice, Vegetables</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Amount Eaten</span>
-                                <span class="report-value">Most (75%)</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Appetite</span>
-                                <span class="report-value">Good</span>
-                            </div>
-                        </div>
-                        <div class="report-notes">
-                            Ate well today. Enjoyed the chicken and asked for seconds on vegetables.
-                        </div>
-                        <div class="report-footer">
-                            <span class="reporter-info">Reported by: Sarah (Caregiver)</span>
-                            <button class="view-btn">View Details</button>
-                        </div>
-                    </div>
+                <div class="reports-grid" id="reportsGrid">
+                    @forelse($dailyReports as $report)
+                        @php
+                            $childPackage = $report->child->package ?? '';
+                        @endphp
 
-                    <!-- Nap Report -->
-                    <div class="report-card nap" data-type="nap">
-                        <div class="report-header">
-                            <div class="report-title">
-                                <h3>Afternoon Nap - Lucas Johnson</h3>
-                                <div class="report-meta">Today, 2:00 PM</div>
+                        {{-- Meals Card --}}
+                        @if($report->meals)
+                            <div class="report-card meal" data-type="meal" data-child-id="{{ $report->child_id }}" data-package="{{ strtolower($childPackage) }}">
+                                <div class="report-header">
+                                    <div class="report-title">
+                                        <h3>Meals - {{ $report->child->first_name }}</h3>
+                                        <div class="report-meta">{{ \Carbon\Carbon::parse($report->created_at)->format('g:i A') }}</div>
+                                    </div>
+                                    <div class="report-icon meal"><i class="fas fa-utensils"></i></div>
+                                </div>
+                                <div class="report-content">
+                                    <div class="report-item">
+                                        <span class="report-label">Meals</span>
+                                        <span class="report-value">
+                                            @foreach($report->meals as $meal)
+                                                {{ ucfirst($meal) }}{{ !$loop->last ? ', ' : '' }}
+                                            @endforeach
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="report-footer">
+                                    <span class="reporter-info">Reported by: {{ $report->caregiver->name }}</span>
+                                    <button class="view-btn" onclick="openModal('{{ $report->id }}', 'meal')">View Details</button>
+                                </div>
                             </div>
-                            <div class="report-icon nap">
-                                <i class="fas fa-bed"></i>
-                            </div>
-                        </div>
-                        <div class="report-content">
-                            <div class="report-item">
-                                <span class="report-label">Start Time</span>
-                                <span class="report-value">1:15 PM</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">End Time</span>
-                                <span class="report-value">3:00 PM</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Duration</span>
-                                <span class="report-value">1 hour 45 minutes</span>
-                            </div>
-                        </div>
-                        <div class="report-notes">
-                            Fell asleep quickly and had a peaceful nap. Woke up in good mood.
-                        </div>
-                        <div class="report-footer">
-                            <span class="reporter-info">Reported by: Mike (Caregiver)</span>
-                            <button class="view-btn">View Details</button>
-                        </div>
-                    </div>
+                        @endif
 
-                    <!-- Health Report -->
-                    <div class="report-card health" data-type="health">
-                        <div class="report-header">
-                            <div class="report-title">
-                                <h3>Health Check - Sophia Williams</h3>
-                                <div class="report-meta">Today, 10:00 AM</div>
+                        {{-- Nap Card --}}
+                        @if($report->nap_duration)
+                            <div class="report-card nap" data-type="nap" data-child-id="{{ $report->child_id }}" data-package="{{ strtolower($childPackage) }}">
+                                <div class="report-header">
+                                    <div class="report-title">
+                                        <h3>Nap - {{ $report->child->first_name }}</h3>
+                                        <div class="report-meta">{{ \Carbon\Carbon::parse($report->created_at)->format('g:i A') }}</div>
+                                    </div>
+                                    <div class="report-icon nap"><i class="fas fa-bed"></i></div>
+                                </div>
+                                <div class="report-content">
+                                    <div class="report-item">
+                                        <span class="report-label">Duration</span>
+                                        <span class="report-value">{{ $report->nap_duration }} mins</span>
+                                    </div>
+                                    <div class="report-item">
+                                        <span class="report-label">Quality</span>
+                                        <span class="report-value">{{ ucfirst($report->nap_quality) }}</span>
+                                    </div>
+                                </div>
+                                <div class="report-footer">
+                                    <span class="reporter-info">Reported by: {{ $report->caregiver->name }}</span>
+                                    <button class="view-btn" onclick="openModal('{{ $report->id }}', 'nap')">View Details</button>
+                                </div>
                             </div>
-                            <div class="report-icon health">
-                                <i class="fas fa-heartbeat"></i>
-                            </div>
-                        </div>
-                        <div class="report-content">
-                            <div class="report-item">
-                                <span class="report-label">Temperature</span>
-                                <span class="report-value">98.6°F (Normal)</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Condition</span>
-                                <span class="report-value">Healthy</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Diaper Changes</span>
-                                <span class="report-value">3 times</span>
-                            </div>
-                        </div>
-                        <div class="report-notes">
-                            Child is healthy and active. No concerns noted.
-                        </div>
-                        <div class="report-footer">
-                            <span class="reporter-info">Reported by: Emily (Nurse)</span>
-                            <button class="view-btn">View Details</button>
-                        </div>
-                    </div>
+                        @endif
 
-                    <!-- Activity Report -->
-                    <div class="report-card activity" data-type="activity">
-                        <div class="report-header">
-                            <div class="report-title">
-                                <h3>Art Class - Emma Martinez</h3>
-                                <div class="report-meta">Today, 11:00 AM</div>
+                         {{-- Activity Card --}}
+                         @if($report->activities)
+                            <div class="report-card activity" data-type="activity" data-child-id="{{ $report->child_id }}" data-package="{{ strtolower($childPackage) }}">
+                                <div class="report-header">
+                                    <div class="report-title">
+                                        <h3>Activity - {{ $report->child->first_name }}</h3>
+                                        <div class="report-meta">{{ \Carbon\Carbon::parse($report->created_at)->format('g:i A') }}</div>
+                                    </div>
+                                    <div class="report-icon activity"><i class="fas fa-palette"></i></div>
+                                </div>
+                                <div class="report-content">
+                                    <div class="report-item">
+                                        <span class="report-label">Activities</span>
+                                        <span class="report-value">
+                                             @foreach($report->activities as $activity)
+                                                {{ ucfirst($activity) }}{{ !$loop->last ? ', ' : '' }}
+                                            @endforeach
+                                        </span>
+                                    </div>
+                                    <div class="report-item">
+                                        <span class="report-label">Mood</span>
+                                        <span class="report-value">{{ ucfirst($report->mood) }}</span>
+                                    </div>
+                                </div>
+                                <div class="report-footer">
+                                    <span class="reporter-info">Reported by: {{ $report->caregiver->name }}</span>
+                                    <button class="view-btn" onclick="openModal('{{ $report->id }}', 'activity')">View Details</button>
+                                </div>
                             </div>
-                            <div class="report-icon activity">
-                                <i class="fas fa-palette"></i>
-                            </div>
-                        </div>
-                        <div class="report-content">
-                            <div class="report-item">
-                                <span class="report-label">Activity</span>
-                                <span class="report-value">Finger Painting</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Duration</span>
-                                <span class="report-value">45 minutes</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Participation</span>
-                                <span class="report-value">Excellent</span>
-                            </div>
-                        </div>
-                        <div class="report-notes">
-                            Very engaged in art activity. Created a beautiful painting of flowers.
-                        </div>
-                        <div class="report-footer">
-                            <span class="reporter-info">Reported by: Lisa (Teacher)</span>
-                            <button class="view-btn">View Details</button>
-                        </div>
-                    </div>
+                        @endif
 
-                    <!-- More Meal Report -->
-                    <div class="report-card meal" data-type="meal">
-                        <div class="report-header">
-                            <div class="report-title">
-                                <h3>Snack Time - Lucas Johnson</h3>
-                                <div class="report-meta">Today, 3:30 PM</div>
-                            </div>
-                            <div class="report-icon meal">
-                                <i class="fas fa-cookie-bite"></i>
-                            </div>
+                    @empty
+                        <div class="no-data" style="width: 100%; text-align: center; padding: 40px; color: #666;">
+                            <h3>No reports found for this date.</h3>
                         </div>
-                        <div class="report-content">
-                            <div class="report-item">
-                                <span class="report-label">Food Served</span>
-                                <span class="report-value">Apple slices, Crackers, Juice</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Amount Eaten</span>
-                                <span class="report-value">All (100%)</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Appetite</span>
-                                <span class="report-value">Excellent</span>
-                            </div>
-                        </div>
-                        <div class="report-notes">
-                            Finished all snacks. Particularly enjoyed the apple slices.
-                        </div>
-                        <div class="report-footer">
-                            <span class="reporter-info">Reported by: Sarah (Caregiver)</span>
-                            <button class="view-btn">View Details</button>
-                        </div>
-                    </div>
-
-                    <!-- Activity Report 2 -->
-                    <div class="report-card activity" data-type="activity">
-                        <div class="report-header">
-                            <div class="report-title">
-                                <h3>Outdoor Play - Sophia Williams</h3>
-                                <div class="report-meta">Today, 4:00 PM</div>
-                            </div>
-                            <div class="report-icon activity">
-                                <i class="fas fa-running"></i>
-                            </div>
-                        </div>
-                        <div class="report-content">
-                            <div class="report-item">
-                                <span class="report-label">Activity</span>
-                                <span class="report-value">Playground Time</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Duration</span>
-                                <span class="report-value">30 minutes</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Participation</span>
-                                <span class="report-value">Very Active</span>
-                            </div>
-                        </div>
-                        <div class="report-notes">
-                            Played on swings and slides. Interacted well with other children.
-                        </div>
-                        <div class="report-footer">
-                            <span class="reporter-info">Reported by: Mike (Caregiver)</span>
-                            <button class="view-btn">View Details</button>
-                        </div>
-                    </div>
+                    @endforelse
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- View Details Modal -->
+    <div id="viewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Report Details</h3>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Content populated by JS -->
+                <p>Loading...</p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal()" style="padding: 8px 16px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Filter by type
-        document.getElementById('typeFilter').addEventListener('change', function(e) {
-            const type = e.target.value;
+        // Reports Data (passed from Controller for JS access without multiple AJAX calls if preferred, or use AJAX)
+        // Since we have the data, we can store it in a JS variable.
+        const reportsData = @json($dailyReports);
+
+        function filterReports() {
+            const childId = document.getElementById('childFilter').value;
+            const type = document.getElementById('typeFilter').value;
+            const package = document.getElementById('packageFilter').value.toLowerCase(); // weekly or monthly
+
             const cards = document.querySelectorAll('.report-card');
+            
             cards.forEach(card => {
-                card.style.display = (!type || card.dataset.type === type) ? '' : 'none';
+                const cardChildId = card.dataset.childId;
+                const cardType = card.dataset.type;
+                const cardPackage = card.dataset.package;
+
+                let show = true;
+
+                if (childId && cardChildId !== childId) show = false;
+                if (type && cardType !== type) show = false;
+                if (package && cardPackage !== package) show = false;
+
+                card.style.display = show ? '' : 'none';
             });
-        });
+        }
+
+        function openModal(reportId, type) {
+            const modal = document.getElementById('viewModal');
+            const modalBody = document.getElementById('modalBody');
+            const modalTitle = document.getElementById('modalTitle');
+            
+            const report = reportsData.find(r => r.id == reportId);
+            
+            if (!report) return;
+
+            // Build dynamic content
+            let content = `
+                <div class="detail-row"><span class="detail-label">Child:</span> <span>${report.child.first_name} ${report.child.last_name}</span></div>
+                <div class="detail-row"><span class="detail-label">Reporter:</span> <span>${report.caregiver.name}</span></div>
+                <div class="detail-row"><span class="detail-label">Date:</span> <span>${report.report_date}</span></div>
+                <div class="detail-row"><span class="detail-label">Mood:</span> <span>${report.mood || 'N/A'}</span></div>
+                <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
+            `;
+
+            if (type === 'meal' || type === 'all' || report.meals) {
+                 content += `<h4>Meals</h4>`;
+                 if (report.meals && report.meals.length) {
+                     report.meals.forEach(m => content += `<div>- ${m}</div>`);
+                 } else {
+                     content += `<p>No meals recorded.</p>`;
+                 }
+                 content += `<br>`;
+            }
+
+            if (type === 'nap' || type === 'all' || report.nap_duration) {
+                 content += `<h4>Nap Time</h4>`;
+                 content += `<div class="detail-row"><span class="detail-label">Duration:</span> <span>${report.nap_duration || 0} minutes</span></div>`;
+                 content += `<div class="detail-row"><span class="detail-label">Quality:</span> <span>${report.nap_quality || 'N/A'}</span></div>`;
+                 content += `<br>`;
+            }
+
+             if (type === 'activity' || type === 'all' || report.activities) {
+                 content += `<h4>Activities</h4>`;
+                 if (report.activities && report.activities.length) {
+                     report.activities.forEach(a => content += `<div>- ${a}</div>`);
+                 } else {
+                     content += `<p>No activities recorded.</p>`;
+                 }
+                 content += `<br>`;
+            }
+
+            if (report.notes) {
+                content += `<h4>Notes</h4><p>${report.notes}</p>`;
+            }
+
+            modalTitle.innerText = `Details for ${report.child.first_name}`;
+            modalBody.innerHTML = content;
+            modal.style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById('viewModal').style.display = "none";
+        }
+
+        // Close on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('viewModal');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
 
         // Mobile toggle
         document.addEventListener('click', (e) => {
-            const sidebar = document.getElementById('sidebar');
-            const toggle = document.querySelector('.mobile-toggle');
-            if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
-        });
+             const sidebar = document.getElementById('sidebar');
+             const toggle = document.querySelector('.mobile-toggle');
+             if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
+                 sidebar.classList.remove('active');
+             }
+         });
     </script>
 </body>
 </html>

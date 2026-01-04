@@ -209,7 +209,7 @@
                         </div>
                         <div class="activity-list">
                             @forelse($recentActivities as $activity)
-                            <div class="activity-item">
+                            <a href="{{ $activity['link'] }}" class="activity-item" style="text-decoration: none; color: inherit; display: flex;">
                                 <div class="activity-icon {{ $activity['color'] == 'success' ? 'payment' : ($activity['color'] == 'orange' ? 'alert' : 'user') }}">
                                     <i class="{{ $activity['icon'] }}"></i>
                                 </div>
@@ -218,7 +218,7 @@
                                     <p>{{ $activity['description'] }}</p>
                                 </div>
                                 <div class="activity-time">{{ $activity['time']->diffForHumans() }}</div>
-                            </div>
+                            </a>
                             @empty
                             <div class="empty-state" style="text-align: center; padding: 20px; color: #6b7280;">
                                 <p>No recent activities found.</p>

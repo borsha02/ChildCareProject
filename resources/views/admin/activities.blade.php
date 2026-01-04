@@ -5,55 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Activities - Admin Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    @vite(['resources/css/admin/dashboard.css'])
-    <style>
-        .container {
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 0 20px;
-        }
-        .header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .back-btn {
-            background: white;
-            border: 1px solid #e5e7eb;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #4b5563;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        .back-btn:hover {
-            background: #f9fafb;
-            color: #1f2937;
-            transform: translateX(-2px);
-        }
-        .page-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #1f2937;
-        }
-        .activity-card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        .empty-state {
-            padding: 40px;
-            text-align: center;
-            color: #6b7280;
-        }
-    </style>
+    @vite(['resources/css/admin/dashboard.css', 'resources/css/admin/activities.css'])
 </head>
 <body>
     <div class="container">

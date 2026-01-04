@@ -910,6 +910,15 @@
                  document.getElementById('end_date').value = '';
             }
         }
+
+        // Check for tab parameter in URL
+        window.addEventListener('load', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            if (tabParam === 'enrolled') {
+                switchTab('enrolled');
+            }
+        });
     </script>
 </body>
 

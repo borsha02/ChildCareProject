@@ -123,8 +123,8 @@
                     <h1>Attendance Monitoring</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <input type="date" class="date-picker" value="{{ date('Y-m-d') }}">
-                    <button class="export-btn" onclick="exportAttendance()">
+                    <input type="date" class="date-picker" value="{{ $date }}" onchange="window.location.href='{{ route('admin.attendance') }}?date=' + this.value">
+                    <button class="export-btn" onclick="window.location.href='{{ route('admin.attendance.export') }}?date={{ $date }}'">
                         <i class="fas fa-download"></i>
                         Export Report
                     </button>
@@ -136,23 +136,23 @@
                 <div class="stats-row">
                     <div class="stat-card">
                         <div class="stat-label">Present Today</div>
-                        <div class="stat-value">{{ $stats['present_today'] ?? 85 }}</div>
-                        <div class="stat-percentage">Out of 100 children</div>
+                        <div class="stat-value">{{ $stats['present_today'] }}</div>
+                        <div class="stat-percentage">Out of {{ $children->count() }} children</div>
                     </div>
                     <div class="stat-card red">
                         <div class="stat-label">Absent Today</div>
-                        <div class="stat-value">{{ $stats['absent_today'] ?? 12 }}</div>
-                        <div class="stat-percentage">12% absence rate</div>
+                        <div class="stat-value">{{ $stats['absent_today'] }}</div>
+                        <div class="stat-percentage">{{ $children->count() > 0 ? round(($stats['absent_today'] / $children->count()) * 100) : 0 }}% absence rate</div>
                     </div>
                     <div class="stat-card orange">
                         <div class="stat-label">Late Arrivals</div>
-                        <div class="stat-value">{{ $stats['late_today'] ?? 3 }}</div>
-                        <div class="stat-percentage">3% late rate</div>
+                        <div class="stat-value">{{ $stats['late_today'] }}</div>
+                        <div class="stat-percentage">{{ $children->count() > 0 ? round(($stats['late_today'] / $children->count()) * 100) : 0 }}% late rate</div>
                     </div>
                     <div class="stat-card green">
                         <div class="stat-label">Attendance Rate</div>
-                        <div class="stat-value">{{ $stats['attendance_rate'] ?? 85 }}%</div>
-                        <div class="stat-percentage">Above average</div>
+                        <div class="stat-value">{{ $stats['attendance_rate'] }}%</div>
+                        <div class="stat-percentage">Daily Average</div>
                     </div>
                 </div>
 
@@ -161,10 +161,15 @@
                     <div class="card-header">
                         <h3>Today's Attendance</h3>
                         <div class="filter-tabs">
-                            <button class="tab-btn active" onclick="filterAttendance('all')">All</button>
-                            <button class="tab-btn" onclick="filterAttendance('present')">Present</button>
-                            <button class="tab-btn" onclick="filterAttendance('absent')">Absent</button>
-                            <button class="tab-btn" onclick="filterAttendance('late')">Late</button>
+                            <select class="filter-select" id="packageFilter" onchange="filterAttendance()">
+                                <option value="all">All Packages</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                            <button class="tab-btn active" onclick="filterStatus('all')">All</button>
+                            <button class="tab-btn" onclick="filterStatus('present')">Present</button>
+                            <button class="tab-btn" onclick="filterStatus('absent')">Absent</button>
+                            <button class="tab-btn" onclick="filterStatus('late')">Late</button>
                         </div>
                     </div>
 
@@ -185,157 +190,54 @@
                             </tr>
                         </thead>
                         <tbody id="attendanceTableBody">
-                            <!-- Sample Data -->
-                            <tr data-status="present">
+                            @forelse($children as $child)
+                                @php
+                                    $record = $child->attendance->first();
+                                    $status = $record ? $record->status : 'absent'; // Default to absent if no record
+                                    // Override if future date? But for simple logic, no record = absent
+                                @endphp
+                            <tr data-status="{{ $status }}" data-package="{{ strtolower($child->package) }}">
                                 <td>
                                     <div class="student-info">
-                                        <div class="student-avatar">EM</div>
+                                        <div class="student-avatar" style="background: {{ '#' . substr(md5($child->first_name . $child->last_name), 0, 6) }};">
+                                            {{ strtoupper(substr($child->first_name, 0, 1) . substr($child->last_name, 0, 1)) }}
+                                        </div>
                                         <div class="student-details">
-                                            <h4>Emma Martinez</h4>
-                                            <p>ID: CH001</p>
+                                            <h4>{{ $child->first_name }} {{ $child->last_name }}</h4>
+                                            <p>ID: CH{{ str_pad($child->id, 3, '0', STR_PAD_LEFT) }}</p>
                                         </div>
                                     </div>
                                 </td>
-                                <td>Preschool A</td>
-                                <td><span class="status-badge present">Present</span></td>
-                                <td><span class="time-badge">8:15 AM</span></td>
-                                <td><span class="time-badge">-</span></td>
+                                <td>{{ $child->class }}</td>
+                                <td>
+                                    <span class="status-badge {{ $status }}">
+                                        {{ ucfirst($status) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="time-badge">
+                                        {{ $record && $record->check_in_time ? \Carbon\Carbon::parse($record->check_in_time)->format('g:i A') : '-' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="time-badge">
+                                        {{ $record && $record->check_out_time ? \Carbon\Carbon::parse($record->check_out_time)->format('g:i A') : '-' }}
+                                    </span>
+                                </td>
                                 <td>
                                     <div class="action-buttons">
-                                        <button class="action-icon view" title="View Details">
+                                        {{-- <button class="action-icon view" title="View Details">
                                             <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
+                                        </button> --}}
+                                        <span title="Managed by Caregiver" style="color:#999; font-size: 0.8em;">Read-only</span>
                                     </div>
                                 </td>
                             </tr>
-                            <tr data-status="present">
-                                <td>
-                                    <div class="student-info">
-                                        <div class="student-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">LJ</div>
-                                        <div class="student-details">
-                                            <h4>Lucas Johnson</h4>
-                                            <p>ID: CH002</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Toddler B</td>
-                                <td><span class="status-badge present">Present</span></td>
-                                <td><span class="time-badge">7:45 AM</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
+                            @empty
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 20px;">No enrolled children found.</td>
                             </tr>
-                            <tr data-status="late">
-                                <td>
-                                    <div class="student-info">
-                                        <div class="student-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">SW</div>
-                                        <div class="student-details">
-                                            <h4>Sophia Williams</h4>
-                                            <p>ID: CH003</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Kindergarten</td>
-                                <td><span class="status-badge late">Late</span></td>
-                                <td><span class="time-badge">9:30 AM</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-status="absent">
-                                <td>
-                                    <div class="student-info">
-                                        <div class="student-avatar" style="background: linear-gradient(135deg, #ef4444, #dc2626);">OB</div>
-                                        <div class="student-details">
-                                            <h4>Oliver Brown</h4>
-                                            <p>ID: CH004</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Preschool B</td>
-                                <td><span class="status-badge absent">Absent</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-status="present">
-                                <td>
-                                    <div class="student-info">
-                                        <div class="student-avatar" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">AD</div>
-                                        <div class="student-details">
-                                            <h4>Ava Davis</h4>
-                                            <p>ID: CH005</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Toddler A</td>
-                                <td><span class="status-badge present">Present</span></td>
-                                <td><span class="time-badge">8:00 AM</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-status="present">
-                                <td>
-                                    <div class="student-info">
-                                        <div class="student-avatar" style="background: linear-gradient(135deg, #ec4899, #db2777);">NM</div>
-                                        <div class="student-details">
-                                            <h4>Noah Miller</h4>
-                                            <p>ID: CH006</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Preschool A</td>
-                                <td><span class="status-badge present">Present</span></td>
-                                <td><span class="time-badge">8:20 AM</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
 
@@ -355,20 +257,36 @@
 
     <script>
         // Filter attendance by status
-        function filterAttendance(status) {
-            const rows = document.querySelectorAll('#attendanceTableBody tr');
-            const tabs = document.querySelectorAll('.tab-btn');
+        let currentStatus = 'all';
 
-            // Update active tab
+        // Update status filter
+        function filterStatus(status) {
+            currentStatus = status;
+            
+            // Update Tab Active State
+            const tabs = document.querySelectorAll('.tab-btn');
             tabs.forEach(tab => tab.classList.remove('active'));
             event.target.classList.add('active');
 
-            // Filter rows
+            filterAttendance();
+        }
+
+        // Combined Filter Logic
+        function filterAttendance() {
+            const packageFilter = document.getElementById('packageFilter').value.toLowerCase();
+            const rows = document.querySelectorAll('#attendanceTableBody tr');
+
             rows.forEach(row => {
-                if (status === 'all') {
+                const rowStatus = row.dataset.status;
+                const rowPackage = row.dataset.package;
+
+                const statusMatch = (currentStatus === 'all') || (rowStatus === currentStatus);
+                const packageMatch = (packageFilter === 'all') || (rowPackage === packageFilter);
+
+                if (statusMatch && packageMatch) {
                     row.style.display = '';
                 } else {
-                    row.style.display = row.dataset.status === status ? '' : 'none';
+                    row.style.display = 'none';
                 }
             });
         }

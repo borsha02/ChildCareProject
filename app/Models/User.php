@@ -54,4 +54,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Child::class, 'child_assignments', 'caregiver_id', 'child_id');
     }
+
+    public function children()
+    {
+        return $this->hasMany(Child::class, 'parent_id');
+    }
 }
