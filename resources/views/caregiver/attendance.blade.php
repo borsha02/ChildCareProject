@@ -2,18 +2,25 @@
 
 @section('title', 'Attendance')
 
+@section('styles')
+    @vite(['resources/css/caregiver/attendance.css'])
+@endsection
+
 @section('content')
     <div class="top-bar">
         <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
             <i class="fas fa-bars"></i>
         </button>
-        <h1>Attendance Tracking</h1>
+        <div style="display: flex; align-items: center;">
+            <a href="{{ route('caregiver.dashboard') }}" class="back-dashboard-icon">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1>Attendance Tracking</h1>
+        </div>
         <div class="top-bar-actions">
             <div style="display: flex; gap: 10px; align-items: center;">
-                <input type="date" value="2025-12-23"
-                    style="padding: 10px 15px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
-                <button
-                    style="padding: 10px 20px; background: #059669; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                <input type="date" value="2025-12-23" class="date-input">
+                <button class="btn-primary">
                     <i class="fas fa-save"></i> Save All
                 </button>
             </div>
@@ -31,16 +38,16 @@
 
     <div class="content-area">
         @if(session('success'))
-            <div style="background: #d1fae5; color: #065f46; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <div class="alert-success">
                 {{ session('success') }}
             </div>
         @endif
 
         <form action="{{ route('caregiver.attendance') }}" method="GET" id="dateFilterForm">
-            <div class="top-bar-actions" style="margin-bottom: 20px; justify-content: flex-end;">
+            <div class="top-bar-actions filter-form">
                  <input type="date" name="date" value="{{ $date }}"
                     onchange="document.getElementById('dateFilterForm').submit()"
-                    style="padding: 10px 15px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                    class="date-input">
             </div>
         </form>
 
@@ -93,24 +100,23 @@
                 @csrf
                 <input type="hidden" name="date" value="{{ $date }}">
                 
-                <div class="card-header" style="border-top: 1px solid #f3f4f6; padding-top: 15px; justify-content: flex-end;">
-                     <button type="submit"
-                        style="padding: 10px 20px; background: #059669; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                <div class="card-header card-header-actions">
+                     <button type="submit" class="btn-primary">
                         <i class="fas fa-save"></i> Save All
                     </button>
                 </div>
 
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse;">
+                <div class="table-responsive">
+                    <table class="attendance-table">
                         <thead>
-                            <tr style="background: #f9fafb; border-bottom: 2px solid #e5e7eb;">
-                                <th style="padding: 12px; text-align: left; font-weight: 600; color: #1f2937;">Child Name</th>
-                                <th style="padding: 12px; text-align: left; font-weight: 600; color: #1f2937;">Class</th>
-                                <th style="padding: 12px; text-align: left; font-weight: 600; color: #1f2937;">Check-in Time</th>
-                                <th style="padding: 12px; text-align: left; font-weight: 600; color: #1f2937;">Check-out Time</th>
-                                <th style="padding: 12px; text-align: left; font-weight: 600; color: #1f2937;">Status</th>
-                                <th style="padding: 12px; text-align: left; font-weight: 600; color: #1f2937;">Notes</th>
-                                <th style="padding: 12px; text-align: left; font-weight: 600; color: #1f2937;">Action</th>
+                            <tr>
+                                <th>Child Name</th>
+                                <th>Class</th>
+                                <th>Check-in Time</th>
+                                <th>Check-out Time</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -119,47 +125,45 @@
                                     $attendance = $child->attendances->first();
                                     $status = $attendance ? $attendance->status : 'present';
                                 @endphp
-                                <tr style="border-bottom: 1px solid #f3f4f6;">
-                                    <td style="padding: 12px;">
-                                        <div style="display: flex; align-items: center; gap: 10px;">
-                                            <div class="child-avatar" style="width: 40px; height: 40px; font-size: 14px; background: #3b82f6; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                                <tr>
+                                    <td>
+                                        <div class="child-info">
+                                            <div class="child-avatar">
                                                 {{ substr($child->first_name, 0, 1) . substr($child->last_name, 0, 1) }}
                                             </div>
-                                            <span style="color: #1f2937; font-weight: 500;">{{ $child->first_name }} {{ $child->last_name }}</span>
+                                            <span class="child-name">{{ $child->first_name }} {{ $child->last_name }}</span>
                                         </div>
                                     </td>
-                                    <td style="padding: 12px; color: #4b5563;">{{ $child->class ?? 'N/A' }}</td>
-                                    <td style="padding: 12px;">
+                                    <td class="child-class">{{ $child->class ?? 'N/A' }}</td>
+                                    <td>
                                         <input type="time" name="attendance[{{ $child->id }}][check_in_time]" value="{{ $attendance ? (\Carbon\Carbon::parse($attendance->check_in_time)->format('H:i') ) : '' }}"
-                                            style="padding: 6px 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
+                                            class="time-input">
                                     </td>
-                                    <td style="padding: 12px;">
+                                    <td>
                                         <input type="time" name="attendance[{{ $child->id }}][check_out_time]" value="{{ $attendance && $attendance->check_out_time ? (\Carbon\Carbon::parse($attendance->check_out_time)->format('H:i') ) : '' }}"
-                                            style="padding: 6px 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
+                                            class="time-input">
                                     </td>
-                                    <td style="padding: 12px;">
-                                        <select name="attendance[{{ $child->id }}][status]"
-                                            style="padding: 6px 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px; font-weight: 600;">
+                                    <td>
+                                        <select name="attendance[{{ $child->id }}][status]" class="status-select">
                                             <option value="present" {{ $status == 'present' ? 'selected' : '' }}>Present</option>
                                             <option value="absent" {{ $status == 'absent' ? 'selected' : '' }}>Absent</option>
                                             <option value="late" {{ $status == 'late' ? 'selected' : '' }}>Late</option>
                                             <option value="excused" {{ $status == 'excused' ? 'selected' : '' }}>Excused</option>
                                         </select>
                                     </td>
-                                    <td style="padding: 12px;">
+                                    <td>
                                         <input type="text" name="attendance[{{ $child->id }}][notes]" value="{{ $attendance ? $attendance->notes : '' }}" placeholder="Add notes..."
-                                            style="padding: 6px 10px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px; width: 150px;">
+                                            class="notes-input">
                                     </td>
-                                    <td style="padding: 12px;">
-                                        <button type="button" onclick="saveChild({{ $child->id }})" id="btn-{{ $child->id }}"
-                                            style="padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; transition: background 0.2s;">
+                                    <td>
+                                        <button type="button" onclick="saveChild({{ $child->id }})" id="btn-{{ $child->id }}" class="btn-save-row">
                                             Save
                                         </button>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" style="padding: 20px; text-align: center; color: #6b7280;">
+                                    <td colspan="6" class="empty-state">
                                         No children assigned to you.
                                     </td>
                                 </tr>

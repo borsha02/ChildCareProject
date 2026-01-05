@@ -10,11 +10,122 @@ class ParentController extends Controller
     public function dashboard()
     {
         $children = \App\Models\Child::where('parent_id', auth()->id())->get();
+        // Card 1: Children Count (Already fetched)
         $childrenCount = $children->count();
+
+        // Card 2: Attendance Rate
+        $childIds = $children->pluck('id');
+        $attendanceRecords = \App\Models\Attendance::whereIn('child_id', $childIds)->get();
+        $totalAttendance = $attendanceRecords->count();
+        $presentCount = $attendanceRecords->where('status', 'present')->count();
+        $attendanceRate = $totalAttendance > 0 ? round(($presentCount / $totalAttendance) * 100) : 0;
+
+        // Card 3: Pending Payment (Placeholder)
+        $pendingPayment = 0;
+
+        // Card 4: Upcoming Events (Placeholder)
+        $upcomingEventsCount = 0;
+
+        // Card 5: Assigned Caregivers
+        $caregiversCount = \App\Models\Child::where('parent_id', auth()->id())
+            ->where('status', '!=', 'pending') // Only count caregivers for active children
+            ->with('caregivers')
+            ->get()
+            ->pluck('caregivers')
+            ->flatten()
+            ->unique('id')
+            ->count();
+
+        // Card 6: Health Records Count
         $healthRecordsCount = \App\Models\HealthRecord::whereHas('child', function($query) {
             $query->where('parent_id', auth()->id());
         })->count();
-        return view('parent.dashboard', compact('children', 'childrenCount', 'healthRecordsCount'));
+
+        // Today's Activities
+        $todaysReports = \App\Models\DailyReport::whereIn('child_id', $childIds)
+            ->whereDate('report_date', now())
+            ->with('child')
+            ->get();
+
+        $todaysActivities = collect();
+
+        foreach ($todaysReports as $report) {
+            $childName = $report->child->first_name;
+
+            // Meals
+            if (isset($report->meals) && is_array($report->meals)) {
+                if (($report->meals['breakfast'] ?? 'None') !== 'None') {
+                    $todaysActivities->push([
+                        'type' => 'meal',
+                        'icon' => 'fas fa-utensils',
+                        'title' => 'Breakfast Completed',
+                        'description' => "$childName had " . strtolower($report->meals['breakfast']) . " of their breakfast",
+                        'time' => '8:30 AM',
+                        'timestamp' => 1 // For sorting
+                    ]);
+                }
+                if (($report->meals['lunch'] ?? 'None') !== 'None') {
+                    $todaysActivities->push([
+                        'type' => 'meal',
+                        'icon' => 'fas fa-utensils',
+                        'title' => 'Lunch Completed',
+                        'description' => "$childName had " . strtolower($report->meals['lunch']) . " of their lunch",
+                        'time' => '12:00 PM',
+                        'timestamp' => 3
+                    ]);
+                }
+                if (($report->meals['snack'] ?? 'None') !== 'None') {
+                    $todaysActivities->push([
+                        'type' => 'meal',
+                        'icon' => 'fas fa-cookie-bite',
+                        'title' => 'Snack Time',
+                        'description' => "$childName had " . strtolower($report->meals['snack']) . " of their snack",
+                        'time' => '3:30 PM',
+                        'timestamp' => 5
+                    ]);
+                }
+            }
+
+            // Nap
+            if ($report->nap_duration > 0) {
+                $todaysActivities->push([
+                    'type' => 'nap',
+                    'icon' => 'fas fa-bed',
+                    'title' => 'Nap Time',
+                    'description' => "$childName slept for {$report->nap_duration} minutes ({$report->nap_quality})",
+                    'time' => '1:00 PM',
+                    'timestamp' => 4
+                ]);
+            }
+
+            // Activities
+            if (isset($report->activities) && is_array($report->activities)) {
+                foreach ($report->activities as $activity) {
+                    $todaysActivities->push([
+                        'type' => 'play',
+                        'icon' => 'fas fa-palette',
+                        'title' => 'Activity Time',
+                        'description' => "$childName participated in $activity",
+                        'time' => '10:00 AM',
+                        'timestamp' => 2
+                    ]);
+                }
+            }
+        }
+
+        // Sort by approximate time
+        $todaysActivities = $todaysActivities->sortBy('timestamp')->values();
+
+        return view('parent.dashboard', compact(
+            'children', 
+            'childrenCount', 
+            'attendanceRate',
+            'pendingPayment',
+            'upcomingEventsCount',
+            'caregiversCount',
+            'healthRecordsCount',
+            'todaysActivities'
+        ));
     }
 
 

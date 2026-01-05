@@ -28,7 +28,7 @@
     <div class="content-area">
         <!-- Stats Grid -->
         <div class="stats-grid">
-            <div class="stat-card" onclick="window.location.href='{{ route('caregiver.assigned') }}'" style="cursor: pointer;">
+            <div class="stat-card clickable-card" onclick="window.location.href='{{ route('caregiver.assigned') }}'">
                 <div class="stat-icon green">
                     <i class="fas fa-users"></i>
                 </div>
@@ -38,7 +38,7 @@
                 </div>
             </div>
             <!-- Dynamic Status -->
-            <div class="stat-card" onclick="window.location.href='{{ route('caregiver.attendance') }}'" style="cursor: pointer;">
+            <div class="stat-card clickable-card" onclick="window.location.href='{{ route('caregiver.attendance') }}'">
                 <div class="stat-icon blue">
                     <i class="fas fa-user-check"></i>
                 </div>
@@ -47,7 +47,7 @@
                     <p>Present Today</p>
                 </div>
             </div>
-            <div class="stat-card" onclick="window.location.href='{{ route('caregiver.reports') }}'" style="cursor: pointer;">
+            <div class="stat-card clickable-card" onclick="window.location.href='{{ route('caregiver.reports') }}'">
                 <div class="stat-icon orange">
                     <i class="fas fa-tasks"></i>
                 </div>
@@ -57,7 +57,7 @@
                     <p>Pending Reports</p>
                 </div>
             </div>
-            <div class="stat-card" onclick="window.location.href='{{ route('caregiver.messages') }}'" style="cursor: pointer;">
+            <div class="stat-card clickable-card" onclick="window.location.href='{{ route('caregiver.messages') }}'">
                 <div class="stat-icon purple">
                     <i class="fas fa-comments"></i>
                 </div>
@@ -89,7 +89,7 @@
                         <span class="status-badge {{ $child->status }}">{{ ucfirst($child->status) }}</span>
                     </div>
                     @empty
-                    <div class="empty-state" style="padding: 20px; text-align: center; color: #6b7280;">
+                    <div class="empty-state-dashboard">
                         <p>No children assigned yet.</p>
                     </div>
                     @endforelse
@@ -157,7 +157,7 @@
                 </div>
                 <div class="task-list">
                     @forelse($tasks as $task)
-                    <div class="task-item" onclick="window.location.href='{{ $task['link'] }}'" style="cursor: pointer;">
+                    <div class="task-item clickable-card" onclick="window.location.href='{{ $task['link'] }}'">
                         <div class="task-checkbox"></div>
                         <div class="task-content">
                             <p>{{ $task['title'] }}</p>
@@ -166,7 +166,7 @@
                         <span class="task-priority {{ $task['priority'] }}">{{ ucfirst($task['priority']) }}</span>
                     </div>
                     @empty
-                    <div class="empty-state" style="padding: 20px; text-align: center; color: #6b7280;">
+                    <div class="empty-state-dashboard">
                         <p>No pending tasks for today!</p>
                     </div>
                     @endforelse

@@ -566,6 +566,17 @@ body {
     font-weight: 500;
 }
 
+/* Custom Utilities */
+.clickable-card {
+    cursor: pointer;
+}
+
+.empty-state-dashboard {
+    padding: 20px;
+    text-align: center;
+    color: #6b7280;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
     .content-grid {

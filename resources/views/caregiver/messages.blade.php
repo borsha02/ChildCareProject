@@ -107,26 +107,24 @@
                             <div class="message-date">Loading messages...</div>
                         @else
                             <div class="empty-chat">
-                                <i class="fas fa-comments" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+                                <i class="fas fa-comments empty-chat-icon"></i>
                                 <p>No conversations yet</p>
                             </div>
                         @endif
                     </div>
 
-                    @if(count($conversations) > 0)
-                        <div class="chat-input-area">
-                            <button class="attach-btn" title="Attach file">
-                                <i class="fas fa-paperclip"></i>
-                            </button>
-                            <input type="text" class="chat-input" id="messageInput" placeholder="Type a message...">
-                            <button class="emoji-btn" title="Emoji">
-                                <i class="fas fa-smile"></i>
-                            </button>
-                            <button class="send-btn" id="sendMessageBtn">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    @endif
+                    <div class="chat-input-area">
+                        <button class="attach-btn" title="Attach file">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <input type="text" class="chat-input" id="messageInput" placeholder="Type a message...">
+                        <button class="emoji-btn" title="Emoji">
+                            <i class="fas fa-smile"></i>
+                        </button>
+                        <button class="send-btn" id="sendMessageBtn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -205,9 +203,9 @@
 
             if (messages.length === 0) {
                 chatMessages.innerHTML = `
-                    <div class="empty-chat" style="text-align: center; padding: 40px;">
-                        <i class="fas fa-comments" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
-                        <p style="color: #999;">No messages yet. Start the conversation!</p>
+                    <div class="empty-chat">
+                        <i class="fas fa-comments empty-chat-icon"></i>
+                        <p class="empty-chat-text">No messages yet. Start the conversation!</p>
                     </div>
                 `;
                 return;

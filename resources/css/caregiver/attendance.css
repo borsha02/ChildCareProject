@@ -1,0 +1,173 @@
+/* Attendance Page Styles */
+
+.date-input {
+    padding: 10px 15px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    background: #059669;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: #047857;
+}
+
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.filter-form {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Card Header Actions */
+.card-header-actions {
+    border-top: 1px solid #f3f4f6;
+    padding-top: 15px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Table Styles */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.attendance-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.attendance-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #1f2937;
+    background: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.attendance-table td {
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.attendance-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Child Info */
+.child-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.child-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+    background: #3b82f6;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+.child-name {
+    color: #1f2937;
+    font-weight: 500;
+}
+
+.child-class {
+    color: #4b5563;
+}
+
+/* Form Elements in Table */
+.time-input {
+    padding: 6px 10px;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.status-select {
+    padding: 6px 10px;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.notes-input {
+    padding: 6px 10px;
+    border: 2px solid #e5e7eb;
+    border-radius: 6px;
+    font-size: 13px;
+    width: 150px;
+}
+
+.btn-save-row {
+    padding: 6px 12px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-save-row:hover {
+    background: #2563eb;
+}
+
+.btn-save-row:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.empty-state {
+    padding: 20px;
+    text-align: center;
+    color: #6b7280;
+}
+
+/* Back to Dashboard Icon */
+.back-dashboard-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    color: #4b5563;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-right: 15px;
+}
+
+.back-dashboard-icon:hover {
+    background-color: #e5e7eb;
+    color: #1f2937;
+    transform: translateX(-3px);
+}

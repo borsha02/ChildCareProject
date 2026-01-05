@@ -147,7 +147,7 @@
                             <i class="fas fa-calendar-check"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>94%</h3>
+                            <h3>{{ $attendanceRate }}%</h3>
                             <p>Attendance Rate</p>
                         </div>
                     </a>
@@ -156,7 +156,7 @@
                             <i class="fas fa-file-invoice"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>$450</h3>
+                            <h3>${{ number_format($pendingPayment, 2) }}</h3>
                             <p>Pending Payment</p>
                         </div>
                     </a>
@@ -165,7 +165,7 @@
                             <i class="fas fa-calendar-day"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>3</h3>
+                            <h3>{{ $upcomingEventsCount }}</h3>
                             <p>Upcoming Events</p>
                         </div>
                     </a>
@@ -174,7 +174,7 @@
                             <i class="fas fa-chalkboard-teacher"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>2</h3>
+                            <h3>{{ $caregiversCount }}</h3>
                             <p>Assigned Caregivers</p>
                         </div>
                     </a>
@@ -272,36 +272,22 @@
                             <a href="{{ route('parent.reports') }}" class="view-all">View Details</a>
                         </div>
                         <div class="activity-list">
-                            <div class="activity-item">
-                                <div class="activity-icon meal">
-                                    <i class="fas fa-utensils"></i>
+                            @forelse($todaysActivities as $activity)
+                                <div class="activity-item">
+                                    <div class="activity-icon {{ $activity['type'] }}">
+                                        <i class="{{ $activity['icon'] }}"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <h4>{{ $activity['title'] }}</h4>
+                                        <p>{{ $activity['description'] }}</p>
+                                    </div>
+                                    <div class="activity-time">{{ $activity['time'] }}</div>
                                 </div>
-                                <div class="activity-content">
-                                    <h4>Breakfast Completed</h4>
-                                    <p>Emma had oatmeal and fruits</p>
+                            @empty
+                                <div class="activity-item" style="justify-content: center; border: none;">
+                                    <p style="color: var(--text-muted); text-align: center;">No activities recorded today yet.</p>
                                 </div>
-                                <div class="activity-time">8:30 AM</div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon play">
-                                    <i class="fas fa-palette"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <h4>Art Activity</h4>
-                                    <p>Lucas participated in painting class</p>
-                                </div>
-                                <div class="activity-time">10:00 AM</div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon nap">
-                                    <i class="fas fa-bed"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <h4>Nap Time</h4>
-                                    <p>Both children are currently napping</p>
-                                </div>
-                                <div class="activity-time">12:30 PM</div>
-                            </div>
+                            @endforelse
                         </div>
                     </div>
 

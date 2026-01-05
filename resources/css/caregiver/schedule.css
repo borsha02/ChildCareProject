@@ -1,0 +1,169 @@
+/* Schedule Styles */
+
+.search-box {
+    display: flex;
+    align-items: center;
+    background: #f3f4f6;
+    padding: 8px 15px;
+    border-radius: 20px;
+}
+
+.search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    padding: 5px;
+    font-size: 14px;
+    width: 200px;
+}
+
+.search-box i {
+    color: #6b7280;
+}
+
+/* Week Navigation */
+.week-navigation-container {
+    margin-bottom: 30px;
+}
+
+.week-navigation-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-nav-week {
+    padding: 10px 20px;
+    background: #059669;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-nav-week:hover {
+    background-color: #047857;
+}
+
+.week-title {
+    color: #1f2937;
+    font-size: 20px;
+    margin: 0;
+}
+
+/* Schedule List */
+.schedule-card {
+    margin-bottom: 20px;
+}
+
+.label-today {
+    color: #059669;
+    font-weight: 600;
+}
+
+.label-holiday {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.schedule-item {
+    display: flex;
+    padding: 15px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.1s;
+}
+
+.schedule-item:last-child {
+    border-bottom: none;
+}
+
+.schedule-item:hover {
+    background: #f9fafb;
+}
+
+.schedule-time {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+    padding-right: 20px;
+    border-right: 2px solid #e5e7eb;
+}
+
+.time-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.period-text {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.schedule-info {
+    padding-left: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.schedule-info h4 {
+    margin: 0 0 5px 0;
+    color: #1f2937;
+    font-size: 16px;
+}
+
+.schedule-info p {
+    margin: 0;
+    color: #4b5563;
+    font-size: 14px;
+}
+
+/* Holiday Empty State */
+.holiday-state {
+    padding: 40px;
+    text-align: center;
+    color: #6b7280;
+}
+
+.holiday-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #d1d5db;
+}
+
+.holiday-text {
+    font-size: 16px;
+    margin: 0;
+}
+
+/* Back to Dashboard Icon */
+.back-dashboard-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    color: #4b5563;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-right: 15px;
+}
+
+.back-dashboard-icon:hover {
+    background-color: #e5e7eb;
+    color: #1f2937;
+    transform: translateX(-3px);
+}

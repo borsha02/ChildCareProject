@@ -6,12 +6,21 @@
     @vite(['resources/css/caregiver/assigned-children.css'])
 @endsection
 
+@section('styles')
+    @vite(['resources/css/caregiver/assigned-children.css'])
+@endsection
+
 @section('content')
     <div class="top-bar">
         <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
             <i class="fas fa-bars"></i>
         </button>
-        <h1>Assigned Children</h1>
+        <div style="display: flex; align-items: center;">
+            <a href="{{ route('caregiver.dashboard') }}" class="back-dashboard-icon">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1>Assigned Children</h1>
+        </div>
         <div class="top-bar-actions">
             <div class="search-box">
                 <input type="text" placeholder="Search children...">
@@ -57,8 +66,8 @@
         <div class="card">
             <div class="card-header">
                 <h3>All Assigned Children</h3>
-                <div style="display: flex; gap: 10px;">
-                    <select id="classFilter" style="padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
+                <div class="filter-container">
+                    <select id="classFilter" class="class-filter-select">
                         <option value="">All Classes</option>
                         @foreach($children->pluck('class')->unique() as $class)
                             <option value="{{ $class }}">{{ $class }}</option>
@@ -100,19 +109,19 @@
     </div>
 
     <!-- View Child Details Modal -->
-    <div class="modal-overlay" id="viewChildModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-        <div class="modal-content" style="background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto;">
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0;">Child Details</h2>
-                <button class="close-modal" onclick="closeViewModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">
+    <div class="modal-wrap modal-overlay modal-hidden" id="viewChildModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Child Details</h2>
+                <button class="close-modal-btn" onclick="closeViewModal()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body" id="viewModalBody">
                 <!-- Details populated via JS -->
             </div>
-            <div class="form-actions" style="margin-top: 20px; text-align: right;">
-                <button type="button" class="btn btn-secondary" onclick="closeViewModal()" style="padding: 8px 16px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+            <div class="modal-footer">
+                <button type="button" class="btn-close" onclick="closeViewModal()">Close</button>
             </div>
         </div>
     </div>
@@ -200,22 +209,25 @@
                         <label>Contact</label>
                         <p>${child.parent ? '<a href="tel:' + child.parent.phone + '">' + child.parent.phone + '</a>' : 'N/A'}</p>
                     </div>
-                    <div class="detail-group" style="grid-column: 1 / -1;">
+                    <div class="detail-group full-width">
                         <label>Medical Notes</label>
                         <p class="note-box">${child.medical_notes || 'No medical notes available.'}</p>
                     </div>
-                     <div class="detail-group" style="grid-column: 1 / -1;">
+                     <div class="detail-group full-width">
                         <label>Allergies</label>
                         <p class="allergy-box">${child.allergies || 'No allergies listed.'}</p>
                     </div>
                 </div>
             `;
 
-            modal.style.display = 'flex';
+            modal.classList.remove('modal-hidden');
+            modal.classList.add('modal-visible');
         }
 
         function closeViewModal() {
-            document.getElementById('viewChildModal').style.display = 'none';
+            const modal = document.getElementById('viewChildModal');
+            modal.classList.remove('modal-visible');
+            modal.classList.add('modal-hidden');
         }
 
         // Close view modal on outside click

@@ -554,7 +554,7 @@ class AdminController extends Controller
 
         // Fetch all enrolled children with their attendance for the specific date
         $children = \App\Models\Child::where('status', '!=', 'pending')
-            ->with(['attendance' => function($query) use ($date) {
+            ->with(['attendances' => function($query) use ($date) {
                 $query->whereDate('date', $date);
             }, 'parent'])
             ->orderBy('first_name')
@@ -567,7 +567,7 @@ class AdminController extends Controller
         $absent = 0;
 
         foreach ($children as $child) {
-            $attendance = $child->attendance->first();
+            $attendance = $child->attendances->first();
             if ($attendance) {
                 if ($attendance->status === 'late') {
                     $late++;
@@ -604,7 +604,7 @@ class AdminController extends Controller
         $filename = "attendance_report_{$date}.csv";
 
         $children = \App\Models\Child::where('status', '!=', 'pending')
-            ->with(['attendance' => function($query) use ($date) {
+            ->with(['attendances' => function($query) use ($date) {
                 $query->whereDate('date', $date);
             }])
             ->orderBy('class')
@@ -626,7 +626,7 @@ class AdminController extends Controller
             fputcsv($file, $columns);
 
             foreach ($children as $child) {
-                $attendance = $child->attendance->first();
+                $attendance = $child->attendances->first();
                 
                 $status = $attendance ? ucfirst($attendance->status) : 'Absent';
                 $checkIn = $attendance && $attendance->check_in_time ? \Carbon\Carbon::parse($attendance->check_in_time)->format('g:i A') : '-';

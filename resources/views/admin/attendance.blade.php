@@ -192,7 +192,7 @@
                         <tbody id="attendanceTableBody">
                             @forelse($children as $child)
                                 @php
-                                    $record = $child->attendance->first();
+                                    $record = $child->attendances->first();
                                     $status = $record ? $record->status : 'absent'; // Default to absent if no record
                                     // Override if future date? But for simple logic, no record = absent
                                 @endphp
