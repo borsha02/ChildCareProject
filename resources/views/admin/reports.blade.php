@@ -99,8 +99,24 @@
                         <span>Analytics</span>
                     </a>
                 </div>
-                <!-- ... existing menu items ... -->
-                 <div class="nav-section">
+
+                <div class="nav-section">
+                    <div class="nav-section-title">User Management</div>
+                    <a href="{{ route('admin.users') }}" class="nav-item">
+                        <i class="fas fa-users"></i>
+                        <span>Manage Users</span>
+                    </a>
+                    <a href="{{ route('admin.children') }}" class="nav-item">
+                        <i class="fas fa-child"></i>
+                        <span>Child Records</span>
+                    </a>
+                    <a href="{{ route('admin.staff') }}" class="nav-item">
+                        <i class="fas fa-user-tie"></i>
+                        <span>Staff Management</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
                     <div class="nav-section-title">Operations</div>
                     <a href="{{ route('admin.attendance') }}" class="nav-item">
                         <i class="fas fa-calendar-check"></i>
@@ -110,8 +126,7 @@
                         <i class="fas fa-file-alt"></i>
                         <span>Daily Reports</span>
                     </a>
-                     <!-- ... other items ... -->
-                     <a href="{{ route('admin.invoices') }}" class="nav-item">
+                    <a href="{{ route('admin.invoices') }}" class="nav-item">
                         <i class="fas fa-file-invoice-dollar"></i>
                         <span>Billing & Invoices</span>
                     </a>
@@ -120,14 +135,37 @@
                         <span>Payment Approvals</span>
                     </a>
                 </div>
-                 <!-- ... other sections ... -->
-                  <div class="nav-section">
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Communication</div>
+                    <a href="{{ route('admin.announcements') }}" class="nav-item">
+                        <i class="fas fa-bullhorn"></i>
+                        <span>Announcements</span>
+                    </a>
+                    <a href="{{ route('admin.communication') }}" class="nav-item">
+                        <i class="fas fa-comments"></i>
+                        <span>Communication Logs</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
                     <div class="nav-section-title">System</div>
-                     <a href="{{ route('logout') }}" class="nav-item" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                    <a href="{{ route('admin.settings') }}" class="nav-item">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                    <a href="{{ route('admin.backup') }}" class="nav-item">
+                        <i class="fas fa-database"></i>
+                        <span>Backup & Restore</span>
+                    </a>
+                    <a href="{{ route('logout') }}" class="nav-item"
+                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Logout</span>
                     </a>
-                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">@csrf</form>
+                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                        @csrf
+                    </form>
                 </div>
             </nav>
         </aside>
@@ -145,7 +183,7 @@
                     <h1>Daily Activity Reports</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <input type="date" class="date-picker" value="{{ $date }}" onchange="window.location.href='{{ route('admin.reports') }}?date=' + this.value">
+                    <input type="date" id="report_date" class="date-picker" value="{{ $date }}" onchange="window.location.href='{{ route('admin.reports') }}?date=' + this.value">
                     <button class="export-btn" onclick="window.open('{{ route('admin.reports.export.pdf') }}?date={{ $date }}', '_blank')">
                         <i class="fas fa-download"></i>
                         Export Reports
@@ -388,11 +426,30 @@
         }
 
         // Mobile toggle
-        document.addEventListener('click', (e) => {
+         document.addEventListener('click', (e) => {
              const sidebar = document.getElementById('sidebar');
              const toggle = document.querySelector('.mobile-toggle');
              if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
                  sidebar.classList.remove('active');
+             }
+         });
+
+         // Ensure correct date based on client timezone
+         document.addEventListener('DOMContentLoaded', () => {
+             const dateInput = document.getElementById('report_date');
+             if (!dateInput) return;
+ 
+             const urlParams = new URLSearchParams(window.location.search);
+             const hasDateParam = urlParams.has('date');
+ 
+             if (!hasDateParam) {
+                 const serverDate = dateInput.value;
+                 const clientDate = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+ 
+                 if (serverDate !== clientDate) {
+                     // Redirect to client date to load correct data
+                     window.location.search = `?date=${clientDate}`;
+                 }
              }
          });
     </script>

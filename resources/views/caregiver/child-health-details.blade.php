@@ -47,12 +47,15 @@
                     <h3><i class="fas fa-pills" style="color: #f59e0b;"></i> Medications</h3>
                 </div>
                 <div class="scrollable-list">
-                    @forelse($child->medications as $med)
+                    @php
+                        $activeMedications = $child->medications->where('status', 'active');
+                    @endphp
+                    @forelse($activeMedications as $med)
                         <div class="list-item">
                             <div class="item-header">
                                 <h4 class="item-title">{{ $med->medication_name }}</h4>
-                                <span class="status-badge {{ $med->status == 'active' ? 'status-active' : 'status-inactive'}}">
-                                    {{ ucfirst($med->status) }}
+                                <span class="status-badge status-active">
+                                    Active
                                 </span>
                             </div>
                             <p class="item-meta">Dosage: {{ $med->dosage }} • {{ $med->frequency }}</p>
@@ -62,7 +65,7 @@
                             @endif
                         </div>
                     @empty
-                        <div class="empty-state">No medication records.</div>
+                        <div class="empty-state">No active medication records.</div>
                     @endforelse
                 </div>
             </div>

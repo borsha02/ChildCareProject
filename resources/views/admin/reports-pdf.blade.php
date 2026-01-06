@@ -76,7 +76,7 @@
         @endif
 
         <div class="footer">
-            <p>Generated on {{ now()->format('Y-m-d H:i') }} | Childcare Management System</p>
+            <p>Generated on {{ \Carbon\Carbon::parse($date)->format('Y-m-d H:i') }} | Little Stars ChildCare Center</p>
         </div>
     </div>
     @empty

@@ -709,7 +709,7 @@
                         </div>
                         <div class="form-group">
                             <label for="checkup_date">Date <span style="color: red;">*</span></label>
-                            <input type="date" id="checkup_date" name="checkup_date" required max="{{ date('Y-m-d') }}">
+                            <input type="date" id="checkup_date" name="checkup_date" required>
                         </div>
                     </div>
 
@@ -783,7 +783,7 @@
 
                     <div class="form-group">
                         <label for="record_date">Record Date <span style="color: red;">*</span></label>
-                        <input type="date" id="record_date" name="record_date" required max="{{ date('Y-m-d') }}">
+                        <input type="date" id="record_date" name="record_date" required>
                     </div>
 
                     <div class="form-group">
@@ -1418,6 +1418,21 @@
                 if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
                     sidebar.classList.remove('active');
                 }
+            }
+        });
+
+        // Fix date inputs to use client local time for max attribute
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+            
+            const checkupDate = document.getElementById('checkup_date');
+            if (checkupDate) {
+                checkupDate.max = today;
+            }
+
+            const recordDate = document.getElementById('record_date');
+            if (recordDate) {
+                recordDate.max = today;
             }
         });
     </script>

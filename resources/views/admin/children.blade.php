@@ -532,6 +532,9 @@
             
             // Reset duration visibility
             toggleDuration();
+
+            // Default enrollment date to today
+            document.getElementById('enrollment_date').value = new Date().toLocaleDateString('en-CA');
         }
 
         function closeModal() {

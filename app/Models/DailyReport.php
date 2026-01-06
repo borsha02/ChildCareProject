@@ -18,12 +18,15 @@ class DailyReport extends Model
         'nap_quality',
         'activities',
         'notes',
+        'medications_included',
+        'status',
     ];
 
     protected $casts = [
         'report_date' => 'date',
         'meals' => 'array',
         'activities' => 'array',
+        'medications_included' => 'array',
     ];
 
     public function child()

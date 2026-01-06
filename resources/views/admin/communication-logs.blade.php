@@ -111,7 +111,7 @@
                     <h1>Communication Logs</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <input type="date" class="date-picker" value="{{ date('Y-m-d') }}">
+                    <input type="date" id="communication_date" class="date-picker">
                 </div>
             </div>
 
@@ -315,6 +315,18 @@
             const toggle = document.querySelector('.mobile-toggle');
             if (window.innerWidth <= 768 && !sidebar.contains(e.target) && !toggle.contains(e.target)) {
                 sidebar.classList.remove('active');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateInput = document.getElementById('communication_date');
+            if (dateInput) {
+                // Set to today's date in local time
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                dateInput.value = `${year}-${month}-${day}`;
             }
         });
     </script>

@@ -47,7 +47,7 @@
                     <p>Present Today</p>
                 </div>
             </div>
-            <div class="stat-card clickable-card" onclick="window.location.href='{{ route('caregiver.reports') }}'">
+            <div class="stat-card clickable-card" onclick="window.location.href='{{ route('caregiver.daily-reports') }}'">
                 <div class="stat-icon orange">
                     <i class="fas fa-tasks"></i>
                 </div>
@@ -153,7 +153,7 @@
             <div class="card">
                 <div class="card-header">
                     <h3>Today's Tasks</h3>
-                    <a href="{{ route('caregiver.reports') }}" class="view-all">View All</a>
+                    <a href="{{ route('caregiver.daily-reports') }}" class="view-all">View All</a>
                 </div>
                 <div class="task-list">
                     @forelse($tasks as $task)
@@ -183,7 +183,7 @@
                         <i class="fas fa-calendar-check"></i>
                         <p>Mark Attendance</p>
                     </a>
-                    <a href="{{ route('caregiver.reports') }}" class="action-btn">
+                    <a href="{{ route('caregiver.daily-reports') }}" class="action-btn">
                         <i class="fas fa-file-alt"></i>
                         <p>Create Report</p>
                     </a>

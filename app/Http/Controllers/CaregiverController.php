@@ -51,7 +51,7 @@ class CaregiverController extends Controller
                     'description' => "Submit report for {$child->first_name} {$child->last_name}",
                     'due' => '4:00 PM',
                     'priority' => 'medium',
-                    'link' => route('caregiver.reports')
+                    'link' => route('caregiver.daily-reports')
                 ];
             }
         }
@@ -92,8 +92,38 @@ class CaregiverController extends Controller
             'date' => 'required|date',
             'attendance' => 'required|array',
             'attendance.*.status' => 'required|in:present,absent,late,excused',
-            'attendance.*.check_in_time' => 'nullable',
-            'attendance.*.check_out_time' => 'nullable',
+            'attendance.*.check_in_time' => [
+                'nullable', 
+                function ($attribute, $value, $fail) {
+                    if ($value && ($value < '08:00' || $value > '18:00')) {
+                        $fail('Check-in time must be between 08:00 AM and 06:00 PM.');
+                    }
+                },
+            ],
+            'attendance.*.check_out_time' => [
+                'nullable',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($value && ($value < '08:00' || $value > '18:00')) {
+                        $fail('Check-out time must be between 08:00 AM and 06:00 PM.');
+                    }
+                    
+                    // Extract child_id from attribute path (e.g., "attendance.123.check_out_time")
+                    preg_match('/attendance\.(\d+)\.check_out_time/', $attribute, $matches);
+                    if (isset($matches[1])) {
+                        $childId = $matches[1];
+                        $checkInTime = $request->input("attendance.{$childId}.check_in_time");
+                        
+                        if ($value && empty($checkInTime)) {
+                            $fail('Check-in time is required before setting check-out time.');
+                        }
+                        
+                        // Validate check-out is after check-in
+                        if ($value && $checkInTime && $value <= $checkInTime) {
+                            $fail('Check-out time must be after check-in time.');
+                        }
+                    }
+                },
+            ],
             'attendance.*.notes' => 'nullable|string',
         ]);
 
@@ -129,7 +159,7 @@ class CaregiverController extends Controller
     public function dailyReports()
     {
         $user = auth()->user();
-        $assignedChildren = $user->assignedChildren;
+        $assignedChildren = $user->assignedChildren()->with(['medications'])->get();
         $today = now()->format('Y-m-d');
 
         // Recent reports list (limited)
@@ -177,21 +207,42 @@ class CaregiverController extends Controller
             'nap_quality' => 'nullable|string',
             'activities' => 'nullable|array',
             'notes' => 'nullable|string',
+            'medication_log' => 'nullable|array',
         ]);
 
-        \App\Models\DailyReport::create([
-            'child_id' => $request->child_id,
-            'caregiver_id' => auth()->id(),
-            'report_date' => $request->report_date,
-            'mood' => $request->mood,
-            'meals' => $request->meals,
-            'nap_duration' => $request->nap_duration,
-            'nap_quality' => $request->nap_quality,
-            'activities' => $request->activities,
-            'notes' => $request->notes,
-        ]);
+        // Determine status based on action
+        $status = $request->input('submit_action') === 'complete' ? 'completed' : 'draft';
 
-        return redirect()->back()->with('success', 'Daily report submitted successfully!');
+        \App\Models\DailyReport::updateOrCreate(
+            [
+                'child_id' => $request->child_id,
+                'caregiver_id' => auth()->id(),
+                'report_date' => $request->report_date,
+            ],
+            [
+                'mood' => $request->mood,
+                'meals' => $request->meals,
+                'nap_duration' => $request->nap_duration,
+                'nap_quality' => $request->nap_quality,
+                'activities' => $request->activities,
+                'notes' => $request->notes,
+                'medications_included' => $request->medication_log,
+                'status' => $status,
+            ]
+        );
+
+        $message = $status === 'completed' ? 'Daily report submitted successfully!' : 'Draft saved successfully.';
+
+        return redirect()->back()->with('success', $message);
+    }
+
+    public function checkDailyReport(Request $request)
+    {
+        $report = \App\Models\DailyReport::where('child_id', $request->child_id)
+            ->where('report_date', $request->date)
+            ->first();
+
+        return response()->json($report);
     }
 
     public function healthRecords()
@@ -212,7 +263,11 @@ class CaregiverController extends Controller
                                                // So limit(1) is fine.
                 $query->limit(1);
             }, 'medications' => function ($query) {
-                $query->where('status', 'active');
+                $query->where('status', 'active')
+                      ->where(function($q) {
+                          $q->whereNull('end_date')
+                            ->orWhere('end_date', '>=', now()->toDateString());
+                      });
             }])
             ->get();
 
@@ -235,7 +290,13 @@ class CaregiverController extends Controller
     public function showChildHealth($id)
     {
         $child = auth()->user()->assignedChildren()
-            ->with(['medications', 'vaccinations', 'healthRecords' => function ($query) {
+            ->with(['medications' => function ($query) {
+                $query->where('status', 'active')
+                      ->where(function($q) {
+                          $q->whereNull('end_date')
+                            ->orWhere('end_date', '>=', now()->toDateString());
+                      });
+            }, 'vaccinations', 'healthRecords' => function ($query) {
                 $query->latest('record_date');
             }, 'checkups' => function ($query) {
                 $query->latest('checkup_date');
@@ -312,7 +373,29 @@ class CaregiverController extends Controller
 
     public function notifications()
     {
-        return view('caregiver.notifications');
+        $notifications = auth()->user()->notifications()->latest()->paginate(10);
+        $unreadCount = auth()->user()->unreadNotifications->count();
+        return view('caregiver.notifications', compact('notifications', 'unreadCount'));
+    }
+
+    public function markNotificationRead($id)
+    {
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+        return redirect()->back()->with('success', 'Notification marked as read.');
+    }
+
+    public function markAllNotificationsRead()
+    {
+        auth()->user()->unreadNotifications->markAsRead();
+        return redirect()->back()->with('success', 'All notifications marked as read.');
+    }
+
+    public function deleteNotification($id)
+    {
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->delete();
+        return redirect()->back()->with('success', 'Notification deleted.');
     }
 
     public function leaveRequests()

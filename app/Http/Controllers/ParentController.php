@@ -383,7 +383,13 @@ class ParentController extends Controller
         $children = \App\Models\Child::where('parent_id', auth()->id())
             ->with([
                 'vaccinations', 
-                'medications', 
+                'medications' => function($query) {
+                    $query->where('status', 'active')
+                          ->where(function($q) {
+                              $q->whereNull('end_date')
+                                ->orWhere('end_date', '>=', now()->toDateString());
+                          });
+                }, 
                 'checkups',
                 'healthRecords' => function($query) {
                     $query->orderBy('record_date', 'desc');
@@ -393,6 +399,7 @@ class ParentController extends Controller
         
         return view('parent.health', compact('children'));
     }
+
 
     public function vaccinations()
     {

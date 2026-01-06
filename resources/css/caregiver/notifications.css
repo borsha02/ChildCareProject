@@ -555,3 +555,39 @@ body {
     color: #1f2937;
     transform: translateX(-3px);
 }
+
+.notification-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn-small {
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    color: #4b5563;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.action-btn-small:hover {
+    background: #059669;
+    color: white;
+    border-color: #059669;
+}
+
+.action-btn-small.delete:hover {
+    background: #ef4444;
+    color: white;
+    border-color: #ef4444;
+}
+
+.alert-success {
+    background: #d1fae5;
+    color: #065f46;
+    padding: 12px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+}

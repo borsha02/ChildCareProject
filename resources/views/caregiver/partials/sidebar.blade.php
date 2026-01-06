@@ -36,7 +36,7 @@
 
         <div class="nav-section">
             <div class="nav-section-title">Activities</div>
-            <a href="{{ route('caregiver.reports') }}" class="nav-item {{ request()->routeIs('caregiver.reports') ? 'active' : '' }}">
+            <a href="{{ route('caregiver.daily-reports') }}" class="nav-item {{ request()->routeIs('caregiver.daily-reports') ? 'active' : '' }}">
                 <i class="fas fa-file-alt"></i>
                 <span>Daily Reports</span>
             </a>
@@ -63,6 +63,12 @@
             <a href="{{ route('caregiver.notifications') }}" class="nav-item {{ request()->routeIs('caregiver.notifications') ? 'active' : '' }}">
                 <i class="fas fa-bell"></i>
                 <span>Notifications</span>
+                @php
+                    $unreadNotifications = Auth::user()->unreadNotifications->count();
+                @endphp
+                @if($unreadNotifications > 0)
+                    <span class="badge">{{ $unreadNotifications }}</span>
+                @endif
             </a>
         </div>
 

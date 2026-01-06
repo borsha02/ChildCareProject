@@ -108,7 +108,8 @@ Route::middleware('auth')->prefix('caregiver')->group(function () {
     Route::get('/assigned-children', [CaregiverController::class, 'assignedChildren'])->name('caregiver.assigned');
     Route::get('/attendance', [CaregiverController::class, 'attendance'])->name('caregiver.attendance');
     Route::post('/attendance', [CaregiverController::class, 'storeAttendance'])->name('caregiver.attendance.store');
-    Route::get('/daily-reports', [CaregiverController::class, 'dailyReports'])->name('caregiver.reports');
+    Route::get('/daily-reports/check', [CaregiverController::class, 'checkDailyReport'])->name('caregiver.daily-reports.check');
+    Route::get('/daily-reports', [CaregiverController::class, 'dailyReports'])->name('caregiver.daily-reports');
     Route::post('/daily-reports', [CaregiverController::class, 'storeDailyReport'])->name('caregiver.reports.store');
     Route::get('/health-records', [CaregiverController::class, 'healthRecords'])->name('caregiver.health');
     Route::get('/health-records/{id}', [CaregiverController::class, 'showChildHealth'])->name('caregiver.health.show');
@@ -119,6 +120,9 @@ Route::middleware('auth')->prefix('caregiver')->group(function () {
     Route::get('/schedule', [CaregiverController::class, 'schedule'])->name('caregiver.schedule');
     Route::get('/events', [CaregiverController::class, 'events'])->name('caregiver.events');
     Route::get('/notifications', [CaregiverController::class, 'notifications'])->name('caregiver.notifications');
+    Route::post('/notifications/mark-read', [CaregiverController::class, 'markAllNotificationsRead'])->name('caregiver.notifications.mark-all');
+    Route::post('/notifications/{id}/mark-read', [CaregiverController::class, 'markNotificationRead'])->name('caregiver.notifications.mark-read');
+    Route::delete('/notifications/{id}', [CaregiverController::class, 'deleteNotification'])->name('caregiver.notifications.delete');
     Route::get('/leave-requests', [CaregiverController::class, 'leaveRequests'])->name('caregiver.leave');
     Route::post('/leave-requests/store', [CaregiverController::class, 'storeLeaveRequest'])->name('caregiver.leave.store');
 });

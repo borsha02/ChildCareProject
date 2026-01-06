@@ -123,7 +123,7 @@
                     <h1>Attendance Monitoring</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <input type="date" class="date-picker" value="{{ $date }}" onchange="window.location.href='{{ route('admin.attendance') }}?date=' + this.value">
+                    <input type="date" id="attendance_date" class="date-picker" value="{{ $date }}" onchange="window.location.href='{{ route('admin.attendance') }}?date=' + this.value">
                     <button class="export-btn" onclick="window.location.href='{{ route('admin.attendance.export') }}?date={{ $date }}'">
                         <i class="fas fa-download"></i>
                         Export Report
@@ -325,6 +325,25 @@
                     sidebar.classList.remove('active');
                 }
             }
+        });
+
+        // Ensure correct date based on client timezone
+        document.addEventListener('DOMContentLoaded', () => {
+             const dateInput = document.getElementById('attendance_date');
+             if (!dateInput) return;
+ 
+             const urlParams = new URLSearchParams(window.location.search);
+             const hasDateParam = urlParams.has('date');
+ 
+             if (!hasDateParam) {
+                 const serverDate = dateInput.value;
+                 const clientDate = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+ 
+                 if (serverDate !== clientDate) {
+                     // Redirect to client date to load correct data
+                     window.location.search = `?date=${clientDate}`;
+                 }
+             }
         });
     </script>
 </body>

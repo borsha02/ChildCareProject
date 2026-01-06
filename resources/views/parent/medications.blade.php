@@ -431,6 +431,9 @@
             idInput.value = '';
             form.action = "{{ route('parent.health.medication.store') }}";
 
+            // Default start date to today
+            document.getElementById('start_date').value = new Date().toLocaleDateString('en-CA');
+
             modal.style.display = 'flex';
             setTimeout(() => modal.classList.add('active'), 10);
         }
