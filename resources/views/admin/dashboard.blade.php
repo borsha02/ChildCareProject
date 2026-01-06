@@ -245,7 +245,7 @@
                                 </div>
                                 <span class="pending-badge">{{ $stats['pending_registrations'] ?? 0 }}</span>
                             </a>
-                            <a href="{{ route('admin.staff') }}" class="pending-item">
+                            <a href="{{ route('admin.job-applications') }}" class="pending-item">
                                 <div class="pending-info">
                                     <h4>Staff Applications</h4>
                                     <p>New job applicants</p>

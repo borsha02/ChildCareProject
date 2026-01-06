@@ -9,6 +9,8 @@ use App\Models\Child;
 use App\Models\LeaveRequest;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\StaffWelcomeMail;
 
 class AdminController extends Controller
 {
@@ -86,7 +88,7 @@ class AdminController extends Controller
                 'time' => $app->created_at,
                 'icon' => 'fas fa-briefcase',
                 'color' => 'orange', // orange/alert color
-                'link' => route('admin.staff')
+                'link' => route('admin.job-applications')
             ];
         });
 
@@ -410,7 +412,9 @@ class AdminController extends Controller
 
     public function jobApplications()
     {
-        $jobApplications = \App\Models\JobApplication::orderBy('created_at', 'desc')->get();
+        $jobApplications = \App\Models\JobApplication::orderByRaw("CASE WHEN status = 'pending' THEN 0 ELSE 1 END")
+            ->orderBy('created_at', 'desc')
+            ->get();
         return view('admin.job-applications', compact('jobApplications'));
     }
 
@@ -470,8 +474,16 @@ class AdminController extends Controller
             }
         }
 
+        // Send welcome email
+        try {
+            Mail::to($staff->email)->send(new StaffWelcomeMail($staff, $validated['password']));
+        } catch (\Exception $e) {
+            // Log error or just continue, we don't want to break the flow if mail fails
+            // \Log::error('Failed to send welcome email: ' . $e->getMessage());
+        }
+
         return redirect()->route('admin.staff')
-            ->with('success', 'Staff member added successfully!');
+            ->with('success', 'Staff member added successfully! Welcome email sent.');
     }
 
     /**
