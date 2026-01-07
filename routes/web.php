@@ -137,6 +137,7 @@ Route::middleware('auth')->prefix('parent')->group(function (){
     Route::put('/child-profile/{id}', [ParentController::class, 'updateChild'])->name('parent.child-profile.update');
     Route::delete('/child-profile/{id}', [ParentController::class, 'deleteChild'])->name('parent.child-profile.delete');
     Route::get('/reports', [ParentController::class, 'reports'])->name('parent.reports');
+    Route::get('/reports/{id}/download', [ParentController::class, 'downloadReport'])->name('parent.reports.download');
     Route::get('/attendance', [ParentController::class, 'attendance'])->name('parent.attendance');
     Route::get('/invoices', [ParentController::class, 'invoices'])->name('parent.invoice');
     Route::get('/health', [ParentController::class, 'health'])->name('parent.health');

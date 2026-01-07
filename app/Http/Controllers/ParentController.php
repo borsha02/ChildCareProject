@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ParentController extends Controller
 {
@@ -196,70 +197,68 @@ class ParentController extends Controller
 
     public function reports(Request $request)
     {
+        // Get unread notifications count
         $unreadCount = auth()->user()->unreadNotifications->count();
-        // Fetch all children that are NOT pending (assuming 'pending' is the status for unapproved)
+
+        // Fetch active children (for the filter buttons)
         $children = \App\Models\Child::where('parent_id', auth()->id())
-            ->where('status', '!=', 'pending') 
+            ->where('status', '!=', 'pending')
             ->get();
-            
-        // Determine which children's data to show
-        if ($request->has('child_id') && $request->child_id != 'all') {
-            // Verify the requested child belongs to the parent
-            $selectedChild = $children->where('id', $request->child_id)->first();
-            $childIds = $selectedChild ? collect([$selectedChild->id]) : $children->pluck('id');
-        } else {
-            $childIds = $children->pluck('id');
-        }
 
-        // Determine time period for filtering
-        $period = $request->get('period', 'month'); // Default to 'month'
-        
-        // Build date query based on period
+        // Get child IDs
+        $childIds = $children->pluck('id');
+
+        // Get filter parameters
+        $childId = $request->input('child_id');
+        $period = $request->input('period', 'this_month');
+
+        // Base query
         $reportsQuery = \App\Models\DailyReport::whereIn('child_id', $childIds);
-        $statsQuery = \App\Models\DailyReport::whereIn('child_id', $childIds);
-        $attendanceQuery = \App\Models\Attendance::whereIn('child_id', $childIds)->where('status', 'present');
-        
-        if ($period === 'week') {
-            $reportsQuery->whereBetween('report_date', [now()->startOfWeek(), now()->endOfWeek()]);
-            $statsQuery->whereBetween('report_date', [now()->startOfWeek(), now()->endOfWeek()]);
-            $attendanceQuery->whereBetween('date', [now()->startOfWeek(), now()->endOfWeek()]);
-        } elseif ($period === 'month') {
-            $reportsQuery->whereMonth('report_date', now()->month)->whereYear('report_date', now()->year);
-            $statsQuery->whereMonth('report_date', now()->month)->whereYear('report_date', now()->year);
-            $attendanceQuery->whereMonth('date', now()->month)->whereYear('date', now()->year);
-        } elseif ($period === 'year') {
-            $reportsQuery->whereYear('report_date', now()->year);
-            $statsQuery->whereYear('report_date', now()->year);
-            $attendanceQuery->whereYear('date', now()->year);
+
+        // Apply child filter
+        if ($childId && in_array($childId, $childIds->toArray())) {
+            $reportsQuery->where('child_id', $childId);
         }
-        // 'all' means no date filter
 
-        // Check if viewing all reports or just recent (limit to 10)
-        $viewAll = $request->get('view_all', false);
-        
-        // Recent Reports Table
-        $recentReportsQuery = $reportsQuery->with('child')->latest('report_date');
-        $recentReports = $viewAll ? $recentReportsQuery->get() : $recentReportsQuery->take(10)->get();
+        // Apply period filter
+        switch ($period) {
+            case 'this_week':
+                $startDate = now()->startOfWeek();
+                $endDate = now()->endOfWeek();
+                break;
+            case 'last_month':
+                $startDate = now()->subMonth()->startOfMonth();
+                $endDate = now()->subMonth()->endOfMonth();
+                break;
+            case 'this_month':
+            default:
+                $startDate = now()->startOfMonth();
+                $endDate = now()->endOfMonth();
+                break;
+        }
 
-        // --- Calculate Stats ---
-        $filteredReports = $statsQuery->get();
+        $reportsQuery->whereBetween('report_date', [$startDate, $endDate]);
 
-        // 1. Total Daily Reports
-        $totalReports = $filteredReports->count();
+        // Calculate statistics
+        $statsQuery = clone $reportsQuery;
+        $totalReports = $statsQuery->count();
+        $completedReports = $statsQuery->where('status', 'completed')->count();
+        $daysPresent = $statsQuery->distinct('report_date')->count('report_date');
 
-        // 2. Average Nap Duration
-        $avgNapDuration = $filteredReports->avg('nap_duration') ?? 0; // in minutes
+        // Get all reports for additional stats
+        $allReports = $statsQuery->get();
 
-        // 3. Activity Stats & Summary
-        $activityCounts = [];
+        // Calculate average nap duration
+        $avgNapDuration = $allReports->avg('nap_duration') ?? 0;
+
+        // Calculate total activities
         $totalActivities = 0;
-
-        foreach ($filteredReports as $report) {
+        $activityCounts = [];
+        foreach ($allReports as $report) {
             $activities = $report->activities ?? [];
             if (is_string($activities)) {
-                 $activities = json_decode($activities, true) ?? [];
+                $activities = json_decode($activities, true) ?? [];
             }
-            
             if (is_array($activities)) {
                 $totalActivities += count($activities);
                 foreach ($activities as $activity) {
@@ -271,29 +270,33 @@ class ParentController extends Controller
                 }
             }
         }
-        
-        // Sort activities by popularity
-        arsort($activityCounts);
-        $topActivities = array_slice($activityCounts, 0, 5); // Take top 5
 
-        // 4. Attendance Count
-        $attendanceCount = $attendanceQuery->count();
-            
-        // Latest Teacher Note (from most recent report)
+        // Get top 5 activities
+        arsort($activityCounts);
+        $topActivities = array_slice($activityCounts, 0, 5, true);
+
+        // Get recent reports
+        $viewAll = $request->get('view_all', false);
+        $recentReportsQuery = $reportsQuery->with(['child', 'caregiver'])->latest('report_date');
+        $recentReports = $viewAll ? $recentReportsQuery->get() : $recentReportsQuery->take(10)->get();
+
+        // Get latest teacher note
         $latestReport = $recentReports->first();
         $latestTeacherNote = $latestReport ? $latestReport->notes : 'No recent notes available.';
 
         return view('parent.reports', compact(
-            'unreadCount', 
-            'children', 
-            'recentReports',
+            'unreadCount',
+            'children',
             'totalReports',
-            'avgNapDuration',
+            'completedReports',
+            'daysPresent',
             'totalActivities',
-            'attendanceCount',
+            'avgNapDuration',
             'topActivities',
-            'latestTeacherNote',
-            'period'
+            'recentReports',
+            'viewAll',
+            'period',
+            'latestTeacherNote'
         ));
     }
 
@@ -306,35 +309,28 @@ class ParentController extends Controller
             ->where('status', '!=', 'pending')
             ->get();
 
-        // Determine which children's data to show
-        if ($request->has('child_id') && $request->child_id != 'all') {
-            $childIds = $children->where('id', $request->child_id)->pluck('id');
-            // If invalid child_id (not belonging to parent), fall back to all
-            if ($childIds->isEmpty()) {
-                $childIds = $children->pluck('id');
-            }
-        } else {
-            $childIds = $children->pluck('id');
+        // Get child IDs
+        $childIds = $children->pluck('id');
+
+        // Get filter parameters
+        $childId = $request->input('child_id');
+        $month = $request->input('month', now()->month);
+        $year = $request->input('year', now()->year);
+
+        // Base query for attendance records
+        $attendanceQuery = \App\Models\Attendance::whereIn('child_id', $childIds);
+
+        // Apply child filter
+        if ($childId && in_array($childId, $childIds->toArray())) {
+            $attendanceQuery->where('child_id', $childId);
         }
-        
-        // Get current month/year or from request
-        $month = $request->get('month', now()->month);
-        $year = $request->get('year', now()->year);
-        
-        // Fetch attendance records for current month
-        $attendanceRecords = \App\Models\Attendance::whereIn('child_id', $childIds)
-            ->whereMonth('date', $month)
-            ->whereYear('date', $year)
-            ->get();
-        
-        // Calculate stats
-        $totalDays = $attendanceRecords->count();
-        $daysPresent = $attendanceRecords->where('status', 'present')->count();
-        $daysAbsent = $attendanceRecords->where('status', 'absent')->count();
-        $timesLate = $attendanceRecords->where('status', 'late')->count();
-        $attendanceRate = $totalDays > 0 ? round(($daysPresent / $totalDays) * 100) : 0;
-        
-        // Build calendar data (group by date)
+
+        // Apply month and year filter for calendar
+        $attendanceQuery->whereMonth('date', $month)->whereYear('date', $year);
+
+        $attendanceRecords = $attendanceQuery->get();
+
+        // Prepare calendar data
         $calendarData = [];
         foreach ($attendanceRecords as $record) {
             $day = \Carbon\Carbon::parse($record->date)->day;
@@ -343,6 +339,15 @@ class ParentController extends Controller
             }
             $calendarData[$day][] = $record;
         }
+        
+        // Calculate attendance statistics for the selected period (month/year)
+        $totalDaysInMonth = \Carbon\Carbon::create($year, $month, 1)->daysInMonth;
+        $daysPresent = $attendanceRecords->where('status', 'present')->count();
+        $daysAbsent = $attendanceRecords->where('status', 'absent')->count();
+        $timesLate = $attendanceRecords->where('is_late', true)->count();
+        $totalDays = $daysPresent + $daysAbsent; // Only count days where attendance was recorded
+
+        $attendanceRate = $totalDays > 0 ? round(($daysPresent / $totalDays) * 100, 2) : 0;
         
         // Fetch recent attendance history (last 20 records)
         $recentAttendance = \App\Models\Attendance::whereIn('child_id', $childIds)
@@ -789,6 +794,32 @@ class ParentController extends Controller
             'success' => true,
             'message' => $message,
         ]);
+    }
+
+    public function downloadReport($id)
+    {
+        // Fetch the report with relationships
+        $report = \App\Models\DailyReport::with(['child', 'caregiver'])->findOrFail($id);
+        
+        // Verify the report belongs to the authenticated parent's child
+        $child = \App\Models\Child::where('parent_id', auth()->id())->findOrFail($report->child_id);
+        
+        // Check if report is completed
+        if ($report->status !== 'completed') {
+            return redirect()->route('parent.reports')->with('error', 'Only completed reports can be downloaded.');
+        }
+        
+        // Prepare data for PDF
+        $caregiver = $report->caregiver;
+        
+        // Load PDF view
+        $pdf = Pdf::loadView('parent.pdf.daily-report', compact('report', 'child', 'caregiver'));
+        
+        // Generate filename
+        $filename = 'daily-report-' . $child->first_name . '-' . \Carbon\Carbon::parse($report->report_date)->format('Y-m-d') . '.pdf';
+        
+        // Download PDF
+        return $pdf->download($filename);
     }
 
     public function getConversation(Request $request, $caregiverId)

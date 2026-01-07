@@ -140,8 +140,8 @@
                     <div class="filter-section">
                         <div class="filter-group">
                             <label>Select Child:</label>
-                            <select class="filter-select" id="childFilter" onchange="updateFilters('child_id', this.value)">
-                                <option value="all" {{ request('child_id') == 'all' ? 'selected' : '' }}>All Children</option>
+                            <select class="filter-select" id="childFilter" onchange="filterReports()">
+                                <option value="">All Children</option>
                                 @foreach($children as $child)
                                     <option value="{{ $child->id }}" {{ request('child_id') == $child->id ? 'selected' : '' }}>
                                         {{ $child->first_name }} {{ $child->last_name }}
@@ -152,11 +152,10 @@
 
                         <div class="filter-group">
                             <label>Time Period:</label>
-                            <select class="filter-select" id="timePeriod" onchange="updateFilters('period', this.value)">
-                                <option value="week" {{ $period == 'week' ? 'selected' : '' }}>This Week</option>
-                                <option value="month" {{ $period == 'month' ? 'selected' : '' }}>This Month</option>
-                                <option value="year" {{ $period == 'year' ? 'selected' : '' }}>This Year</option>
-                                <option value="all" {{ $period == 'all' ? 'selected' : '' }}>All Time</option>
+                            <select class="filter-select" id="periodFilter" onchange="filterReports()">
+                                <option value="this_week" {{ request('period') == 'this_week' ? 'selected' : '' }}>This Week</option>
+                                <option value="this_month" {{ request('period', 'this_month') == 'this_month' ? 'selected' : '' }}>This Month</option>
+                                <option value="last_month" {{ request('period') == 'last_month' ? 'selected' : '' }}>Last Month</option>
                             </select>
                         </div>
                     </div>
@@ -168,16 +167,14 @@
                                 <i class="fas fa-calendar-check"></i>
                             </div>
                             <div class="stat-details">
-                                <h3>{{ $attendanceCount }} Days</h3>
+                                <h3>{{ $daysPresent }} Days</h3>
                                 <p>Present 
-                                    @if($period == 'week')
+                                    @if($period == 'this_week')
                                         This Week
-                                    @elseif($period == 'month')
+                                    @elseif($period == 'this_month')
                                         This Month
-                                    @elseif($period == 'year')
-                                        This Year
-                                    @else
-                                        (All Time)
+                                    @elseif($period == 'last_month')
+                                        Last Month
                                     @endif
                                 </p>
                             </div>
@@ -280,12 +277,45 @@
                                                 <span>{{ $report->child->first_name }} {{ $report->child->last_name }}</span>
                                             </div>
                                         </td>
-                                        <td><span class="report-type progress">Daily Report</span></td>
-                                        <td><span class="status-badge completed">Completed</span></td>
                                         <td>
-                                            <button class="action-icon-btn view" title="View" onclick="viewReport({{ $report->id }}, '{{ $report->child->first_name }} {{ $report->child->last_name }}', '{{ $report->report_date }}', '{{ $report->mood }}', {{ json_encode($report->meals) }}, '{{ $report->nap_duration }}', '{{ $report->nap_quality }}', {{ json_encode($report->activities) }}, '{{ addslashes($report->notes ?? '') }}')">
+                                            <span class="report-type progress">Daily Report</span>
+                                        </td>
+                                        <td>
+                                            @if($report->status == 'completed')
+                                                <span class="status-badge completed">Completed</span>
+                                            @elseif($report->status == 'draft')
+                                                <span class="status-badge pending">Draft</span>
+                                            @else
+                                                <span class="status-badge" style="background: #e2e8f0; color: #475569;">{{ ucfirst($report->status) }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <button class="action-icon-btn view" title="View" 
+                                                onclick="viewReport(
+                                                    {{ $report->id }}, 
+                                                    '{{ addslashes($report->child->first_name . ' ' . $report->child->last_name) }}', 
+                                                    '{{ $report->report_date }}', 
+                                                    '{{ $report->mood }}', 
+                                                    {{ json_encode($report->meals) }}, 
+                                                    '{{ $report->nap_duration }}', 
+                                                    '{{ $report->nap_quality }}', 
+                                                    {{ json_encode($report->activities) }}, 
+                                                    '{{ addslashes($report->notes ?? '') }}',
+                                                    {{ json_encode($report->medications_included) }},
+                                                    '{{ addslashes($report->caregiver ? $report->caregiver->name : 'Unknown') }}',
+                                                    '{{ addslashes($report->child->class) }}'
+                                                )">
                                                 <i class="fas fa-eye"></i>
                                             </button>
+                                            @if($report->status === 'completed')
+                                                <a href="{{ route('parent.reports.download', $report->id) }}" class="action-icon-btn download" title="Download PDF">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                            @else
+                                                <button class="action-icon-btn download disabled" title="Draft reports cannot be downloaded" disabled>
+                                                    <i class="fas fa-download"></i>
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty
@@ -304,85 +334,174 @@
     </div>
 
     <!-- Report Detail Modal -->
-    <div id="reportModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; padding: 30px; position: relative;">
-            <button onclick="closeReportModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: #64748b;">&times;</button>
-            
-            <h2 style="margin-bottom: 20px; color: #1e293b;"><i class="fas fa-file-alt"></i> Daily Report Details</h2>
-            
-            <div style="margin-bottom: 15px;">
-                <strong style="color: #64748b;">Child:</strong>
-                <p id="modalChildName" style="margin: 5px 0; color: #1e293b;"></p>
+    <!-- Report Detail Modal (Smart Design) -->
+    <div id="reportModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center;">
+        <div class="modal-content-smart">
+            <div class="modal-header-smart">
+                <h2 id="modalTitle">Daily Report</h2>
+                <button class="modal-close-btn" onclick="closeReportModal()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             
-            <div style="margin-bottom: 15px;">
-                <strong style="color: #64748b;">Date:</strong>
-                <p id="modalDate" style="margin: 5px 0; color: #1e293b;"></p>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <strong style="color: #64748b;">Mood:</strong>
-                <p id="modalMood" style="margin: 5px 0; color: #1e293b;"></p>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <strong style="color: #64748b;">Meals:</strong>
-                <div id="modalMeals" style="margin: 5px 0; color: #1e293b;"></div>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <strong style="color: #64748b;">Nap:</strong>
-                <p id="modalNap" style="margin: 5px 0; color: #1e293b;"></p>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <strong style="color: #64748b;">Activities:</strong>
-                <div id="modalActivities" style="margin: 5px 0; color: #1e293b;"></div>
-            </div>
-            
-            <div style="margin-bottom: 15px;">
-                <strong style="color: #64748b;">Notes:</strong>
-                <p id="modalNotes" style="margin: 5px 0; color: #1e293b; white-space: pre-wrap;"></p>
+            <div class="modal-body">
+                <!-- Summary Section -->
+                <div class="modal-summary">
+                    <div class="summary-row">
+                        <span class="summary-label">Child Name:</span>
+                        <span id="summaryChildName" class="summary-value"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Class:</span>
+                        <span id="summaryClass" class="summary-value"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Caregiver:</span>
+                        <span id="summaryCaregiver" class="summary-value"></span>
+                    </div>
+                </div>
+
+                <div class="smart-grid">
+                    <!-- Mood Card -->
+                    <div class="info-card">
+                        <span class="card-label">Mood</span>
+                        <div id="modalMood" class="card-content"></div>
+                    </div>
+
+                    <!-- Meals Card -->
+                    <div class="info-card">
+                        <span class="card-label">Meals</span>
+                        <ul id="modalMeals" class="meal-list"></ul>
+                    </div>
+
+                    <!-- Nap Card -->
+                    <div class="info-card">
+                        <span class="card-label">Nap Time</span>
+                        <div id="modalNap" class="card-content"></div>
+                    </div>
+
+                    <!-- Activities Card -->
+                    <div class="info-card">
+                        <span class="card-label">Activities</span>
+                        <div id="modalActivities" class="activity-tags"></div>
+                    </div>
+
+                    <!-- Medications Card (Full Width) -->
+                    <div class="info-card full-width">
+                        <span class="card-label">Medications Administered</span>
+                        <div id="modalMedications" class="medication-list"></div>
+                    </div>
+
+                    <!-- Notes Card (Full Width) -->
+                    <div class="info-card full-width">
+                        <span class="card-label">Notes & Observations</span>
+                        <p id="modalNotes" class="card-content notes-text"></p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         // View report details in modal
-        function viewReport(id, childName, date, mood, meals, napDuration, napQuality, activities, notes) {
-            document.getElementById('modalChildName').textContent = childName;
-            document.getElementById('modalDate').textContent = new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        function viewReport(id, childName, date, mood, meals, napDuration, napQuality, activities, notes, medications, caregiverName, childClass) {
+            // Set Header Title
+            const formattedDate = new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            document.getElementById('modalTitle').textContent = `Daily Report - ${formattedDate}`;
+
+            // Populate Summary
+            document.getElementById('summaryChildName').textContent = childName;
+            document.getElementById('summaryClass').textContent = childClass || 'N/A';
+            document.getElementById('summaryCaregiver').textContent = caregiverName || 'Unknown';
+
+            // Mood
             document.getElementById('modalMood').textContent = mood || 'Not recorded';
             
-            // Display meals
+            // Display meals (List Format)
             let mealsHtml = '';
             if (meals && typeof meals === 'object') {
                 for (let [meal, status] of Object.entries(meals)) {
-                    mealsHtml += `<div>• ${meal.charAt(0).toUpperCase() + meal.slice(1)}: ${status}</div>`;
+                    mealsHtml += `<li><strong>${meal.charAt(0).toUpperCase() + meal.slice(1)}:</strong> ${status}</li>`;
                 }
             }
-            document.getElementById('modalMeals').innerHTML = mealsHtml || 'Not recorded';
+            document.getElementById('modalMeals').innerHTML = mealsHtml || '<li style="color: #94a3b8">No meals recorded</li>';
             
             // Display nap
             let napText = '';
             if (napDuration) {
                 napText = `${napDuration} minutes`;
-                if (napQuality) napText += ` (${napQuality})`;
+                if (napQuality) napText += ` - ${napQuality}`;
             } else {
                 napText = 'Not recorded';
             }
             document.getElementById('modalNap').textContent = napText;
             
-            // Display activities
+            // Display activities (Tags)
             let activitiesHtml = '';
-            if (activities && Array.isArray(activities)) {
+            if (activities && Array.isArray(activities) && activities.length > 0) {
                 activities.forEach(activity => {
-                    activitiesHtml += `<div>• ${activity}</div>`;
+                    // Check if activity is an object (new structure) or string (old structure)
+                    let activityName = typeof activity === 'object' ? (activity.name || 'Unknown Activity') : activity;
+                    activitiesHtml += `<span class="activity-tag">${activityName}</span>`;
                 });
+            } else {
+                activitiesHtml = '<span style="color: #94a3b8; font-size: 13px;">No activities recorded</span>';
             }
-            document.getElementById('modalActivities').innerHTML = activitiesHtml || 'No activities recorded';
+            document.getElementById('modalActivities').innerHTML = activitiesHtml;
             
-            document.getElementById('modalNotes').textContent = notes || 'No notes';
+            // Display medications (Detailed List)
+            let medicationsHtml = '';
+            if (medications && Array.isArray(medications) && medications.length > 0) {
+                medications.forEach(med => {
+                    let medObj = med;
+                    // If it's a string that looks like JSON, try to parse it
+                    if (typeof med === 'string' && (med.startsWith('{') || med.startsWith('['))) {
+                        try {
+                            medObj = JSON.parse(med);
+                        } catch (e) {
+                            medObj = med; // Keep as string if parse fails
+                        }
+                    }
+
+                    // Extract name and details
+                    let name = 'Unknown Medication';
+                    let time = '';
+                    let doseInfo = '';
+                    
+                    if (typeof medObj === 'object' && medObj !== null) {
+                        name = medObj.medication_name || medObj.name || 'Unknown Medication';
+                        time = medObj.time ? `Given at ${medObj.time}` : 'Time not recorded';
+                        
+                        // Build dose information
+                        let doseParts = [];
+                        if (medObj.dose_index) {
+                            doseParts.push(`Dose ${medObj.dose_index}`);
+                        }
+                        if (medObj.amount) {
+                            doseParts.push(medObj.amount);
+                        }
+                        if (doseParts.length > 0) {
+                            doseInfo = ` (${doseParts.join(' - ')})`;
+                        }
+                    } else {
+                        name = String(medObj);
+                    }
+
+                    medicationsHtml += `
+                        <div class="medication-item">
+                            <span class="med-name">${name}${doseInfo}</span>
+                            <span class="med-time">
+                                <i class="fas fa-check-circle"></i> ${time}
+                            </span>
+                        </div>
+                    `;
+                });
+            } else {
+                 medicationsHtml = '<p style="color: #94a3b8; font-size: 14px;">No medications administered</p>';
+            }
+            document.getElementById('modalMedications').innerHTML = medicationsHtml;
+            
+            document.getElementById('modalNotes').textContent = notes || 'No additional notes.';
             
             // Show modal
             document.getElementById('reportModal').style.display = 'flex';
@@ -407,6 +526,18 @@
                 // Here you would load the specific child's data
             });
         });
+
+        // Filter reports
+        function filterReports() {
+            const childId = document.getElementById('childFilter').value;
+            const period = document.getElementById('periodFilter').value;
+            
+            let url = '{{ route("parent.reports") }}?';
+            if (childId) url += 'child_id=' + childId + '&';
+            if (period) url += 'period=' + period;
+            
+            window.location.href = url;
+        }
 
         // Mobile menu toggle
         const mobileToggle = document.querySelector('.mobile-toggle');
