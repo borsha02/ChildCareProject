@@ -251,11 +251,39 @@
         const csrfToken = '{{ csrf_token() }}';
 
         // Load conversation on page load if there are conversations
+        // Load conversation on page load
         document.addEventListener('DOMContentLoaded', function() {
-            const firstConversation = document.querySelector('.conversation-item');
-            if (firstConversation) {
-                currentCaregiverId = firstConversation.dataset.caregiverId;
-                loadConversation(currentCaregiverId);
+            // Check for caregiver_id parameter in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetCaregiverId = urlParams.get('caregiver_id');
+
+            let conversationToLoad = null;
+
+            if (targetCaregiverId) {
+                // Find conversation item with this caregiver ID
+                const targetItem = document.querySelector(`.conversation-item[data-caregiver-id="${targetCaregiverId}"]`);
+                if (targetItem) {
+                    conversationToLoad = targetItem;
+                    // Scroll to this item
+                    targetItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+                
+                // Clean up URL
+                if (window.history.replaceState) {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('caregiver_id');
+                    window.history.replaceState({}, document.title, url.toString());
+                }
+            }
+
+            // Fallback to first conversation if no specific target or target not found
+            if (!conversationToLoad) {
+                conversationToLoad = document.querySelector('.conversation-item');
+            }
+
+            if (conversationToLoad) {
+                // Trigger click to activate and load
+                conversationToLoad.click();
             }
         });
 

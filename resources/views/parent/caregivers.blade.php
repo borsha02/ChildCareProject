@@ -140,7 +140,7 @@
                                 <p class="mt-2 text-sm">{{ $caregiver->email }}</p> 
                             </div>
                             <div class="caregiver-actions">
-                                <a href="#" class="btn-message" style="opacity: 0.5; cursor: not-allowed;" onclick="return false;">
+                                <a href="{{ route('parent.messages', ['caregiver_id' => $caregiver->id]) }}" class="btn-message">
                                     <i class="fas fa-comment-alt"></i> Send Message
                                 </a>
                             </div>
