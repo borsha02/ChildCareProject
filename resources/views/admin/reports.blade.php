@@ -306,7 +306,7 @@
                         @endif
 
                     @empty
-                        <div class="no-data" style="width: 100%; text-align: center; padding: 40px; color: #666;">
+                        <div class="no-data" style="width: 100%; grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
                             <h3>No reports found for this date.</h3>
                         </div>
                     @endforelse
@@ -315,26 +315,76 @@
         </main>
     </div>
 
-    <!-- View Details Modal -->
-    <div id="viewModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modalTitle">Report Details</h3>
-                <span class="close" onclick="closeModal()">&times;</span>
+    <!-- Report Detail Modal (Smart Design) -->
+    <div id="reportModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center;">
+        <div class="modal-content-smart">
+            <div class="modal-header-smart">
+                <h2 id="modalTitle">Daily Report</h2>
+                <button class="modal-close-btn" onclick="closeReportModal()">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <div class="modal-body" id="modalBody">
-                <!-- Content populated by JS -->
-                <p>Loading...</p>
-            </div>
-            <div class="modal-footer">
-                <button onclick="closeModal()" style="padding: 8px 16px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer;">Close</button>
+            
+            <div class="modal-body">
+                <!-- Summary Section -->
+                <div class="modal-summary">
+                    <div class="summary-row">
+                        <span class="summary-label">Child Name:</span>
+                        <span id="summaryChildName" class="summary-value"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Class:</span>
+                        <span id="summaryClass" class="summary-value"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Caregiver:</span>
+                        <span id="summaryCaregiver" class="summary-value"></span>
+                    </div>
+                </div>
+
+                <div class="smart-grid">
+                    <!-- Mood Card -->
+                    <div class="info-card">
+                        <span class="card-label">Mood</span>
+                        <div id="modalMood" class="card-content"></div>
+                    </div>
+
+                    <!-- Meals Card -->
+                    <div class="info-card">
+                        <span class="card-label">Meals</span>
+                        <ul id="modalMeals" class="meal-list"></ul>
+                    </div>
+
+                    <!-- Nap Card -->
+                    <div class="info-card">
+                        <span class="card-label">Nap Time</span>
+                        <div id="modalNap" class="card-content"></div>
+                    </div>
+
+                    <!-- Activities Card -->
+                    <div class="info-card">
+                        <span class="card-label">Activities</span>
+                        <div id="modalActivities" class="activity-tags"></div>
+                    </div>
+
+                    <!-- Medications Card (Full Width) -->
+                    <div class="info-card full-width">
+                        <span class="card-label">Medications Administered</span>
+                        <div id="modalMedications" class="medication-list"></div>
+                    </div>
+
+                    <!-- Notes Card (Full Width) -->
+                    <div class="info-card full-width">
+                        <span class="card-label">Notes & Observations</span>
+                        <p id="modalNotes" class="card-content notes-text"></p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Reports Data (passed from Controller for JS access without multiple AJAX calls if preferred, or use AJAX)
-        // Since we have the data, we can store it in a JS variable.
+        // Reports Data
         const reportsData = @json($dailyReports);
 
         function filterReports() {
@@ -360,68 +410,140 @@
         }
 
         function openModal(reportId, type) {
-            const modal = document.getElementById('viewModal');
-            const modalBody = document.getElementById('modalBody');
-            const modalTitle = document.getElementById('modalTitle');
-            
             const report = reportsData.find(r => r.id == reportId);
-            
             if (!report) return;
 
-            // Build dynamic content
-            let content = `
-                <div class="detail-row"><span class="detail-label">Child:</span> <span>${report.child.first_name} ${report.child.last_name}</span></div>
-                <div class="detail-row"><span class="detail-label">Reporter:</span> <span>${report.caregiver.name}</span></div>
-                <div class="detail-row"><span class="detail-label">Date:</span> <span>${report.report_date}</span></div>
-                <div class="detail-row"><span class="detail-label">Mood:</span> <span>${report.mood || 'N/A'}</span></div>
-                <hr style="margin: 15px 0; border: 0; border-top: 1px solid #eee;">
-            `;
+            // Set Header Title
+            const formattedDate = new Date(report.report_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            document.getElementById('modalTitle').textContent = `Daily Report - ${formattedDate}`;
 
-            if (type === 'meal' || type === 'all' || report.meals) {
-                 content += `<h4>Meals</h4>`;
-                 if (report.meals && report.meals.length) {
-                     report.meals.forEach(m => content += `<div>- ${m}</div>`);
-                 } else {
-                     content += `<p>No meals recorded.</p>`;
-                 }
-                 content += `<br>`;
+            // Populate Summary
+            document.getElementById('summaryChildName').textContent = `${report.child.first_name} ${report.child.last_name}`;
+            document.getElementById('summaryClass').textContent = report.child.class || 'N/A';
+            document.getElementById('summaryCaregiver').textContent = report.caregiver ? report.caregiver.name : 'Unknown';
+
+            // Mood
+            document.getElementById('modalMood').textContent = report.mood ? ucFirst(report.mood) : 'Not recorded';
+            
+            // Display meals (List Format)
+            let mealsHtml = '';
+            // Safe parse if string, though usually array in backend casts
+            let meals = report.meals;
+            if (typeof meals === 'string') {
+                 try { meals = JSON.parse(meals); } catch(e) {}
             }
 
-            if (type === 'nap' || type === 'all' || report.nap_duration) {
-                 content += `<h4>Nap Time</h4>`;
-                 content += `<div class="detail-row"><span class="detail-label">Duration:</span> <span>${report.nap_duration || 0} minutes</span></div>`;
-                 content += `<div class="detail-row"><span class="detail-label">Quality:</span> <span>${report.nap_quality || 'N/A'}</span></div>`;
-                 content += `<br>`;
+            if (meals && typeof meals === 'object') {
+                // Determine if array or object
+                if (Array.isArray(meals)) {
+                    meals.forEach(m => mealsHtml += `<li><strong>Item:</strong> ${m}</li>`);
+                } else {
+                     for (let [meal, status] of Object.entries(meals)) {
+                        mealsHtml += `<li><strong>${ucFirst(meal)}:</strong> ${status}</li>`;
+                    }
+                }
+            }
+            document.getElementById('modalMeals').innerHTML = mealsHtml || '<li style="color: #94a3b8">No meals recorded</li>';
+            
+            // Display nap
+            let napText = '';
+            if (report.nap_duration) {
+                napText = `${report.nap_duration} minutes`;
+                if (report.nap_quality) napText += ` - ${ucFirst(report.nap_quality)}`;
+            } else {
+                napText = 'Not recorded';
+            }
+            document.getElementById('modalNap').textContent = napText;
+            
+            // Display activities (Tags)
+            let activitiesHtml = '';
+            let activities = report.activities;
+            if (typeof activities === 'string') {
+                 try { activities = JSON.parse(activities); } catch(e) {}
             }
 
-             if (type === 'activity' || type === 'all' || report.activities) {
-                 content += `<h4>Activities</h4>`;
-                 if (report.activities && report.activities.length) {
-                     report.activities.forEach(a => content += `<div>- ${a}</div>`);
-                 } else {
-                     content += `<p>No activities recorded.</p>`;
-                 }
-                 content += `<br>`;
+            if (activities && Array.isArray(activities) && activities.length > 0) {
+                activities.forEach(activity => {
+                    let activityName = typeof activity === 'object' ? (activity.name || 'Unknown Activity') : activity;
+                    activitiesHtml += `<span class="activity-tag">${activityName}</span>`;
+                });
+            } else {
+                activitiesHtml = '<span style="color: #94a3b8; font-size: 13px;">No activities recorded</span>';
+            }
+            document.getElementById('modalActivities').innerHTML = activitiesHtml;
+            
+            // Display medications (Detailed List)
+            let medicationsHtml = '';
+            let medications = report.medications_included; // Using the key from the report object
+            // If the controller doesn't send medications_included but sends medications
+            if (!medications && report.medications) medications = report.medications;
+
+             if (typeof medications === 'string') {
+                 try { medications = JSON.parse(medications); } catch(e) {}
             }
 
-            if (report.notes) {
-                content += `<h4>Notes</h4><p>${report.notes}</p>`;
-            }
+            if (medications && Array.isArray(medications) && medications.length > 0) {
+                medications.forEach(med => {
+                    let medObj = med;
+                    // Extract name and details
+                    let name = 'Unknown Medication';
+                    let time = '';
+                    let doseInfo = '';
+                    
+                    if (typeof medObj === 'object' && medObj !== null) {
+                        name = medObj.medication_name || medObj.name || 'Unknown Medication';
+                        time = medObj.time ? `Given at ${medObj.time}` : 'Time not recorded';
+                        
+                        // Build dose information
+                        let doseParts = [];
+                        if (medObj.dose_index) {
+                            doseParts.push(`Dose ${medObj.dose_index}`);
+                        }
+                        if (medObj.amount) {
+                            doseParts.push(medObj.amount);
+                        }
+                        if (doseParts.length > 0) {
+                            doseInfo = ` (${doseParts.join(' - ')})`;
+                        }
+                    } else {
+                        name = String(medObj);
+                    }
 
-            modalTitle.innerText = `Details for ${report.child.first_name}`;
-            modalBody.innerHTML = content;
-            modal.style.display = "block";
+                    medicationsHtml += `
+                        <div class="medication-item">
+                            <span class="med-name">${name}${doseInfo}</span>
+                            <span class="med-time">
+                                <i class="fas fa-check-circle"></i> ${time}
+                            </span>
+                        </div>
+                    `;
+                });
+            } else {
+                 medicationsHtml = '<p style="color: #94a3b8; font-size: 14px;">No medications administered</p>';
+            }
+            document.getElementById('modalMedications').innerHTML = medicationsHtml;
+            
+            document.getElementById('modalNotes').textContent = report.notes || 'No additional notes.';
+            
+            // Show modal
+            document.getElementById('reportModal').style.display = 'flex';
+        }
+        
+        function closeReportModal() {
+            document.getElementById('reportModal').style.display = 'none';
         }
 
-        function closeModal() {
-            document.getElementById('viewModal').style.display = "none";
+        // Helper for capitalization
+        function ucFirst(string) {
+            if (!string) return '';
+            return string.charAt(0).toUpperCase() + string.slice(1);
         }
 
         // Close on outside click
         window.onclick = function(event) {
-            const modal = document.getElementById('viewModal');
+            const modal = document.getElementById('reportModal');
             if (event.target == modal) {
-                modal.style.display = "none";
+                closeReportModal();
             }
         }
 

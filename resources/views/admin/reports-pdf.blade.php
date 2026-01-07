@@ -9,82 +9,178 @@
 <body onload="window.print()">
     
     <div class="no-print" style="position: fixed; top: 20px; right: 20px; background: #fff; padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border-radius: 8px; z-index: 1000;">
-        <button onclick="window.print()" style="padding: 8px 16px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Print / Save as PDF</button>
+        <button onclick="window.print()" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+             Save / Print PDF
+        </button>
     </div>
 
     @forelse($dailyReports as $report)
     <div class="report-page">
+        <!-- Header -->
         <div class="header">
             <h1>Daily Activity Report</h1>
             <p>{{ \Carbon\Carbon::parse($date)->format('l, F j, Y') }}</p>
         </div>
 
+        <!-- Child Summary -->
         <div class="child-info">
-            <ul>
-                <li><span class="label">Child Name:</span> <span class="value">{{ $report->child->first_name }} {{ $report->child->last_name }}</span></li>
-                <li><span class="label">Class:</span> <span class="value">{{ $report->child->class }}</span></li>
-                <li><span class="label">Caregiver:</span> <span class="value">{{ $report->caregiver->name }}</span></li>
-            </ul>
+            <div class="info-item">
+                <span class="label">Child Name</span>
+                <span class="value">{{ $report->child->first_name }} {{ $report->child->last_name }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Class</span>
+                <span class="value">{{ $report->child->class }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Caregiver</span>
+                <span class="value">{{ $report->caregiver->name }}</span>
+            </div>
         </div>
 
-        @if($report->meals && count($report->meals) > 0)
+        <div class="grid-2-col">
+            <!-- Mood and Nap side by side -->
+            <div>
+                @if($report->mood)
+                <div class="section">
+                    <div class="section-title">Mood</div>
+                    <div style="font-size: 15px; font-weight: 500; color: #334155; padding: 5px 0;">
+                        {{ ucfirst($report->mood) }}
+                    </div>
+                </div>
+                @endif
+            </div>
+
+            <div>
+                @if($report->nap_duration)
+                <div class="section">
+                    <div class="section-title">Nap Time</div>
+                    <div style="font-size: 14px; color: #334155;">
+                        <span style="font-weight: 600;">{{ $report->nap_duration }} minutes</span> 
+                        @if($report->nap_quality)
+                            - {{ ucfirst($report->nap_quality) }}
+                        @endif
+                    </div>
+                </div>
+                @endif
+            </div>
+        </div>
+
+        <!-- Meals Section -->
+        @php
+            $meals = $report->meals;
+            // Handle if it's a JSON string
+            if(is_string($meals)) {
+                $meals = json_decode($meals, true);
+            }
+        @endphp
+
+        @if($meals && (is_array($meals) || is_object($meals)))
         <div class="section">
             <div class="section-title">Meals</div>
-            <ul>
-                @foreach($report->meals as $meal)
-                <li><span class="value">• {{ ucfirst($meal) }}</span></li>
-                @endforeach
+            <ul class="meal-list">
+                @if(is_array($meals) && array_values($meals) === $meals) 
+                    {{-- Array list (old format or simple list) --}}
+                    @foreach($meals as $meal)
+                        <li><span>• {{ ucfirst($meal) }}</span></li>
+                    @endforeach
+                @else
+                    {{-- Object/Assoc Array (smart format) --}}
+                    @foreach($meals as $type => $status)
+                        <li>
+                            <span style="font-weight: 600; color: #475569;">{{ ucfirst($type) }}:</span>
+                            <span style="color: #0f172a;">{{ $status }}</span>
+                        </li>
+                    @endforeach
+                @endif
             </ul>
         </div>
         @endif
 
-        @if($report->nap_duration)
-        <div class="section">
-            <div class="section-title">Nap Time</div>
-            <ul>
-                <li><span class="label">Duration:</span> <span class="value">{{ $report->nap_duration }} minutes</span></li>
-                <li><span class="label">Quality:</span> <span class="value">{{ ucfirst($report->nap_quality) }}</span></li>
-            </ul>
-        </div>
-        @endif
+        <!-- Activities Section -->
+        @php
+            $activities = $report->activities;
+            if(is_string($activities)) {
+                $activities = json_decode($activities, true);
+            }
+        @endphp
 
-        @if($report->activities && count($report->activities) > 0)
+        @if($activities && count($activities) > 0)
         <div class="section">
             <div class="section-title">Activities</div>
-            <ul>
-                @foreach($report->activities as $activity)
-                <li><span class="value">• {{ ucfirst($activity) }}</span></li>
+            <div class="activity-tags">
+                @foreach($activities as $activity)
+                    @php
+                        $activityName = is_array($activity) ? ($activity['name'] ?? 'Unknown') : $activity;
+                    @endphp
+                    <span class="activity-tag">{{ $activityName }}</span>
                 @endforeach
-            </ul>
+            </div>
         </div>
         @endif
         
-        @if($report->mood)
+        <!-- Medications Section -->
+        @php
+            $medications = $report->medications_included;
+             if (!$medications && isset($report->medications)) {
+                $medications = $report->medications;
+            }
+            if(is_string($medications)) {
+                $medications = json_decode($medications, true);
+            }
+        @endphp
+
+        @if($medications && is_array($medications) && count($medications) > 0)
         <div class="section">
-            <div class="section-title">Mood</div>
-            <ul>
-                <li><span class="label">Observation:</span> <span class="value">{{ ucfirst($report->mood) }}</span></li>
-            </ul>
+            <div class="section-title">Medications Administered</div>
+            <div class="medication-list">
+                @foreach($medications as $med)
+                     @php
+                        $medName = is_array($med) ? ($med['medication_name'] ?? $med['name'] ?? 'Unknown') : $med;
+                        $medTime = is_array($med) && isset($med['time']) ? $med['time'] : null;
+                        $medAmount = is_array($med) && isset($med['amount']) ? $med['amount'] : null;
+                    @endphp
+                    <div class="medication-item">
+                        <span style="font-weight: 600;">{{ $medName }} {{ $medAmount ? "($medAmount)" : '' }}</span>
+                        @if($medTime)
+                            <span style="font-size: 13px;">Given at: {{ $medTime }}</span>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
         </div>
         @endif
 
+        <!-- Notes Section -->
         @if($report->notes)
         <div class="section">
             <div class="section-title">Caregiver Notes</div>
-            <p style="white-space: pre-wrap;">{{ $report->notes }}</p>
+            <div class="notes-box">{{ $report->notes }}</div>
         </div>
         @endif
 
         <div class="footer">
-            <p>Generated on {{ \Carbon\Carbon::parse($date)->format('Y-m-d H:i') }} | Little Stars ChildCare Center</p>
+            <p>Generated on <span id="printTime"></span> | Little Stars Childcare Center</p>
         </div>
     </div>
     @empty
-    <div style="text-align: center; padding: 50px;">
-        <h2>No reports found for this date.</h2>
-        <button onclick="window.history.back()" style="padding: 10px 20px; cursor: pointer;">Go Back</button>
+    <div style="text-align: center; padding: 100px 20px;">
+        <h2 style="color: #64748b;">No daily reports found for {{ $date }}.</h2>
+        <button onclick="window.history.back()" style="padding: 10px 20px; cursor: pointer; margin-top: 20px; background: #e2e8f0; border: none; border-radius: 6px;">Go Back</button>
     </div>
     @endforelse
 
+    <script>
+        // Set the current print time
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        
+        const timestamp = `${year}-${month}-${day} ${hours}:${minutes}`;
+        document.querySelectorAll('#printTime').forEach(el => el.textContent = timestamp);
+    </script>
 </body>
 </html>
