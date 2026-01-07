@@ -210,7 +210,7 @@ class ParentController extends Controller
 
         // Get filter parameters
         $childId = $request->input('child_id');
-        $period = $request->input('period', 'this_month');
+        $date = $request->input('date', now('Asia/Dhaka')->toDateString());
 
         // Base query
         $reportsQuery = \App\Models\DailyReport::whereIn('child_id', $childIds);
@@ -220,24 +220,8 @@ class ParentController extends Controller
             $reportsQuery->where('child_id', $childId);
         }
 
-        // Apply period filter
-        switch ($period) {
-            case 'this_week':
-                $startDate = now()->startOfWeek();
-                $endDate = now()->endOfWeek();
-                break;
-            case 'last_month':
-                $startDate = now()->subMonth()->startOfMonth();
-                $endDate = now()->subMonth()->endOfMonth();
-                break;
-            case 'this_month':
-            default:
-                $startDate = now()->startOfMonth();
-                $endDate = now()->endOfMonth();
-                break;
-        }
-
-        $reportsQuery->whereBetween('report_date', [$startDate, $endDate]);
+        // Apply date filter
+        $reportsQuery->whereDate('report_date', $date);
 
         // Calculate statistics
         $statsQuery = clone $reportsQuery;
@@ -295,7 +279,7 @@ class ParentController extends Controller
             'topActivities',
             'recentReports',
             'viewAll',
-            'period',
+            'date',
             'latestTeacherNote'
         ));
     }

@@ -137,10 +137,10 @@
             <div class="content-area">
                 <div class="reports-container">
                     <!-- Filter Section -->
-                    <div class="filter-section">
+                    <form action="{{ route('parent.reports') }}" method="GET" class="filter-section">
                         <div class="filter-group">
                             <label>Select Child:</label>
-                            <select class="filter-select" id="childFilter" onchange="filterReports()">
+                            <select name="child_id" class="filter-select" onchange="this.form.submit()">
                                 <option value="">All Children</option>
                                 @foreach($children as $child)
                                     <option value="{{ $child->id }}" {{ request('child_id') == $child->id ? 'selected' : '' }}>
@@ -151,14 +151,10 @@
                         </div>
 
                         <div class="filter-group">
-                            <label>Time Period:</label>
-                            <select class="filter-select" id="periodFilter" onchange="filterReports()">
-                                <option value="this_week" {{ request('period') == 'this_week' ? 'selected' : '' }}>This Week</option>
-                                <option value="this_month" {{ request('period', 'this_month') == 'this_month' ? 'selected' : '' }}>This Month</option>
-                                <option value="last_month" {{ request('period') == 'last_month' ? 'selected' : '' }}>Last Month</option>
-                            </select>
+                            <label>Date:</label>
+                            <input type="date" name="date" class="filter-select" value="{{ $date }}" onchange="this.form.submit()" autocomplete="off">
                         </div>
-                    </div>
+                    </form>
 
                     <!-- Stats Overview -->
                     <div class="stats-grid">
@@ -168,15 +164,7 @@
                             </div>
                             <div class="stat-details">
                                 <h3>{{ $daysPresent }} Days</h3>
-                                <p>Present 
-                                    @if($period == 'this_week')
-                                        This Week
-                                    @elseif($period == 'this_month')
-                                        This Month
-                                    @elseif($period == 'last_month')
-                                        Last Month
-                                    @endif
-                                </p>
+                                <p>Present on {{ \Carbon\Carbon::parse($date)->format('M d, Y') }}</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -225,7 +213,7 @@
                         <!-- Activity Summary -->
                         <div class="card">
                             <div class="card-header">
-                                <h2><i class="fas fa-clipboard-list"></i> Activity Summary (This Month)</h2>
+                                <h2><i class="fas fa-clipboard-list"></i> Activity Summary ({{ \Carbon\Carbon::parse($date)->format('M d, Y') }})</h2>
                             </div>
                             <div class="activity-summary">
                                 @forelse($topActivities as $activityName => $count)
@@ -240,7 +228,7 @@
                                     </div>
                                 @empty
                                     <div style="text-align: center; color: #94a3b8; padding: 20px;">
-                                        No activities recorded this month.
+                                        No activities recorded for this date.
                                     </div>
                                 @endforelse
                             </div>
@@ -403,6 +391,16 @@
     </div>
 
     <script>
+        // Clear URL parameters on load to ensure Refresh resets to defaults
+        if (window.history.replaceState) {
+             const url = new URL(window.location.href);
+             if (url.search.length > 0) {
+                 url.search = '';
+                 window.history.replaceState({}, document.title, url.toString());
+             }
+        }
+
+
         // View report details in modal
         function viewReport(id, childName, date, mood, meals, napDuration, napQuality, activities, notes, medications, caregiverName, childClass) {
             // Set Header Title
@@ -511,33 +509,7 @@
             document.getElementById('reportModal').style.display = 'none';
         }
 
-        // Filter update function to preserve both child_id and period
-        function updateFilters(paramName, value) {
-            const url = new URL(window.location.href);
-            url.searchParams.set(paramName, value);
-            window.location.href = url.toString();
-        }
 
-        // Child tab switching
-        document.querySelectorAll('.child-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                document.querySelectorAll('.child-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                // Here you would load the specific child's data
-            });
-        });
-
-        // Filter reports
-        function filterReports() {
-            const childId = document.getElementById('childFilter').value;
-            const period = document.getElementById('periodFilter').value;
-            
-            let url = '{{ route("parent.reports") }}?';
-            if (childId) url += 'child_id=' + childId + '&';
-            if (period) url += 'period=' + period;
-            
-            window.location.href = url;
-        }
 
         // Mobile menu toggle
         const mobileToggle = document.querySelector('.mobile-toggle');
