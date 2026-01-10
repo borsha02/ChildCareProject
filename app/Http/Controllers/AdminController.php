@@ -252,13 +252,36 @@ class AdminController extends Controller
             'caregiver_id' => 'required|exists:users,id',
         ]);
         
-        // Check if already assigned
-        if (!$child->caregivers->contains($validated['caregiver_id'])) {
-            $child->caregivers()->attach($validated['caregiver_id']);
-             return redirect()->back()->with('success', 'Caregiver assigned successfully.');
+        $caregiver = User::findOrFail($validated['caregiver_id']);
+
+        // Check if caregiver is already assigned to a different class
+        // We look at all children this caregiver is assigned to
+        // If they have distinct classes that are different from the current child's class, we block it.
+        // NOTE: Usually a caregiver should only have ONE class.
+        // So we just check if they have ANY child with a class != $child->class
+        
+        $assignedClasses = $caregiver->assignedChildren()
+            ->where('class', '!=', $child->class)
+            ->pluck('class')
+            ->unique();
+
+        if ($assignedClasses->isNotEmpty()) {
+            $conflictClass = $assignedClasses->first();
+            return redirect()->back()->with('error', "Caregiver is already assigned to class '{$conflictClass}'. Please remove them from that class before assigning to '{$child->class}'.")->withFragment('enrolled');
         }
 
-        return redirect()->back()->with('warning', 'Caregiver already assigned.');
+        // Check max assignment limit (Max 2 children per caregiver)
+        if ($caregiver->assignedChildren()->count() >= 2) {
+             return redirect()->back()->with('error', "Caregiver limit reached. This caregiver is already assigned to 2 children.")->withFragment('enrolled');
+        }
+
+        // Check if already assigned to this specific child
+        if (!$child->caregivers->contains($validated['caregiver_id'])) {
+            $child->caregivers()->attach($validated['caregiver_id']);
+             return redirect()->back()->with('success', 'Caregiver assigned successfully.')->withFragment('enrolled');
+        }
+
+        return redirect()->back()->with('warning', 'Caregiver already assigned.')->withFragment('enrolled');
     }
 
     public function removeCaregiver(Request $request, $id)
@@ -269,7 +292,7 @@ class AdminController extends Controller
         ]);
         
         $child->caregivers()->detach($validated['caregiver_id']);
-        return redirect()->back()->with('success', 'Caregiver removed successfully.');
+        return redirect()->back()->with('success', 'Caregiver removed successfully.')->withFragment('enrolled');
     }
 
     public function approveChild($id)
@@ -281,14 +304,14 @@ class AdminController extends Controller
             $child->parent->notify(new \App\Notifications\ChildApproved($child));
         }
 
-        return redirect()->back()->with('success', 'Child registration approved successfully.');
+        return redirect()->back()->with('success', 'Child registration approved successfully.')->withFragment('enrolled');
     }
 
     public function rejectChild($id)
     {
         $child = Child::findOrFail($id);
         $child->update(['status' => 'rejected']);
-        return redirect()->back()->with('success', 'Child registration rejected.');
+        return redirect()->back()->with('success', 'Child registration rejected.')->withFragment('requests');
     }
 
     public function createChild(Request $request)
@@ -343,7 +366,7 @@ class AdminController extends Controller
             $child->caregivers()->attach($request->caregiver_id);
         }
 
-        return redirect()->route('admin.children')->with('success', 'Child record created successfully!');
+        return redirect()->route('admin.children')->with('success', 'Child record created successfully!')->withFragment('enrolled');
     }
 
     public function updateChild(Request $request, $id)
@@ -372,7 +395,7 @@ class AdminController extends Controller
             'medical_notes' => $validated['medical_info'] ?? $child->medical_notes,
         ]);
 
-        return redirect()->route('admin.children')->with('success', 'Child record updated successfully!');
+        return redirect()->route('admin.children')->with('success', 'Child record updated successfully!')->withFragment('enrolled');
     }
 
     public function reactivate($id)
@@ -383,7 +406,7 @@ class AdminController extends Controller
         $child->enrollment_date = now(); // Reset enrollment date to today
         $child->save();
 
-        return redirect()->route('admin.children')->with('success', 'Child reactivated successfully. Enrollment date reset to today.');
+        return redirect()->route('admin.children')->with('success', 'Child reactivated successfully. Enrollment date reset to today.')->withFragment('enrolled');
     }
 
     public function deleteChild($id)
@@ -401,6 +424,8 @@ class AdminController extends Controller
     public function staff()
     {
         $staff = User::where('role', 'caregiver')
+            ->withAvg('ratings', 'rating')
+            ->with('assignedChildren')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
@@ -560,7 +585,26 @@ class AdminController extends Controller
     public function ratings()
     {
         $ratings = \App\Models\Rating::with(['parent', 'caregiver'])->latest()->get();
-        return view('admin.ratings', compact('ratings'));
+        
+        // Fetch stats for sidebar
+        try {
+            $pendingApplications = \App\Models\JobApplication::where('status', 'pending')->count();
+            $pendingRegistrations = \App\Models\Child::where('status', 'pending')->count();
+            $pendingLeaveRequests = \App\Models\LeaveRequest::where('status', 'pending')->count();
+
+            $stats = [
+                'pending_registrations' => $pendingRegistrations,
+                'pending_payments' => 0, // Placeholder
+                'pending_applications' => $pendingApplications,
+                'pending_leave_requests' => $pendingLeaveRequests,
+            ];
+            $pendingJobAppsCount = $pendingApplications;
+        } catch (\Exception $e) {
+            $stats = [];
+            $pendingJobAppsCount = 0;
+        }
+
+        return view('admin.ratings', compact('ratings', 'stats', 'pendingJobAppsCount'));
     }
 
     /**

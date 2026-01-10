@@ -5,107 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Staff Management - Childcare Management</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    @vite(['resources/css/admin/staff.css'])
+    @vite(['resources/css/admin/staff.css', 'resources/css/admin/sidebar.css'])
 </head>
 <body>
     <div class="dashboard-container">
         <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <i class="fas fa-shield-alt"></i>
-                    <h2>Admin Panel</h2>
-                </div>
-                <div class="user-info">
-                    <div class="user-avatar">AD</div>
-                    <div class="user-details">
-                        <h4>Administrator</h4>
-                        <p>System Admin</p>
-                    </div>
-                </div>
-            </div>
-            <nav class="nav-menu">
-                <div class="nav-section">
-                    <div class="nav-section-title">Main Menu</div>
-                    <a href="{{ route('admin.dashboard') }}" class="nav-item">
-                        <i class="fas fa-home"></i>
-                        <span>Dashboard</span>
-                    </a>
-                    <a href="{{ route('admin.analytics') }}" class="nav-item">
-                        <i class="fas fa-chart-line"></i>
-                        <span>Analytics</span>
-                    </a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">User Management</div>
-                    <a href="{{ route('admin.users') }}" class="nav-item">
-                        <i class="fas fa-users"></i>
-                        <span>Manage Users</span>
-                    </a>
-                    <a href="{{ route('admin.children') }}" class="nav-item">
-                        <i class="fas fa-child"></i>
-                        <span>Child Records</span>
-                    </a>
-                    <a href="{{ route('admin.staff') }}" class="nav-item active">
-                        <i class="fas fa-user-tie"></i>
-                        <span>Staff Management</span>
-                    </a>
-                    <a href="{{ route('admin.job-applications') }}" class="nav-item">
-                        <i class="fas fa-briefcase"></i>
-                        <span>Job Applications</span>
-                        @if(isset($pendingJobAppsCount) && $pendingJobAppsCount > 0)
-                            <span class="badge" style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: auto;">{{ $pendingJobAppsCount }}</span>
-                        @endif
-                    </a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">Operations</div>
-                    <a href="{{ route('admin.attendance') }}" class="nav-item">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Attendance</span>
-                    </a>
-                    <a href="{{ route('admin.reports') }}" class="nav-item">
-                        <i class="fas fa-file-alt"></i>
-                        <span>Daily Reports</span>
-                    </a>
-                    <a href="{{ route('admin.invoices') }}" class="nav-item">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        <span>Billing & Invoices</span>
-                    </a>
-                    <a href="{{ route('admin.payments.pending') }}" class="nav-item">
-                        <i class="fas fa-credit-card"></i>
-                        <span>Payment Approvals</span>
-                    </a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">Communication</div>
-                    <a href="{{ route('admin.announcements') }}" class="nav-item">
-                        <i class="fas fa-bullhorn"></i>
-                        <span>Announcements</span>
-                    </a>
-                    <a href="{{ route('admin.communication') }}" class="nav-item">
-                        <i class="fas fa-comments"></i>
-                        <span>Communication Logs</span>
-                    </a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">System</div>
-                    <a href="{{ route('admin.settings') }}" class="nav-item">
-                        <i class="fas fa-cog"></i>
-                        <span>Settings</span>
-                    </a>
-                    <a href="{{ route('admin.backup') }}" class="nav-item">
-                        <i class="fas fa-database"></i>
-                        <span>Backup & Restore</span>
-                    </a>
-                    <a href="{{ route('logout') }}" class="nav-item" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </a>
-                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">@csrf</form>
-                </div>
-            </nav>
-        </aside>
+        @include('admin.partials.sidebar', ['stats' => $stats ?? [], 'pendingJobAppsCount' => $pendingJobAppsCount ?? 0])
 
         <!-- Main Content -->
         <main class="main-content">
@@ -202,19 +107,36 @@
                                 <h3>{{ $member->name }}</h3>
                                 <div class="staff-role">{{ $member->specialization ?? 'Caregiver' }}</div>
                                 <div class="staff-rating">
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    <i class="fas fa-star"></i>
-                                    5.0
+                                    @php
+                                        $avgRating = $member->ratings_avg_rating ?? 0;
+                                        $fullStars = floor($avgRating);
+                                        $halfStar = $avgRating - $fullStars >= 0.5;
+                                        $emptyStars = 5 - $fullStars - ($halfStar ? 1 : 0);
+                                    @endphp
+
+                                    @for($i = 0; $i < $fullStars; $i++)
+                                        <i class="fas fa-star" style="color: #f59e0b;"></i>
+                                    @endfor
+
+                                    @if($halfStar)
+                                        <i class="fas fa-star-half-alt" style="color: #f59e0b;"></i>
+                                    @endif
+
+                                    @for($i = 0; $i < $emptyStars; $i++)
+                                        <i class="far fa-star" style="color: #cbd5e1;"></i>
+                                    @endfor
+                                    
+                                    <span style="color: #64748b; font-size: 0.9em; margin-left: 5px;">{{ number_format($avgRating, 1) }}</span>
                                 </div>
                             </div>
                         </div>
                         <div class="staff-details">
                             <div class="detail-item">
                                 <div class="detail-label">Class</div>
-                                <div class="detail-value">--</div> 
+                                @php
+                                    $classes = $member->assignedChildren->pluck('class')->unique()->filter()->implode(', ');
+                                @endphp
+                                <div class="detail-value" title="{{ $classes }}">{{ $classes ?: '--' }}</div> 
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">Shift</div>

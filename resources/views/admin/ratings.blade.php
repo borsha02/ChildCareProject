@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Caregiver Ratings - Admin Dashboard</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    @vite(['resources/css/admin-dashboard.css', 'resources/css/admin/ratings.css'])
+    @vite(['resources/css/admin/dashboard.css', 'resources/css/admin/sidebar.css', 'resources/css/admin/ratings.css'])
     <style>
         .ratings-table {
             width: 100%;
@@ -32,34 +32,7 @@
 </head>
 <body>
     <div class="dashboard-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <i class="fas fa-baby"></i>
-                    <h2>Childcare Admin</h2>
-                </div>
-            </div>
-            
-            <nav class="nav-menu">
-                <a href="{{ route('admin.dashboard') }}" class="nav-item">
-                    <i class="fas fa-home"></i> <span>Dashboard</span>
-                </a>
-                <a href="{{ route('admin.users') }}" class="nav-item">
-                    <i class="fas fa-users"></i> <span>Users</span>
-                </a>
-                <a href="{{ route('admin.children') }}" class="nav-item">
-                    <i class="fas fa-child"></i> <span>Children</span>
-                </a>
-                <a href="{{ route('admin.staff') }}" class="nav-item">
-                    <i class="fas fa-chalkboard-teacher"></i> <span>Staff</span>
-                </a>
-                <a href="{{ route('admin.ratings') }}" class="nav-item active">
-                    <i class="fas fa-star"></i> <span>Ratings</span>
-                </a>
-                <!-- Other links -->
-            </nav>
-        </aside>
+        @include('admin.partials.sidebar', ['stats' => $stats ?? [], 'pendingJobAppsCount' => $pendingJobAppsCount ?? 0])
 
         <main class="main-content">
             <div class="top-bar">

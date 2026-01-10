@@ -123,6 +123,7 @@
                     <h1>Child Records Management</h1>
                 </div>
                 <div class="top-bar-actions">
+
                     <button class="add-btn" onclick="openModal()">
                         <i class="fas fa-plus"></i>
                         Add New Child
@@ -131,16 +132,73 @@
             </div>
 
             <div class="content-area">
+
+
+                <!-- Alert Messages -->
+                @if ($errors->any())
+                    <div class="alert alert-error" style="background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fecaca; position: relative;">
+                        <ul style="margin-left: 20px; margin-bottom: 0;">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                        <button onclick="this.parentElement.remove()" style="position: absolute; right: 10px; top: 10px; background: none; border: none; color: inherit; cursor: pointer; opacity: 0.7; font-size: 16px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                @endif
+                
+                @if(session('success'))
+                    <div class="alert alert-success" style="background: #d1fae5; color: #065f46; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #a7f3d0; position: relative;">
+                        <i class="fas fa-check-circle"></i> {{ session('success') }}
+                        <button onclick="this.parentElement.remove()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: inherit; cursor: pointer; opacity: 0.7; font-size: 16px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                @endif
+                @if(session('error'))
+                    <div class="alert alert-error" style="background: #fee2e2; color: #991b1b; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fecaca; position: relative;">
+                        <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+                        <button onclick="this.parentElement.remove()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: inherit; cursor: pointer; opacity: 0.7; font-size: 16px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                @endif
+                @if(session('warning'))
+                    <div class="alert alert-warning" style="background: #ffedd5; color: #9a3412; padding: 10px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fed7aa; position: relative;">
+                        <i class="fas fa-exclamation-triangle"></i> {{ session('warning') }}
+                        <button onclick="this.parentElement.remove()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: inherit; cursor: pointer; opacity: 0.7; font-size: 16px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                @endif
+
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const alerts = document.querySelectorAll('.alert');
+                        if (alerts.length > 0) {
+                            setTimeout(function() {
+                                alerts.forEach(function(alert) {
+                                    alert.style.transition = 'opacity 0.5s ease';
+                                    alert.style.opacity = '0';
+                                    setTimeout(function() {
+                                        alert.remove();
+                                    }, 500);
+                                });
+                            }, 5000); // Auto dismiss after 5 seconds
+                        }
+                    });
+                </script>
                 
                 <!-- Tabs -->
                 <div class="tabs">
-                    <button class="tab-btn active" onclick="switchTab('requests')">
+                    <button class="tab-btn active" data-tab="requests" onclick="switchTab('requests')">
                         Registration Requests
                         @if($pendingChildren->count() > 0)
                             <span class="badge">{{ $pendingChildren->count() }}</span>
                         @endif
                     </button>
-                    <button class="tab-btn" onclick="switchTab('enrolled')">Enrolled Children</button>
+                    <button class="tab-btn" data-tab="enrolled" onclick="switchTab('enrolled')">Enrolled Children</button>
                 </div>
 
                 <!-- Registration Requests Section -->
@@ -343,8 +401,8 @@
                         <input type="text" id="last_name" name="last_name" required placeholder="Enter last name">
                     </div>
                     <div class="form-group">
-                        <label for="date_of_birth">Date of Birth <span style="color: red">*</span></label>
-                        <input type="date" id="date_of_birth" name="date_of_birth" required>
+                        <label for="dob">Date of Birth <span style="color: red">*</span></label>
+                        <input type="date" id="dob" name="dob" required>
                     </div>
                     <div class="form-group">
                         <label for="gender">Gender <span style="color: red">*</span></label>
@@ -505,18 +563,34 @@
         // Tab Switcher
         function switchTab(tabName) {
             // Update Tab Buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.currentTarget.classList.add('active');
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if(btn.dataset.tab === tabName) btn.classList.add('active');
+            });
+            // document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            // event.currentTarget.classList.add('active');
 
             // Update Tab Content
             document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
             
             if (tabName === 'requests') {
                 document.getElementById('requestsTab').style.display = 'block';
+                // history.pushState(null, null, '#requests'); // Optional: Update URL without reload
             } else {
                 document.getElementById('enrolledTab').style.display = 'block';
+                // history.pushState(null, null, '#enrolled'); // Optional: Update URL without reload
             }
         }
+
+        // Check hash on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const hash = window.location.hash.substring(1); // Remove '#'
+            if (hash === 'enrolled') {
+                switchTab('enrolled');
+            } else if (hash === 'requests') {
+                switchTab('requests');
+            }
+        });
 
         // Modal functions
         function openModal() {
@@ -561,7 +635,11 @@
             // Populate fields
             document.getElementById('first_name').value = child.first_name;
             document.getElementById('last_name').value = child.last_name;
-            document.getElementById('date_of_birth').value = child.dob ? child.dob.split('T')[0] : '';
+            
+            if (child.dob) {
+                 document.getElementById('dob').value = child.dob.split('T')[0].split(' ')[0];
+            }
+            
             document.getElementById('gender').value = child.gender;
             document.getElementById('class').value = child.class;
             document.getElementById('package').value = child.package || 'monthly';
@@ -575,9 +653,9 @@
             
             // Enrollment date
             if (child.enrollment_date) {
-                document.getElementById('enrollment_date').value = child.enrollment_date.split('T')[0];
+                document.getElementById('enrollment_date').value = child.enrollment_date.split('T')[0].split(' ')[0];
             } else if (child.created_at) {
-                document.getElementById('enrollment_date').value = child.created_at.split('T')[0];
+                document.getElementById('enrollment_date').value = child.created_at.split('T')[0].split(' ')[0];
             }
 
             // Parent info
@@ -591,8 +669,7 @@
             document.getElementById('blood_group').value = child.blood_group || '';
             document.getElementById('allergies').value = child.allergies || '';
             
-            // Caregiver select might need special handling if multiple assignments are allowed, 
-            // but for editing one child, we can just select the first one if exists or leave empty
+            // Caregiver select
              if (document.getElementById('caregiver_id')) {
                 document.getElementById('caregiver_id').value = (child.caregivers && child.caregivers.length > 0) ? child.caregivers[0].id : '';
             } 
