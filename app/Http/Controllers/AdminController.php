@@ -557,6 +557,12 @@ class AdminController extends Controller
         return view('admin.staff-ratings', compact('staff', 'ratings'));
     }
 
+    public function ratings()
+    {
+        $ratings = \App\Models\Rating::with(['parent', 'caregiver'])->latest()->get();
+        return view('admin.ratings', compact('ratings'));
+    }
+
     /**
      * Feature #6: Monitor Attendance
      */

@@ -504,14 +504,20 @@ class CaregiverController extends Controller
 
     public function markAsRead(Request $request, $messageId)
     {
-        $message = \App\Models\Message::where('receiver_id', auth()->id())
-            ->findOrFail($messageId);
+        $message = \App\Models\Message::findOrFail($messageId);
+        
+        // Ensure the message belongs to the current user
+        if ($message->receiver_id == auth()->id()) {
+            $message->update(['is_read' => true]);
+            return response()->json(['success' => true]);
+        }
+        
+        return response()->json(['success' => false], 403);
+    }
 
-        $message->update([
-            'is_read' => true,
-            'read_at' => now(),
-        ]);
-
-        return response()->json(['success' => true]);
+    public function ratings()
+    {
+        $ratings = \App\Models\Rating::where('caregiver_id', auth()->id())->latest()->get();
+        return view('caregiver.ratings', compact('ratings'));
     }
 }

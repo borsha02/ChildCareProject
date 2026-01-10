@@ -189,6 +189,23 @@
                         <span><strong>Duration:</strong> {{ $child->duration }} Weeks</span>
                     </div>
                     @endif
+
+                    @if($child->caregivers->count() > 0)
+                    <div class="caregiver-section" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <h4 style="font-size: 0.9em; color: #64748b; margin-bottom: 10px;">Assigned Caregiver{{ $child->caregivers->count() > 1 ? 's' : '' }}</h4>
+                        @foreach($child->caregivers as $caregiver)
+                        <a href="{{ route('parent.caregivers') }}" class="caregiver-card" style="display: flex; align-items: center; gap: 10px; background: #f8fafc; padding: 8px; border-radius: 8px; margin-bottom: 5px; text-decoration: none; color: inherit; transition: all 0.2s;">
+                            <div class="caregiver-avatar" style="width: 30px; height: 30px; background: #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 0.8em; font-weight: bold;">
+                                {{ strtoupper(substr($caregiver->name, 0, 1)) }}
+                            </div>
+                            <div class="caregiver-info">
+                                <span style="display: block; font-size: 0.9em; font-weight: 600; color: #334155;">{{ $caregiver->name }}</span>
+                                <span style="display: block; font-size: 0.8em; color: #64748b;">Caregiver</span>
+                            </div>
+                        </a>
+                        @endforeach
+                    </div>
+                    @endif
                 </div>
 
                 <div class="card-actions">

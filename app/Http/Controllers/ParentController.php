@@ -132,7 +132,7 @@ class ParentController extends Controller
 
     public function childProfile()
     {
-        $children = \App\Models\Child::where('parent_id', auth()->id())->get();
+        $children = \App\Models\Child::with('caregivers')->where('parent_id', auth()->id())->get();
         return view('parent.child-profile', compact('children'));
     }
 
@@ -282,6 +282,28 @@ class ParentController extends Controller
             'date',
             'latestTeacherNote'
         ));
+    }
+
+    public function storeRating(Request $request)
+    {
+        $request->validate([
+            'caregiver_id' => 'required|exists:users,id',
+            'rating' => 'required|integer|min:1|max:5',
+            'comment' => 'nullable|string|max:1000',
+        ]);
+
+        \App\Models\Rating::updateOrCreate(
+            [
+                'parent_id' => auth()->id(),
+                'caregiver_id' => $request->caregiver_id,
+            ],
+            [
+                'rating' => $request->rating,
+                'comment' => $request->comment,
+            ]
+        );
+
+        return back()->with('success', 'Rating submitted successfully!')->with('rated_caregiver_id', $request->caregiver_id);
     }
 
     public function attendance(Request $request)
@@ -544,14 +566,24 @@ class ParentController extends Controller
     {
         $unreadCount = auth()->user()->unreadNotifications->count();
         
-        // Fetch caregivers assigned to the parent's children
-        // We get all children of the parent, then pluck their caregivers, collapse into one collection, and make unique
+        // Fetch caregivers similar to how it's done in messages method
         $caregivers = \App\Models\Child::where('parent_id', auth()->id())
             ->with('caregivers')
             ->get()
             ->pluck('caregivers')
             ->flatten()
             ->unique('id');
+
+        // Check which caregivers have been rated by the parent
+        $ratedCaregiverIds = \App\Models\Rating::where('parent_id', auth()->id())
+            ->whereIn('caregiver_id', $caregivers->pluck('id'))
+            ->pluck('caregiver_id')
+            ->toArray();
+
+        // Add 'is_rated' attribute to each caregiver object
+        foreach ($caregivers as $caregiver) {
+            $caregiver->is_rated = in_array($caregiver->id, $ratedCaregiverIds);
+        }
 
         return view('parent.caregivers', compact('unreadCount', 'caregivers'));
     }

@@ -130,19 +130,34 @@
                 <div class="caregiver-grid">
                     @forelse($caregivers as $caregiver)
                         <div class="caregiver-card">
-                            <div class="caregiver-avatar" style="background: linear-gradient(135deg, {{ $loop->iteration % 2 == 0 ? '#3b82f6, #2563eb' : '#10b981, #059669' }});">
+                            <div class="caregiver-avatar" style="background: linear-gradient(135deg, {{ $loop->iteration % 2 == 0 ? '#6366f1, #8b5cf6' : '#ec4899, #f43f5e' }});">
                                 {{ strtoupper(substr($caregiver->name, 0, 1) . substr(strrchr($caregiver->name, ' '), 1, 1)) }}
                             </div>
                             <div class="caregiver-info">
                                 <h3>{{ $caregiver->name }}</h3>
-                                <p>Caregiver</p>
-                                <!-- Assuming phone or email as contact info since we don't have experience/class explicitly in user table -->
-                                <p class="mt-2 text-sm">{{ $caregiver->email }}</p> 
+                                <p class="role">Caregiver</p>
+                                <p class="contact"><i class="far fa-envelope"></i> {{ $caregiver->email }}</p> 
                             </div>
                             <div class="caregiver-actions">
-                                <a href="{{ route('parent.messages', ['caregiver_id' => $caregiver->id]) }}" class="btn-message">
-                                    <i class="fas fa-comment-alt"></i> Send Message
+                                @if(session('success') && $caregivers->where('id', session('rated_caregiver_id'))->first()?->id == $caregiver->id)
+                                    <div class="alert alert-success" style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: #d1fae5; color: #065f46; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); white-space: nowrap; z-index: 10;">
+                                        <i class="fas fa-check-circle"></i> Rating Submitted!
+                                    </div>
+                                @endif
+
+                                <a href="{{ route('parent.messages', ['caregiver_id' => $caregiver->id]) }}" class="btn-message btn-primary-action">
+                                    <i class="fas fa-comment-dots"></i> Send Message
                                 </a>
+                                
+                                @if($caregiver->is_rated)
+                                    <button class="btn-message" style="background: #e2e8f0; color: #64748b; cursor: default;">
+                                        <i class="fas fa-check"></i> Rated
+                                    </button>
+                                @else
+                                    <button onclick="openRatingModal({{ $caregiver->id }}, '{{ $caregiver->name }}')" class="btn-message btn-secondary-action">
+                                        <i class="fas fa-star"></i> Rate Caregiver
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     @empty
@@ -156,5 +171,76 @@
             </div>
         </main>
     </div>
-</body>
-</html>
+
+    <!-- Rating Modal -->
+    <div id="ratingModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px;">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 id="ratingModalTitle">Rate Caregiver</h2>
+                <span onclick="closeRatingModal()" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+            </div>
+            <form action="{{ route('parent.ratings.store') }}" method="POST">
+                @csrf
+                <input type="hidden" name="caregiver_id" id="ratingCaregiverId">
+                
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px;">Rating:</label>
+                    <div class="rating-stars" style="display: flex; gap: 10px; font-size: 24px; cursor: pointer;">
+                        <i class="far fa-star star" data-value="1" onclick="setRating(1)"></i>
+                        <i class="far fa-star star" data-value="2" onclick="setRating(2)"></i>
+                        <i class="far fa-star star" data-value="3" onclick="setRating(3)"></i>
+                        <i class="far fa-star star" data-value="4" onclick="setRating(4)"></i>
+                        <i class="far fa-star star" data-value="5" onclick="setRating(5)"></i>
+                    </div>
+                    <input type="hidden" name="rating" id="ratingValue" required>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="comment" style="display: block; margin-bottom: 5px;">Comment (Optional):</label>
+                    <textarea name="comment" id="comment" rows="4" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+                </div>
+
+                <div class="form-actions" style="text-align: right;">
+                    <button type="button" onclick="closeRatingModal()" style="padding: 8px 16px; margin-right: 10px; background: #e2e8f0; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                    <button type="submit" style="padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">Submit Rating</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openRatingModal(caregiverId, caregiverName) {
+            document.getElementById('ratingModal').style.display = 'block';
+            document.getElementById('ratingCaregiverId').value = caregiverId;
+            document.getElementById('ratingModalTitle').innerText = 'Rate ' + caregiverName;
+            setRating(0); // Reset stars
+        }
+
+        function closeRatingModal() {
+            document.getElementById('ratingModal').style.display = 'none';
+        }
+
+        function setRating(value) {
+            document.getElementById('ratingValue').value = value;
+            const stars = document.querySelectorAll('.star');
+            stars.forEach(star => {
+                const starValue = parseInt(star.getAttribute('data-value'));
+                if (starValue <= value) {
+                    star.classList.remove('far'); // Empty star
+                    star.classList.add('fas'); // Filled star
+                    star.style.color = '#f59e0b';
+                } else {
+                    star.classList.remove('fas');
+                    star.classList.add('far');
+                    star.style.color = 'inherit';
+                }
+            });
+        }
+
+        // Close modal if clicked outside
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('ratingModal')) {
+                closeRatingModal();
+            }
+        }
+    </script>

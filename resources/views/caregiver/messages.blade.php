@@ -291,7 +291,7 @@
             const messageText = messageInput.value.trim();
             messageInput.value = '';
 
-            fetch('/caregiver/messages/send', {
+            fetch('/caregiver/messages', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

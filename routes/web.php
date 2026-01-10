@@ -52,6 +52,7 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     Route::post('/staff/create', [AdminController::class, 'createStaff'])->name('admin.staff.create');
     Route::put('/staff/{id}', [AdminController::class, 'updateStaff'])->name('admin.staff.update');
     Route::delete('/staff/{id}', [AdminController::class, 'deleteStaff'])->name('admin.staff.delete');
+    Route::get('/ratings', [AdminController::class, 'ratings'])->name('admin.ratings');
     Route::post('/staff/assign', [AdminController::class, 'assignStaffToChild'])->name('admin.staff.assign');
     Route::post('/job-applications/{id}/reject', [AdminController::class, 'rejectJobApplication'])->name('admin.jobs.reject');
     Route::get('/staff/{id}/ratings', [AdminController::class, 'staffRatings'])->name('admin.staff.ratings');
@@ -114,9 +115,11 @@ Route::middleware('auth')->prefix('caregiver')->group(function () {
     Route::get('/health-records', [CaregiverController::class, 'healthRecords'])->name('caregiver.health');
     Route::get('/health-records/{id}', [CaregiverController::class, 'showChildHealth'])->name('caregiver.health.show');
     Route::get('/messages', [CaregiverController::class, 'messages'])->name('caregiver.messages');
-    Route::post('/messages/send', [CaregiverController::class, 'sendMessage'])->name('caregiver.messages.send');
+    Route::post('/messages', [CaregiverController::class, 'sendMessage'])->name('caregiver.messages.send');
     Route::get('/messages/conversation/{parentId}', [CaregiverController::class, 'getConversation'])->name('caregiver.messages.conversation');
-    Route::post('/messages/{id}/mark-read', [CaregiverController::class, 'markAsRead'])->name('caregiver.messages.mark-read');
+    Route::post('/messages/{id}/read', [CaregiverController::class, 'markAsRead'])->name('caregiver.messages.read');
+
+    Route::get('/ratings', [CaregiverController::class, 'ratings'])->name('caregiver.ratings');
     Route::get('/schedule', [CaregiverController::class, 'schedule'])->name('caregiver.schedule');
     Route::get('/events', [CaregiverController::class, 'events'])->name('caregiver.events');
     Route::get('/notifications', [CaregiverController::class, 'notifications'])->name('caregiver.notifications');
@@ -133,6 +136,8 @@ Route::middleware('auth')->prefix('caregiver')->group(function () {
 Route::middleware('auth')->prefix('parent')->group(function (){
     Route::get('/dashboard', [ParentController::class, 'dashboard'])->name('parent.dashboard');
     Route::get('/child-profile', [ParentController::class, 'childProfile'])->name('parent.child-profile');
+    Route::get('/caregivers', [ParentController::class, 'caregivers'])->name('parent.caregivers');
+    Route::post('/ratings', [ParentController::class, 'storeRating'])->name('parent.ratings.store');
     Route::post('/child-profile', [ParentController::class, 'storeChild'])->name('parent.child-profile.store');
     Route::put('/child-profile/{id}', [ParentController::class, 'updateChild'])->name('parent.child-profile.update');
     Route::delete('/child-profile/{id}', [ParentController::class, 'deleteChild'])->name('parent.child-profile.delete');
