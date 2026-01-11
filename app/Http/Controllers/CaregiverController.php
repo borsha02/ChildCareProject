@@ -94,7 +94,15 @@ class CaregiverController extends Controller
             'attendance.*.status' => 'required|in:present,absent,late,excused',
             'attendance.*.check_in_time' => [
                 'nullable', 
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($request) {
+                    preg_match('/attendance\.(\d+)\.check_in_time/', $attribute, $matches);
+                    $childId = $matches[1] ?? null;
+                    $status = $request->input("attendance.{$childId}.status");
+
+                    if (in_array($status, ['present', 'late']) && empty($value)) {
+                        $fail('Check-in time is required when status is ' . ucfirst($status) . '.');
+                    }
+
                     if ($value && ($value < '08:00' || $value > '18:00')) {
                         $fail('Check-in time must be between 08:00 AM and 06:00 PM.');
                     }

@@ -151,7 +151,7 @@
                                     </td>
                                     <td>
                                         @php
-                                            $isSaved = $attendance && ($attendance->check_in_time || $attendance->check_out_time || $attendance->notes);
+                                            $isSaved = $attendance !== null;
                                         @endphp
                                         <button type="button" 
                                             onclick="saveChild({{ $child->id }})" 
@@ -196,7 +196,14 @@
                 
                 const checkIn = checkInInput.value;
                 const checkOut = checkOutInput.value;
+                const status = row.querySelector('select[name*="status"]')?.value;
                 const childName = row.querySelector('.child-name')?.textContent || 'Unknown';
+
+                // Validate check-in time is required for 'present' and 'late' statuses
+                if ((status === 'present' || status === 'late') && !checkIn) {
+                    hasError = true;
+                    errorMessages.push(`${childName}: Check-in time is required when status is ${status.charAt(0).toUpperCase() + status.slice(1)}`);
+                }
 
                 // Validate time range for check-in
                 if (checkIn && (checkIn < '08:00' || checkIn > '18:00')) {
@@ -255,10 +262,36 @@
             }, 3000);
         }
 
+        // Reset button state when any input changes in a row
+        document.querySelectorAll('.attendance-table tbody tr').forEach(row => {
+            row.querySelectorAll('input, select').forEach(input => {
+                input.addEventListener('change', () => {
+                    const childId = row.querySelector('.btn-save-row').id.replace('btn-', '');
+                    const btn = document.getElementById('btn-' + childId);
+                    if (btn.innerText === 'Saved!') {
+                        btn.innerText = 'Save';
+                        btn.style.background = ''; // Revert to original primary color
+                    }
+                });
+                
+                // Also for text/time inputs, listen to 'input' event for immediate feedback
+                if (input.tagName === 'INPUT') {
+                    input.addEventListener('input', () => {
+                        const childId = row.querySelector('.btn-save-row').id.replace('btn-', '');
+                        const btn = document.getElementById('btn-' + childId);
+                        if (btn.innerText === 'Saved!') {
+                            btn.innerText = 'Save';
+                            btn.style.background = '';
+                        }
+                    });
+                }
+            });
+        });
+
         function saveChild(childId) {
             const btn = document.getElementById('btn-' + childId);
-            const originalText = btn.innerText;
-            const originalBg = btn.style.background;
+            const originalText = 'Save'; // Force back to Save on error
+            const originalBg = ''; // Revert to primary
             
             // Show loading state
             btn.innerText = 'Saving...';
@@ -272,21 +305,24 @@
             const status = document.querySelector(`select[name="attendance[${childId}][status]"]`).value;
             const notes = document.querySelector(`input[name="attendance[${childId}][notes]"]`).value;
 
+            // Client-side validation: check-in time required for Present/Late
+            if ((status === 'present' || status === 'late') && !checkIn) {
+                showToast(`Check-in time is required when status is ${status.charAt(0).toUpperCase() + status.slice(1)}.`, 'error');
+                resetBtn();
+                return;
+            }
+
             // Client-side validation: check-out requires check-in
             if (checkOut && !checkIn) {
                 showToast('Check-in time is required before setting check-out time.', 'error');
-                btn.innerText = originalText;
-                btn.disabled = false;
-                btn.style.opacity = '1';
+                resetBtn();
                 return;
             }
 
             // Client-side validation: check-out must be after check-in
             if (checkOut && checkIn && checkOut <= checkIn) {
                 showToast('Check-out time must be after check-in time.', 'error');
-                btn.innerText = originalText;
-                btn.disabled = false;
-                btn.style.opacity = '1';
+                resetBtn();
                 return;
             }
 
@@ -336,23 +372,29 @@
                 // Try to parse validation error response if possible, otherwise generic error
                 if (error.status === 422 && error.data) {
                     let msg = '';
-                    for (let key in error.data.errors) {
+                    if (error.data.errors) {
+                        for (let key in error.data.errors) {
                             msg += error.data.errors[key][0] + '\n';
+                        }
+                    } else {
+                        msg = error.data.message || 'Validation error';
                     }
                     showToast(msg, 'error');
                 } else {
-                    showToast('Please check time range (8:00 AM - 6:00 PM).', 'error');
+                    showToast('Failed to save. Please check input ranges.', 'error');
                 }
                 resetBtn();
             });
 
             function resetBtn() {
-                btn.innerText = originalText;
+                btn.innerText = 'Save';
                 btn.style.background = '#ef4444'; // Red error
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                
                 setTimeout(() => {
-                        btn.style.background = originalBg; 
-                        btn.disabled = false;
-                        btn.style.opacity = '1';
+                    btn.style.background = originalBg;
+                    btn.innerText = originalText;
                 }, 2000);
             }
         }
