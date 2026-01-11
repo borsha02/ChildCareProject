@@ -1,96 +1,114 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Ratings - Childcare Management</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    @vite(['resources/css/caregiver/dashboard.css'])
-    <style>
-        .ratings-container {
-            padding: 20px;
-        }
-        .rating-card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border-left: 5px solid #3b82f6;
-        }
-        .rating-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .rating-date {
-            color: #64748b;
-            font-size: 0.9em;
-        }
-        .star-rating {
-            color: #f59e0b;
-            font-size: 1.2em;
-        }
-        .rating-comment {
-            color: #334155;
-            line-height: 1.6;
-            font-style: italic;
-            background: #f8fafc;
-            padding: 15px;
-            border-radius: 8px;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 50px;
-            color: #94a3b8;
-        }
-    </style>
-</head>
-<body>
-    <div class="dashboard-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <i class="fas fa-baby"></i>
-                    <h2>Caregiver Panel</h2>
-                </div>
-            </div>
+@extends('layouts.caregiver')
+
+@section('title', 'My Ratings')
+
+@section('styles')
+    @vite(['resources/css/caregiver/ratings.css'])
+@endsection
+
+@section('content')
+    <div class="top-bar">
+        <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div style="display: flex; align-items: center;">
+            <a href="{{ route('caregiver.dashboard') }}" class="back-dashboard-icon">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1>My Ratings & Reviews</h1>
+        </div>
+        <div class="top-bar-actions">
+            <a href="{{ route('caregiver.notifications') }}"
+                class="icon-btn {{ request()->routeIs('caregiver.notifications') ? 'active' : '' }}">
+                <i class="fas fa-bell"></i>
+                @php
+                    $unreadNotifications = Auth::user()->unreadNotifications->count();
+                @endphp
+                @if($unreadNotifications > 0)
+                    <span class="notification-dot"></span>
+                @endif
+            </a>
+            <a href="{{ route('caregiver.messages') }}"
+                class="icon-btn {{ request()->routeIs('caregiver.messages') ? 'active' : '' }}">
+                <i class="fas fa-envelope"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="content-area">
+        @if($ratings->count() > 0)
+            @php
+                $averageRating = $ratings->avg('rating');
+                $totalRatings = $ratings->count();
+            @endphp
             
-            <nav class="nav-menu">
-                <a href="{{ route('caregiver.dashboard') }}" class="nav-item">
-                    <i class="fas fa-home"></i> <span>Dashboard</span>
-                </a>
-                <a href="{{ route('caregiver.children') }}" class="nav-item">
-                    <i class="fas fa-child"></i> <span>Assigned Children</span>
-                </a>
-                <a href="{{ route('caregiver.attendance') }}" class="nav-item">
-                    <i class="fas fa-calendar-check"></i> <span>Attendance</span>
-                </a>
-                <a href="{{ route('caregiver.reports') }}" class="nav-item">
-                    <i class="fas fa-file-alt"></i> <span>Daily Reports</span>
-                </a>
-                <a href="{{ route('caregiver.ratings') }}" class="nav-item active">
-                    <i class="fas fa-star"></i> <span>My Ratings</span>
-                </a>
-                <!-- Other links would go here -->
-            </nav>
-        </aside>
-
-        <main class="main-content">
-            <div class="top-bar">
-                 <div style="display: flex; align-items: center;">
-                    <h1>My Ratings & Reviews</h1>
+            <!-- Rating Summary Card -->
+            <div class="rating-summary">
+                <div class="rating-summary-content">
+                    <div class="rating-summary-left">
+                        <h3>Your Average Rating</h3>
+                        <div class="average-rating">
+                            <span class="score">{{ number_format($averageRating, 1) }}</span>
+                            <div class="stars">
+                                @for($i = 1; $i <= 5; $i++)
+                                    @if($i <= round($averageRating))
+                                        <i class="fas fa-star"></i>
+                                    @else
+                                        <i class="far fa-star"></i>
+                                    @endif
+                                @endfor
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rating-summary-right">
+                        <div class="total-ratings">{{ $totalRatings }}</div>
+                        <div class="total-ratings-label">Total Reviews</div>
+                    </div>
                 </div>
-                <!-- Profile/Notifications -->
             </div>
 
-            <div class="content-area">
-                <div class="ratings-container">
-                    @forelse($ratings as $rating)
-                    <div class="rating-card">
-                        <div class="rating-header">
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon yellow">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3>{{ number_format($averageRating, 1) }}</h3>
+                        <p>Average Rating</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon purple">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3>{{ $totalRatings }}</h3>
+                        <p>Total Reviews</p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Ratings List -->
+        <div class="card">
+            <div class="card-header">
+                <h3>All Reviews</h3>
+            </div>
+            <div class="ratings-container">
+                @forelse($ratings as $rating)
+                <div class="rating-card">
+                    <div class="rating-header">
+                        <div class="rating-parent-info">
+                            <div class="rating-parent-avatar">
+                                P
+                            </div>
+                            <div class="rating-parent-details">
+                                <h4>Anonymous Parent</h4>
+                                <p>Verified Reviewer</p>
+                            </div>
+                        </div>
+                        <div class="rating-meta">
                             <div class="star-rating">
                                 @for($i = 1; $i <= 5; $i++)
                                     @if($i <= $rating->rating)
@@ -99,28 +117,27 @@
                                         <i class="far fa-star"></i>
                                     @endif
                                 @endfor
-                                <span style="font-size: 0.8em; color: #64748b; margin-left: 5px;">({{ $rating->rating }}/5)</span>
                             </div>
+                            <span class="rating-score">{{ $rating->rating }}/5</span>
                             <span class="rating-date">{{ $rating->created_at->format('M d, Y') }}</span>
                         </div>
-                        @if($rating->comment)
-                        <div class="rating-comment">
-                            "{{ $rating->comment }}"
-                        </div>
-                        @else
-                        <div style="color: #94a3b8; font-style: italic;">No specific comment provided.</div>
-                        @endif
                     </div>
-                    @empty
-                    <div class="empty-state">
-                        <i class="fas fa-star" style="font-size: 48px; margin-bottom: 20px; color: #e2e8f0;"></i>
-                        <h3>No Ratings Yet</h3>
-                        <p>Ratings from parents will appear here.</p>
+                    @if($rating->comment)
+                    <div class="rating-comment">
+                        <p>{{ $rating->comment }}</p>
                     </div>
-                    @endforelse
+                    @else
+                    <div class="no-comment">No specific comment provided.</div>
+                    @endif
                 </div>
+                @empty
+                <div class="empty-state">
+                    <i class="fas fa-star"></i>
+                    <h3>No Ratings Yet</h3>
+                    <p>Ratings and reviews from parents will appear here.</p>
+                </div>
+                @endforelse
             </div>
-        </main>
+        </div>
     </div>
-</body>
-</html>
+@endsection

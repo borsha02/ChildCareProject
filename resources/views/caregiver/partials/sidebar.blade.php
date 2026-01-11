@@ -48,6 +48,10 @@
                 <i class="fas fa-calendar-days"></i>
                 <span>Events</span>
             </a>
+            <a href="{{ route('caregiver.ratings') }}" class="nav-item {{ request()->routeIs('caregiver.ratings') ? 'active' : '' }}">
+                <i class="fas fa-star"></i>
+                <span>Ratings</span>
+            </a>
             <a href="{{ route('caregiver.messages') }}" class="nav-item {{ request()->routeIs('caregiver.messages') ? 'active' : '' }}">
                 <i class="fas fa-comments"></i>
                 <span>Messages</span>

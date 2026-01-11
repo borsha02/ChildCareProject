@@ -517,7 +517,10 @@ class CaregiverController extends Controller
 
     public function ratings()
     {
-        $ratings = \App\Models\Rating::where('caregiver_id', auth()->id())->latest()->get();
+        $ratings = \App\Models\Rating::where('caregiver_id', auth()->id())
+            ->with('parent')
+            ->latest()
+            ->get();
         return view('caregiver.ratings', compact('ratings'));
     }
 }
