@@ -72,6 +72,7 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     Route::get('/invoices', [AdminController::class, 'invoices'])->name('admin.invoices');
     Route::post('/invoices/generate', [AdminController::class, 'generateInvoice'])->name('admin.invoices.generate');
     Route::put('/invoices/{id}', [AdminController::class, 'updateInvoice'])->name('admin.invoices.update');
+    Route::get('/invoices/{id}/download', [AdminController::class, 'downloadInvoice'])->name('admin.invoices.download');
 
     // Announcements (Feature #10)
     Route::get('/announcements', [AdminController::class, 'announcements'])->name('admin.announcements');

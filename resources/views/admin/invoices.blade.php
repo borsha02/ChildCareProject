@@ -113,7 +113,7 @@
                     <h1>Billing & Invoices</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <button class="generate-btn">
+                    <button class="generate-btn" onclick="openInvoiceModal()">
                         <i class="fas fa-plus"></i>
                         Generate Invoice
                     </button>
@@ -125,23 +125,23 @@
                 <div class="stats-row">
                     <div class="stat-card green">
                         <div class="stat-label">Total Revenue</div>
-                        <div class="stat-value">$45,280</div>
-                        <div class="stat-description">This month</div>
+                        <div class="stat-value">{{ number_format($stats['total_revenue']) }}</div>
+                        <div class="stat-description">Paid Invoices</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Paid Invoices</div>
-                        <div class="stat-value">28</div>
-                        <div class="stat-description">$38,500 collected</div>
+                        <div class="stat-value">{{ $stats['paid_invoices'] }}</div>
+                        <div class="stat-description">{{ number_format($stats['collected_revenue']) }} collected</div>
                     </div>
                     <div class="stat-card orange">
                         <div class="stat-label">Pending</div>
-                        <div class="stat-value">12</div>
-                        <div class="stat-description">$5,800 outstanding</div>
+                        <div class="stat-value">{{ $stats['pending_invoices'] }}</div>
+                        <div class="stat-description">{{ number_format($stats['outstanding_amount']) }} outstanding</div>
                     </div>
                     <div class="stat-card red">
                         <div class="stat-label">Overdue</div>
-                        <div class="stat-value">3</div>
-                        <div class="stat-description">$980 overdue</div>
+                        <div class="stat-value">{{ $stats['overdue_invoices'] }}</div>
+                        <div class="stat-description">{{ number_format($stats['overdue_amount']) }} overdue</div>
                     </div>
                 </div>
 
@@ -170,140 +170,181 @@
                             </tr>
                         </thead>
                         <tbody id="invoicesTableBody">
-                            <tr data-status="paid">
-                                <td><span class="invoice-number">INV-2025-001</span></td>
-                                <td>Sarah Martinez</td>
-                                <td>Emma Martinez</td>
-                                <td>$1,200</td>
-                                <td>Dec 15, 2025</td>
-                                <td><span class="status-badge paid">Paid</span></td>
+                            @forelse($invoices as $invoice)
+                            <tr data-status="{{ $invoice->status }}">
+                                <td><span class="invoice-number">{{ $invoice->invoice_number }}</span></td>
+                                <td>{{ $invoice->parent->name ?? 'N/A' }}</td>
+                                <td>{{ $invoice->child->first_name ?? 'N/A' }} {{ $invoice->child->last_name ?? '' }}</td>
+                                <td>{{ number_format($invoice->amount, 2) }}</td>
+                                <td>{{ \Carbon\Carbon::parse($invoice->due_date)->format('M d, Y') }}</td>
+                                <td>
+                                    <span class="status-badge {{ $invoice->status }}">
+                                        {{ ucfirst($invoice->status) }}
+                                    </span>
+                                </td>
                                 <td>
                                     <div class="action-buttons">
-                                        <button class="action-icon view" title="View">
+                                        <button class="action-icon view" title="View" onclick='viewInvoice(@json($invoice))'>
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <button class="action-icon edit" title="Edit">
+                                        <button class="action-icon edit" title="Edit" onclick='editInvoice(@json($invoice))'>
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="action-icon download" title="Download">
+                                        <a href="{{ route('admin.invoices.download', $invoice->id) }}" class="action-icon download" title="Download" target="_blank" style="text-decoration: none;">
                                             <i class="fas fa-download"></i>
-                                        </button>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>
-                            <tr data-status="pending">
-                                <td><span class="invoice-number">INV-2025-002</span></td>
-                                <td>Michael Johnson</td>
-                                <td>Lucas Johnson</td>
-                                <td>$1,150</td>
-                                <td>Dec 20, 2025</td>
-                                <td><span class="status-badge pending">Pending</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon download" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </div>
-                                </td>
+                            @empty
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 20px;">No invoices found.</td>
                             </tr>
-                            <tr data-status="paid">
-                                <td><span class="invoice-number">INV-2025-003</span></td>
-                                <td>Jennifer Williams</td>
-                                <td>Sophia Williams</td>
-                                <td>$1,300</td>
-                                <td>Dec 10, 2025</td>
-                                <td><span class="status-badge paid">Paid</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon download" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-status="overdue">
-                                <td><span class="invoice-number">INV-2025-004</span></td>
-                                <td>David Brown</td>
-                                <td>Oliver Brown</td>
-                                <td>$1,100</td>
-                                <td>Dec 5, 2025</td>
-                                <td><span class="status-badge overdue">Overdue</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon download" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-status="pending">
-                                <td><span class="invoice-number">INV-2025-005</span></td>
-                                <td>Emily Davis</td>
-                                <td>Ava Davis</td>
-                                <td>$950</td>
-                                <td>Dec 25, 2025</td>
-                                <td><span class="status-badge pending">Pending</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon download" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-status="paid">
-                                <td><span class="invoice-number">INV-2025-006</span></td>
-                                <td>Robert Miller</td>
-                                <td>Noah Miller</td>
-                                <td>$1,250</td>
-                                <td>Dec 12, 2025</td>
-                                <td><span class="status-badge paid">Paid</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon download" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
-        </main>
+    </div>
+
+    <!-- Generate Invoice Modal -->
+    <div id="invoiceModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeInvoiceModal()">&times;</span>
+            <h2 id="modalTitle">Generate New Invoice</h2>
+            <form id="invoiceForm" action="{{ route('admin.invoices.generate') }}" method="POST">
+                @csrf
+                <div id="methodField"></div>
+                <div class="form-group">
+                    <label for="child_id">Child & Parent</label>
+                    <select name="child_id" id="child_id" required>
+                        <option value="">Select Child</option>
+                        @foreach($children as $child)
+                        <option value="{{ $child->id }}" 
+                                data-package="{{ $child->package }}"
+                                data-enrollment="{{ \Carbon\Carbon::parse($child->enrollment_date)->format('M d, Y') }}">
+                            {{ $child->first_name }} {{ $child->last_name }} (Parent: {{ $child->parent->name ?? 'N/A' }})
+                        </option>
+                        @endforeach
+                    </select>
+                    <small id="enrollment-info" style="display:none; color: #6b7280; margin-top: 5px; font-size: 12px;"></small>
+                </div>
+                <div class="form-group">
+                    <label for="amount">Amount</label>
+                    <input type="number" step="0.01" name="amount" id="amount" required placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="due_date">Due Date</label>
+                    <input type="date" name="due_date" id="due_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select name="status" id="status" required>
+                        <option value="pending">Pending</option>
+                        <option value="paid">Paid</option>
+                        <option value="overdue">Overdue</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" onclick="closeInvoiceModal()">Cancel</button>
+                    <button type="submit" class="save-btn" id="submitBtn">Generate Invoice</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
+        // Auto-fill amount based on package and show enrollment date
+        document.getElementById('child_id').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const packageType = selectedOption.getAttribute('data-package');
+            const enrollmentDate = selectedOption.getAttribute('data-enrollment');
+            
+            const amountInput = document.getElementById('amount');
+            const enrollmentInfo = document.getElementById('enrollment-info');
+            
+            // Amount logic
+            if (packageType === 'weekly') {
+                amountInput.value = 1500;
+            } else if (packageType === 'monthly') {
+                amountInput.value = 5000;
+            } else {
+                amountInput.value = '';
+            }
+
+            // Enrollment Date logic
+            if (enrollmentDate) {
+                enrollmentInfo.style.display = 'block';
+                enrollmentInfo.textContent = `Assigned/Enrollment Date: ${enrollmentDate}`;
+            } else {
+                enrollmentInfo.style.display = 'none';
+            }
+        });
+
+        function openInvoiceModal() {
+            document.getElementById('invoiceModal').style.display = 'block';
+            document.getElementById('modalTitle').innerText = 'Generate New Invoice';
+            document.getElementById('invoiceForm').action = "{{ route('admin.invoices.generate') }}";
+            document.getElementById('methodField').innerHTML = '';
+            document.getElementById('submitBtn').innerText = 'Generate Invoice';
+            document.getElementById('submitBtn').style.display = 'block';
+            
+            // Enable fields in case they were disabled by view
+            document.getElementById('child_id').disabled = false;
+            document.getElementById('amount').disabled = false;
+            document.getElementById('due_date').disabled = false;
+            document.getElementById('status').disabled = false;
+        }
+
+        function editInvoice(invoice) {
+            openInvoiceModal();
+            document.getElementById('modalTitle').innerText = 'Edit Invoice';
+            document.getElementById('invoiceForm').action = `/admin/invoices/${invoice.id}`;
+            document.getElementById('methodField').innerHTML = '<input type="hidden" name="_method" value="PUT">';
+            document.getElementById('submitBtn').innerText = 'Update Invoice';
+
+            // Populate fields
+            document.getElementById('child_id').value = invoice.child_id;
+            document.getElementById('amount').value = invoice.amount;
+            if (invoice.due_date) {
+                document.getElementById('due_date').value = invoice.due_date.substring(0, 10);
+            } else {
+                 document.getElementById('due_date').value = '';
+            }
+            document.getElementById('status').value = invoice.status;
+            
+            // Trigger change event to show enrollment info if logic exists
+             const event = new Event('change');
+             document.getElementById('child_id').dispatchEvent(event);
+        }
+
+        function viewInvoice(invoice) {
+            editInvoice(invoice); // Reuse population logic
+            document.getElementById('modalTitle').innerText = 'View Invoice Details';
+            document.getElementById('submitBtn').style.display = 'none'; // Hide save button
+
+            // Disable fields
+            document.getElementById('child_id').disabled = true;
+            document.getElementById('amount').disabled = true;
+            document.getElementById('due_date').disabled = true;
+            document.getElementById('status').disabled = true;
+        }
+
+        function closeInvoiceModal() {
+            document.getElementById('invoiceModal').style.display = 'none';
+            document.querySelector('#invoiceModal form').reset();
+            document.getElementById('child_id').disabled = false; // Reset state
+             // Clear hidden method field
+            document.getElementById('methodField').innerHTML = '';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('invoiceModal');
+            if (event.target == modal) {
+                closeInvoiceModal();
+            }
+        }
+
         function filterByStatus(status) {
             const rows = document.querySelectorAll('#invoicesTableBody tr');
             const tabs = document.querySelectorAll('.tab-btn');

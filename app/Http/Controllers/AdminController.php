@@ -762,25 +762,53 @@ class AdminController extends Controller
      */
     public function invoices()
     {
-        // Placeholder - will be implemented when Invoice model is created
-        $invoices = [];
+        $invoices = \App\Models\Invoice::with(['parent', 'child'])->latest()->get();
+        // Fetch children with parents for the generation modal
+        $children = \App\Models\Child::with('parent')->where('status', '!=', 'pending')->get();
+
         $stats = [
-            'total_invoices' => 0,
-            'paid_invoices' => 0,
-            'pending_invoices' => 0,
-            'overdue_invoices' => 0,
-            'total_revenue' => 0,
+            'total_invoices' => $invoices->count(),
+            'paid_invoices' => $invoices->where('status', 'paid')->count(),
+            'pending_invoices' => $invoices->where('status', 'pending')->count(),
+            'overdue_invoices' => $invoices->where('status', 'overdue')->count(),
+            'total_revenue' => $invoices->where('status', 'paid')->sum('amount'), // Sum of paid invoices
+            'collected_revenue' => $invoices->where('status', 'paid')->sum('amount'), // Explicitly collected
+            'outstanding_amount' => $invoices->where('status', 'pending')->sum('amount'),
+            'overdue_amount' => $invoices->where('status', 'overdue')->sum('amount'),
         ];
 
-        return view('admin.invoices', compact('invoices', 'stats'));
+        return view('admin.invoices', compact('invoices', 'stats', 'children'));
     }
 
     /**
      * Feature #8: Generate invoice
      */
+    /**
+     * Feature #8: Generate invoice
+     */
     public function generateInvoice(Request $request)
     {
-        // Will be implemented when Invoice model is created
+        $validated = $request->validate([
+            'child_id' => 'required|exists:children,id',
+            'amount' => 'required|numeric|min:0',
+            'due_date' => 'required|date',
+            'status' => 'required|in:paid,pending,overdue',
+        ]);
+
+        $child = \App\Models\Child::findOrFail($validated['child_id']);
+
+        // Generate unique invoice number
+        $invoiceNumber = 'INV-' . date('Y') . '-' . strtoupper(\Illuminate\Support\Str::random(6));
+
+        \App\Models\Invoice::create([
+            'invoice_number' => $invoiceNumber,
+            'parent_id' => $child->parent_id, // Automatically link to the child's parent
+            'child_id' => $child->id,
+            'amount' => $validated['amount'],
+            'due_date' => $validated['due_date'],
+            'status' => $validated['status'],
+        ]);
+
         return redirect()->route('admin.invoices')
             ->with('success', 'Invoice generated successfully!');
     }
@@ -788,11 +816,37 @@ class AdminController extends Controller
     /**
      * Feature #8: Update invoice
      */
+    /**
+     * Feature #8: Update invoice
+     */
     public function updateInvoice(Request $request, $id)
     {
-        // Will be implemented when Invoice model is created
+        $invoice = \App\Models\Invoice::findOrFail($id);
+
+        $validated = $request->validate([
+            'amount' => 'required|numeric|min:0',
+            'due_date' => 'required|date',
+            'status' => 'required|in:paid,pending,overdue',
+        ]);
+
+        $invoice->update([
+            'amount' => $validated['amount'],
+            'due_date' => $validated['due_date'],
+            'status' => $validated['status'],
+        ]);
+
         return redirect()->route('admin.invoices')
             ->with('success', 'Invoice updated successfully!');
+    }
+
+    /**
+     * Feature #8: Download invoice
+     */
+    public function downloadInvoice($id)
+    {
+        $invoice = \App\Models\Invoice::with(['parent', 'child'])->findOrFail($id);
+        // specific view for printing/downloading
+        return view('admin.invoice-pdf', compact('invoice'));
     }
 
     /**
