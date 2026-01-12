@@ -64,8 +64,20 @@
     </table>
 
     <div class="total-section">
-        <span class="total-label">Total Due:</span>
-        <span class="total-amount">${{ number_format($invoice->amount, 2) }}</span>
+        @if($invoice->status == 'paid')
+            <p><span class="total-label">Subtotal:</span> <span class="total-amount">${{ number_format($invoice->amount, 2) }}</span></p>
+            <p><span class="total-label" style="color: green;">Amount Paid:</span> <span class="total-amount" style="color: green;">-${{ number_format($invoice->amount, 2) }}</span></p>
+            <div style="border-top: 2px solid #333; display: inline-block; padding-top: 5px; margin-top: 5px;">
+                <span class="total-label">Balance Due:</span>
+                <span class="total-amount">$0.00</span>
+            </div>
+            <div style="margin-top: 20px; font-size: 24px; font-weight: bold; color: green; border: 2px solid green; display: inline-block; padding: 10px 20px; transform: rotate(-5deg);">
+                PAID IN FULL
+            </div>
+        @else
+            <span class="total-label">Total Due:</span>
+            <span class="total-amount">${{ number_format($invoice->amount, 2) }}</span>
+        @endif
     </div>
 
     <div style="margin-top: 50px; text-align: center; color: #666; font-size: 0.9em;">

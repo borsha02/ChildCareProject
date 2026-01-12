@@ -146,6 +146,7 @@ Route::middleware('auth')->prefix('parent')->group(function (){
     Route::get('/reports/{id}/download', [ParentController::class, 'downloadReport'])->name('parent.reports.download');
     Route::get('/attendance', [ParentController::class, 'attendance'])->name('parent.attendance');
     Route::get('/invoices', [ParentController::class, 'invoices'])->name('parent.invoice');
+    Route::get('/invoices/{id}/download', [ParentController::class, 'downloadInvoice'])->name('parent.invoices.download');
     Route::get('/health', [ParentController::class, 'health'])->name('parent.health');
     Route::get('/health/vaccinations', [ParentController::class, 'vaccinations'])->name('parent.vaccinations');
     Route::get('/health/medications', [ParentController::class, 'medications'])->name('parent.medications');
@@ -174,7 +175,17 @@ Route::middleware('auth')->prefix('parent')->group(function (){
     Route::post('/settings/password', [ParentController::class, 'updatePassword'])->name('parent.settings.password');
     Route::get('/help', [ParentController::class, 'help'])->name('parent.help');
     Route::get('/caregivers', [ParentController::class, 'caregivers'])->name('parent.caregivers');
+
+    // Payment Initiation (Needs Auth)
+    Route::post('/invoice/{id}/pay', [App\Http\Controllers\PaymentController::class, 'pay'])->name('payment.pay');
+    Route::get('/payment/receipt/{transactionId}', [App\Http\Controllers\PaymentController::class, 'downloadReceipt'])->name('payment.receipt.download');
 });
+
+// Payment Callbacks (Public - No Auth required for callback handling)
+Route::post('/payment/success', [App\Http\Controllers\PaymentController::class, 'success'])->name('payment.success');
+Route::post('/payment/fail', [App\Http\Controllers\PaymentController::class, 'fail'])->name('payment.fail');
+Route::post('/payment/cancel', [App\Http\Controllers\PaymentController::class, 'cancel'])->name('payment.cancel');
+Route::post('/payment/ipn', [App\Http\Controllers\PaymentController::class, 'ipn'])->name('payment.ipn');
 
 Route::get('/dashboard', [HomeController::class, 'index'])
     ->middleware(['auth', 'verified'])

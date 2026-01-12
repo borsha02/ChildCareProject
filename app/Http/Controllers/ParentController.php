@@ -386,7 +386,46 @@ class ParentController extends Controller
 
     public function invoices()
     {
-        return view('parent.invoices');
+        $user = auth()->user();
+        $unreadCount = $user->unreadNotifications->count();
+
+        // Fetch invoices for the logged-in parent
+        $invoices = \App\Models\Invoice::where('parent_id', $user->id)
+            ->with(['child', 'successfulPayment'])
+            ->latest()
+            ->get();
+
+        // Calculate statistics
+        $pendingPayment = $invoices->where('status', 'pending')->sum('amount');
+        $paidThisYear = $invoices->where('status', 'paid')
+            ->where('created_at', '>=', now()->startOfYear())
+            ->sum('amount');
+        $totalInvoices = $invoices->count();
+        
+        $nextDueInvoice = $invoices->where('status', 'pending')->sortBy('due_date')->first();
+        $nextPaymentDue = $nextDueInvoice ? \Carbon\Carbon::parse($nextDueInvoice->due_date)->format('M d, Y') : 'N/A';
+
+        // Get the latest invoice for the "Current Invoice" section
+        $latestInvoice = $invoices->first();
+
+        return view('parent.invoices', compact(
+            'unreadCount',
+            'invoices',
+            'pendingPayment',
+            'paidThisYear',
+            'totalInvoices',
+            'nextPaymentDue',
+            'latestInvoice'
+        ));
+    }
+
+    public function downloadInvoice($id)
+    {
+        $invoice = \App\Models\Invoice::where('parent_id', auth()->id())
+            ->with(['parent', 'child'])
+            ->findOrFail($id);
+            
+        return view('admin.invoice-pdf', compact('invoice'));
     }
 
     public function health()

@@ -14,6 +14,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\Role::class,
         ]);
+        $middleware->validateCsrfTokens(except: [
+            '/payment/*',
+            '/payment/success',
+            '/payment/fail',
+            '/payment/cancel',
+            '/payment/ipn',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

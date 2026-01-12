@@ -32,4 +32,14 @@ class Invoice extends Model
     {
         return $this->belongsTo(Child::class);
     }
+
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function successfulPayment()
+    {
+        return $this->hasOne(Payment::class)->where('status', 'Completed')->latest();
+    }
 }

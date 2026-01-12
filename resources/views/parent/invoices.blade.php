@@ -142,7 +142,7 @@
                                 <i class="fas fa-clock"></i>
                             </div>
                             <div class="billing-details">
-                                <h3>$450.00</h3>
+                                <h3>{{ number_format($pendingPayment, 2) }}</h3>
                                 <p>Pending Payment</p>
                             </div>
                         </div>
@@ -151,7 +151,7 @@
                                 <i class="fas fa-check-circle"></i>
                             </div>
                             <div class="billing-details">
-                                <h3>$2,850.00</h3>
+                                <h3>{{ number_format($paidThisYear, 2) }}</h3>
                                 <p>Paid This Year</p>
                             </div>
                         </div>
@@ -160,7 +160,7 @@
                                 <i class="fas fa-calendar-day"></i>
                             </div>
                             <div class="billing-details">
-                                <h3>Jan 1, 2026</h3>
+                                <h3>{{ $nextPaymentDue }}</h3>
                                 <p>Next Payment Due</p>
                             </div>
                         </div>
@@ -169,51 +169,61 @@
                                 <i class="fas fa-file-invoice-dollar"></i>
                             </div>
                             <div class="billing-details">
-                                <h3>12</h3>
+                                <h3>{{ $totalInvoices }}</h3>
                                 <p>Total Invoices</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Current Invoice -->
+                    @if($latestInvoice)
                     <div class="card current-invoice">
                         <div class="card-header">
-                            <h2><i class="fas fa-file-invoice"></i> Current Invoice</h2>
+                            <h2><i class="fas fa-file-invoice"></i> Latest Invoice</h2>
                             <div class="invoice-actions">
-                                <button class="action-btn download">
+                                <a href="{{ route('parent.invoices.download', $latestInvoice->id) }}" class="action-btn download" target="_blank">
                                     <i class="fas fa-download"></i> Download PDF
-                                </button>
-                                <button class="action-btn pay">
-                                    <i class="fas fa-credit-card"></i> Pay Now
-                                </button>
+                                </a>
+                                @if($latestInvoice->status == 'pending')
+                                <form action="{{ route('payment.pay', $latestInvoice->id) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="action-btn pay">
+                                        <i class="fas fa-credit-card"></i> Pay Now
+                                    </button>
+                                </form>
+                                @endif
+                                
+                                @if($latestInvoice->status == 'paid' && $latestInvoice->successfulPayment)
+                                <a href="{{ route('payment.receipt.download', $latestInvoice->successfulPayment->transaction_id) }}" class="action-btn download" target="_blank">
+                                    <i class="fas fa-receipt"></i> Receipt
+                                </a>
+                                @endif
                             </div>
                         </div>
                         <div class="invoice-content">
                             <div class="invoice-header-info">
                                 <div class="invoice-number">
-                                    <h3>Invoice #INV-2025-12-001</h3>
-                                    <p>Issue Date: December 1, 2025</p>
-                                    <p>Due Date: December 31, 2025</p>
+                                    <h3>Invoice #{{ $latestInvoice->invoice_number }}</h3>
+                                    <p>Issue Date: {{ $latestInvoice->created_at->format('M d, Y') }}</p>
+                                    <p>Due Date: {{ \Carbon\Carbon::parse($latestInvoice->due_date)->format('M d, Y') }}</p>
                                 </div>
-                                <div class="invoice-status-badge pending">
-                                    <i class="fas fa-exclamation-circle"></i> Payment Pending
+                                <div class="invoice-status-badge {{ $latestInvoice->status }}">
+                                    <i class="fas fa-exclamation-circle"></i> Payment {{ ucfirst($latestInvoice->status) }}
                                 </div>
                             </div>
 
                             <div class="invoice-details">
                                 <div class="billing-info">
                                     <h4>Bill To:</h4>
-                                    <p><strong>John Doe</strong></p>
-                                    <p>123 Main Street</p>
-                                    <p>New York, NY 10001</p>
-                                    <p>Phone: +1 (555) 123-4567</p>
+                                    <p><strong>{{ Auth::user()->name }}</strong></p>
+                                    <p>{{ Auth::user()->email }}</p>
+                                    <p>{{ Auth::user()->phone }}</p>
                                 </div>
                                 <div class="facility-info">
                                     <h4>From:</h4>
-                                    <p><strong>Sunshine Childcare Center</strong></p>
-                                    <p>456 Oak Avenue</p>
-                                    <p>New York, NY 10002</p>
-                                    <p>Phone: +1 (555) 987-6543</p>
+                                    <p><strong>Little Stars ChildCare Center</strong></p>
+                                    <p>123 Childcare Lane</p>
+                                    <p>City, State, Zip</p>
                                 </div>
                             </div>
 
@@ -222,164 +232,78 @@
                                     <tr>
                                         <th>Description</th>
                                         <th>Child</th>
-                                        <th>Period</th>
-                                        <th>Quantity</th>
-                                        <th>Rate</th>
                                         <th>Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td>Monthly Tuition</td>
-                                        <td>Emma Doe</td>
-                                        <td>Dec 2025</td>
-                                        <td>1 month</td>
-                                        <td>$200.00</td>
-                                        <td>$200.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Monthly Tuition</td>
-                                        <td>Lucas James</td>
-                                        <td>Dec 2025</td>
-                                        <td>1 month</td>
-                                        <td>$200.00</td>
-                                        <td>$200.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Meal Plan</td>
-                                        <td>Emma Doe</td>
-                                        <td>Dec 2025</td>
-                                        <td>1 month</td>
-                                        <td>$50.00</td>
-                                        <td>$50.00</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Activity Fee</td>
-                                        <td>Both Children</td>
-                                        <td>Dec 2025</td>
-                                        <td>1 month</td>
-                                        <td>$30.00</td>
-                                        <td>$30.00</td>
+                                        <td>Tuition/Care Services</td>
+                                        <td>{{ $latestInvoice->child->first_name }} {{ $latestInvoice->child->last_name }}</td>
+                                        <td>{{ number_format($latestInvoice->amount, 2) }}</td>
                                     </tr>
                                 </tbody>
                             </table>
 
                             <div class="invoice-summary">
-                                <div class="summary-row">
-                                    <span>Subtotal:</span>
-                                    <span>$480.00</span>
-                                </div>
-                                <div class="summary-row">
-                                    <span>Discount (Sibling 10%):</span>
-                                    <span class="discount">-$30.00</span>
-                                </div>
                                 <div class="summary-row total">
                                     <span>Total Due:</span>
-                                    <span>$450.00</span>
-                                </div>
-                            </div>
-
-                            <div class="payment-methods">
-                                <h4>Accepted Payment Methods:</h4>
-                                <div class="payment-icons">
-                                    <i class="fab fa-cc-visa"></i>
-                                    <i class="fab fa-cc-mastercard"></i>
-                                    <i class="fab fa-cc-amex"></i>
-                                    <i class="fab fa-paypal"></i>
-                                    <i class="fas fa-university"></i>
+                                    <span>{{ number_format($latestInvoice->amount, 2) }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                    @endif
 
                     <!-- Invoice History -->
                     <div class="card">
                         <div class="card-header">
                             <h2><i class="fas fa-history"></i> Invoice History</h2>
-                            <div class="filter-group">
-                                <select class="filter-select">
-                                    <option value="all">All Invoices</option>
-                                    <option value="paid">Paid</option>
-                                    <option value="pending">Pending</option>
-                                    <option value="overdue">Overdue</option>
-                                </select>
-                            </div>
                         </div>
                         <table class="history-table">
                             <thead>
                                 <tr>
                                     <th>Invoice #</th>
                                     <th>Date</th>
-                                    <th>Description</th>
+                                    <th>Child</th>
                                     <th>Amount</th>
                                     <th>Status</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                @forelse($invoices as $invoice)
                                 <tr>
-                                    <td>INV-2025-12-001</td>
-                                    <td>Dec 1, 2025</td>
-                                    <td>December Tuition & Fees</td>
-                                    <td>$450.00</td>
-                                    <td><span class="status-badge pending">Pending</span></td>
+                                    <td>{{ $invoice->invoice_number }}</td>
+                                    <td>{{ $invoice->created_at->format('M d, Y') }}</td>
+                                    <td>{{ $invoice->child->first_name }}</td>
+                                    <td>{{ number_format($invoice->amount, 2) }}</td>
+                                    <td><span class="status-badge {{ $invoice->status }}">{{ ucfirst($invoice->status) }}</span></td>
                                     <td>
-                                        <button class="action-icon-btn" title="View">
+                                        <button class="action-icon-btn" title="View" onclick="viewInvoice({{ $invoice->id }})">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <button class="action-icon-btn" title="Download">
+                                        <a href="{{ route('parent.invoices.download', $invoice->id) }}" class="action-icon-btn" title="Download Invoice" target="_blank">
                                             <i class="fas fa-download"></i>
-                                        </button>
-                                        <button class="action-icon-btn pay-btn" title="Pay">
-                                            <i class="fas fa-credit-card"></i>
-                                        </button>
+                                        </a>
+                                        @if($invoice->status == 'pending')
+                                        <form action="{{ route('payment.pay', $invoice->id) }}" method="POST" style="display:inline;">
+                                            @csrf
+                                            <button type="submit" class="action-icon-btn pay-btn" title="Pay Now">
+                                                <i class="fas fa-credit-card"></i>
+                                            </button>
+                                        </form>
+                                        @elseif($invoice->status == 'paid' && $invoice->successfulPayment)
+                                        <a href="{{ route('payment.receipt.download', $invoice->successfulPayment->transaction_id) }}" class="action-icon-btn" title="Download Receipt" target="_blank">
+                                            <i class="fas fa-receipt"></i>
+                                        </a>
+                                        @endif
                                     </td>
                                 </tr>
+                                @empty
                                 <tr>
-                                    <td>INV-2025-11-001</td>
-                                    <td>Nov 1, 2025</td>
-                                    <td>November Tuition & Fees</td>
-                                    <td>$450.00</td>
-                                    <td><span class="status-badge paid">Paid</span></td>
-                                    <td>
-                                        <button class="action-icon-btn" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon-btn" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </td>
+                                    <td colspan="5" style="text-align: center;">No invoices found.</td>
                                 </tr>
-                                <tr>
-                                    <td>INV-2025-10-001</td>
-                                    <td>Oct 1, 2025</td>
-                                    <td>October Tuition & Fees</td>
-                                    <td>$450.00</td>
-                                    <td><span class="status-badge paid">Paid</span></td>
-                                    <td>
-                                        <button class="action-icon-btn" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon-btn" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>INV-2025-09-001</td>
-                                    <td>Sep 1, 2025</td>
-                                    <td>September Tuition & Fees</td>
-                                    <td>$450.00</td>
-                                    <td><span class="status-badge paid">Paid</span></td>
-                                    <td>
-                                        <button class="action-icon-btn" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon-btn" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </td>
-                                </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -391,13 +315,93 @@
                         </div>
                         <div class="info-content">
                             <h4>Payment Information</h4>
-                            <p>Payments are due by the last day of each month. Late payments may incur a $25 late fee. For payment assistance or questions, please contact our billing department at billing@sunshinechildcare.com or call (555) 987-6543.</p>
+                            <p>Payments are due by the last day of each month. Late payments may incur a 250 Taka late fee. For payment assistance or questions, please contact our billing department at info.littlestars.childcarecenter@gmail.com or call (555) 987-6543.</p>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
+
+    <!-- View Invoice Modal -->
+    <div id="invoiceModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="closeInvoiceModal()">&times;</span>
+            <h2 id="modalTitle">Invoice Details</h2>
+            <div class="form-group">
+                <label>Invoice Number</label>
+                <input type="text" id="view_invoice_number" readonly>
+            </div>
+            <div class="form-group">
+                <label>Child</label>
+                <input type="text" id="view_child_name" readonly>
+            </div>
+            <div class="form-group">
+                <label>Amount</label>
+                <input type="text" id="view_amount" readonly>
+            </div>
+            <div class="form-group">
+                <label>Due Date</label>
+                <input type="text" id="view_due_date" readonly>
+            </div>
+             <div class="form-group">
+                <label>Status</label>
+                <input type="text" id="view_status" readonly>
+            </div>
+             <div class="form-group">
+                <label>Transaction ID</label>
+                <input type="text" id="view_transaction_id" readonly placeholder="N/A">
+            </div>
+            <div class="form-actions">
+                <button class="cancel-btn" onclick="closeInvoiceModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store invoices in a global variable to avoid multiple parsing and quoting issues
+        const invoicesData = @json($invoices);
+
+        function viewInvoice(id) {
+            // Find the invoice by ID from the global data
+            const invoice = invoicesData.find(inv => inv.id === id);
+            
+            if (!invoice) {
+                console.error('Invoice not found:', id);
+                return;
+            }
+
+            document.getElementById('invoiceModal').style.display = 'block';
+            
+            document.getElementById('view_invoice_number').value = invoice.invoice_number;
+            document.getElementById('view_child_name').value = (invoice.child ? invoice.child.first_name + ' ' + (invoice.child.last_name || '') : 'N/A');
+            document.getElementById('view_amount').value = parseFloat(invoice.amount).toFixed(2);
+            document.getElementById('view_due_date').value = new Date(invoice.due_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+            
+            // Status
+            const statusField = document.getElementById('view_status');
+            statusField.value = invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1);
+            
+            // Transaction ID - Check both camelCase (relation name) and snake_case (potential serialization)
+            const payment = invoice.successfulPayment || invoice.successful_payment;
+            if (payment) {
+                document.getElementById('view_transaction_id').value = payment.transaction_id;
+            } else {
+                document.getElementById('view_transaction_id').value = 'N/A';
+            }
+        }
+
+        function closeInvoiceModal() {
+            document.getElementById('invoiceModal').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('invoiceModal');
+            if (event.target == modal) {
+                closeInvoiceModal();
+            }
+        }
+    </script>
 
     <script>
         // Mobile menu toggle
