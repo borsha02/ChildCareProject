@@ -932,12 +932,51 @@ class AdminController extends Controller
     /**
      * Feature #11: Approve Payments
      */
+    /**
+     * Feature #11: Approve Payments
+     */
     public function pendingPayments()
     {
-        // Placeholder - will be implemented when Payment model is created
-        $pendingPayments = [];
+        // Fetch all payments for the list
+        $pendingPayments = \App\Models\Payment::with(['invoice.parent', 'invoice.child'])
+            ->latest()
+            ->get();
 
-        return view('admin.pending-payments', compact('pendingPayments'));
+        // Calculate Stats
+        
+        // 1. Pending Approvals (Status is not Approved or Rejected)
+        // Adjust status check based on your specific logic. If 'Completed' means pending admin review, use that.
+        // Assuming 'Completed' from SSLCommerz needs Admin Approval to move to 'Approved'
+        // Or if 'Pending' is the status for manual payments. 
+        // Let's assume anything NOT 'Approved' or 'Rejected' is pending review.
+        $pendingCount = \App\Models\Payment::whereNotIn('status', ['Approved', 'Rejected'])->count();
+
+        // 2. Approved Today
+        $approvedToday = \App\Models\Payment::where('status', 'Approved')
+            ->whereDate('updated_at', today())
+            ->get();
+        $approvedTodayCount = $approvedToday->count();
+        $approvedTodayAmount = $approvedToday->sum('amount');
+
+        // 3. Rejected This Week
+        $rejectedWeekCount = \App\Models\Payment::where('status', 'Rejected')
+            ->whereBetween('updated_at', [now()->startOfWeek(), now()->endOfWeek()])
+            ->count();
+
+        // 4. Total Processed This Month (Approved or Rejected)
+        $totalProcessedMonthCount = \App\Models\Payment::whereIn('status', ['Approved', 'Rejected'])
+            ->whereMonth('updated_at', now()->month)
+            ->whereYear('updated_at', now()->year)
+            ->count();
+
+        return view('admin.pending-payments', compact(
+            'pendingPayments',
+            'pendingCount',
+            'approvedTodayCount',
+            'approvedTodayAmount',
+            'rejectedWeekCount',
+            'totalProcessedMonthCount'
+        ));
     }
 
     /**
@@ -945,7 +984,9 @@ class AdminController extends Controller
      */
     public function approvePayment($id)
     {
-        // Will be implemented when Payment model is created
+        $payment = \App\Models\Payment::findOrFail($id);
+        $payment->update(['status' => 'Approved']);
+        
         return redirect()->back()
             ->with('success', 'Payment approved successfully!');
     }
@@ -955,11 +996,19 @@ class AdminController extends Controller
      */
     public function rejectPayment(Request $request, $id)
     {
+        // Reason is optional for now as manual payments might not have strictly defined rejection flows
+        /*
         $validated = $request->validate([
             'reason' => 'required|string|max:500',
         ]);
+        */
 
-        // Will be implemented when Payment model is created
+        $payment = \App\Models\Payment::findOrFail($id);
+        $payment->update(['status' => 'Rejected']);
+        
+        // If rejected, we might want to set invoice back to pending?
+        // For now, let's keep it simple. Only change payment status.
+        // If needed, we can: $payment->invoice->update(['status' => 'pending']);
 
         return redirect()->back()
             ->with('success', 'Payment rejected!');

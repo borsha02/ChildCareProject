@@ -140,11 +140,12 @@ class PaymentController extends Controller
             ->firstOrFail();
 
         // Verify ownership (optional but recommended)
-        if ($payment->invoice->parent_id != auth()->id()) {
+        $user = auth()->user();
+        if ($user->role !== 'admin' && $payment->invoice->parent_id != $user->id) {
             abort(403);
         }
 
         $pdf = Pdf::loadView('parent.receipt-pdf', compact('payment'));
-        return $pdf->download('receipt-' . $transactionId . '.pdf');
+        return $pdf->stream('receipt-' . $transactionId . '.pdf');
     }
 }

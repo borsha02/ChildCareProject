@@ -116,22 +116,22 @@
                 <div class="stats-row">
                     <div class="stat-card orange">
                         <div class="stat-label">Pending Approvals</div>
-                        <div class="stat-value">5</div>
+                        <div class="stat-value">{{ $pendingCount }}</div>
                         <div class="stat-description">Awaiting review</div>
                     </div>
                     <div class="stat-card green">
                         <div class="stat-label">Approved Today</div>
-                        <div class="stat-value">12</div>
-                        <div class="stat-description">$14,400 approved</div>
+                        <div class="stat-value">{{ $approvedTodayCount }}</div>
+                        <div class="stat-description">${{ number_format($approvedTodayAmount, 2) }} approved</div>
                     </div>
                     <div class="stat-card red">
                         <div class="stat-label">Rejected</div>
-                        <div class="stat-value">2</div>
+                        <div class="stat-value">{{ $rejectedWeekCount }}</div>
                         <div class="stat-description">This week</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Total Processed</div>
-                        <div class="stat-value">156</div>
+                        <div class="stat-value">{{ $totalProcessedMonthCount }}</div>
                         <div class="stat-description">This month</div>
                     </div>
                 </div>
@@ -154,69 +154,54 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @forelse($pendingPayments as $payment)
                             <tr>
-                                <td><span class="invoice-number">PAY-001</span></td>
-                                <td>Sarah Martinez</td>
-                                <td>$1,200</td>
-                                <td>Bank Transfer</td>
-                                <td>Dec 23, 2025</td>
-                                <td>INV-2025-001</td>
+                                <td><span class="invoice-number">PAY-{{ str_pad($payment->id, 3, '0', STR_PAD_LEFT) }}</span></td>
+                                <td>{{ $payment->invoice->parent->name ?? 'Unknown' }}</td>
+                                <td>${{ number_format($payment->amount, 2) }}</td>
+                                <td>{{ $payment->card_type ?? 'Online' }}</td>
+                                <td>{{ $payment->created_at->format('M d, Y') }}</td>
+                                <td>{{ $payment->invoice->invoice_number ?? 'N/A' }}</td>
                                 <td>
                                     <div class="action-buttons">
-                                        <button class="action-icon view" title="View Receipt">
+                                        <!-- View Receipt -->
+                                        <a href="{{ route('payment.receipt.download', $payment->transaction_id) }}" class="action-icon view" title="View Receipt" target="_blank">
                                             <i class="fas fa-eye"></i>
+                                        </a>
+
+                                        <!-- Approve Form -->
+                                        @if($payment->status !== 'Approved')
+                                        <form action="{{ route('admin.payments.approve', $payment->id) }}" method="POST" style="display:inline;">
+                                            @csrf
+                                            <button type="submit" class="action-icon download" title="Approve" onclick="return confirm('Approve this payment?')">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+                                        @else
+                                        <button class="action-icon" style="opacity: 0.5; cursor: default;" title="Already Approved">
+                                            <i class="fas fa-check-double" style="color: green;"></i>
                                         </button>
-                                        <button class="action-icon download" title="Approve" onclick="approvePayment(1)">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Reject" onclick="rejectPayment(1)">
-                                            <i class="fas fa-times"></i>
-                                        </button>
+                                        @endif
+
+                                        <!-- Reject Form -->
+                                        @if($payment->status !== 'Rejected')
+                                        <form action="{{ route('admin.payments.reject', $payment->id) }}" method="POST" style="display:inline;">
+                                            @csrf
+                                            <button type="submit" class="action-icon edit" title="Reject" onclick="return confirm('Reject this payment?')">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </form>
+                                        @else
+                                        <span class="badge" style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px;">Rejected</span>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
+                            @empty
                             <tr>
-                                <td><span class="invoice-number">PAY-002</span></td>
-                                <td>Michael Johnson</td>
-                                <td>$1,150</td>
-                                <td>Credit Card</td>
-                                <td>Dec 23, 2025</td>
-                                <td>INV-2025-002</td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Receipt">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon download" title="Approve" onclick="approvePayment(2)">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Reject" onclick="rejectPayment(2)">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                </td>
+                                <td colspan="7" style="text-align: center; padding: 20px;">No payments found.</td>
                             </tr>
-                            <tr>
-                                <td><span class="invoice-number">PAY-003</span></td>
-                                <td>Emily Davis</td>
-                                <td>$950</td>
-                                <td>Cash</td>
-                                <td>Dec 22, 2025</td>
-                                <td>INV-2025-005</td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Receipt">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon download" title="Approve" onclick="approvePayment(3)">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Reject" onclick="rejectPayment(3)">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -225,21 +210,6 @@
     </div>
 
     <script>
-        function approvePayment(id) {
-            if (confirm('Approve this payment?')) {
-                alert('Payment approved successfully!');
-                console.log('Approved payment:', id);
-            }
-        }
-
-        function rejectPayment(id) {
-            const reason = prompt('Reason for rejection:');
-            if (reason) {
-                alert('Payment rejected.');
-                console.log('Rejected payment:', id, 'Reason:', reason);
-            }
-        }
-
         document.addEventListener('click', (e) => {
             const sidebar = document.getElementById('sidebar');
             const toggle = document.querySelector('.mobile-toggle');
