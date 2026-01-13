@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Event;
+use Illuminate\Support\Facades\Auth;
 
 class CaregiverController extends Controller
 {
@@ -376,7 +378,15 @@ class CaregiverController extends Controller
 
     public function events()
     {
-        return view('caregiver.events');
+        $user = Auth::user();
+        $events = Event::whereIn('audience', ['all', 'caregiver'])
+            ->with(['registrations' => function($query) use ($user) {
+                $query->where('user_id', $user->id);
+            }])
+            ->orderBy('start_time', 'asc')
+            ->get();
+            
+        return view('caregiver.events', compact('events'));
     }
 
     public function notifications()

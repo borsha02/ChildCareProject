@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Event;
 
 class ParentController extends Controller
 {
@@ -555,7 +556,17 @@ class ParentController extends Controller
 
     public function events()
     {
-        return view('parent.events');
+        $user = Auth::user();
+        $events = Event::whereIn('audience', ['all', 'parent'])
+            ->with(['registrations' => function($query) use ($user) {
+                $query->where('user_id', $user->id);
+            }])
+            ->orderBy('start_time', 'asc')
+            ->get();
+        
+        $unreadCount = \App\Models\Notification::where('user_id', $user->id)->where('is_read', false)->count();
+
+        return view('parent.events', compact('events', 'unreadCount'));
     }
 
     public function settings()

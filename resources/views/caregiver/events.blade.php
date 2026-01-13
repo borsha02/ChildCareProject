@@ -129,245 +129,53 @@
             <div class="events-section">
                 <h2><i class="fas fa-calendar-alt"></i> All Events</h2>
 
-                <!-- Event Card 1 -->
-                <div class="event-card">
-                    <div class="event-date-badge">
-                        <div class="date-day">28</div>
-                        <div class="date-month">DEC</div>
-                    </div>
-                    <div class="event-content">
-                        <div class="event-header">
-                            <h3>Parent-Teacher Meeting</h3>
-                            <span class="event-category educational">Educational</span>
-                        </div>
-                        <p class="event-description">
-                            Individual sessions with parents to discuss children's progress and development. Prepare reports
-                            for your assigned children.
-                        </p>
-                        <div class="event-details">
-                            <span class="event-detail">
-                                <i class="fas fa-clock"></i> 2:00 PM - 5:00 PM
-                            </span>
-                            <span class="event-detail">
-                                <i class="fas fa-map-marker-alt"></i> Conference Room
-                            </span>
-                            <span class="event-detail">
-                                <i class="fas fa-users"></i> 12 Children
-                            </span>
-                        </div>
-                        <div class="event-role-tag">
-                            <i class="fas fa-user-tag"></i> Your Role: Lead Presenter
-                        </div>
-                    </div>
-                    <div class="event-actions">
-                        <button class="action-btn primary">
-                            <i class="fas fa-clipboard-check"></i> View Schedule
-                        </button>
-                        <button class="action-btn secondary">
-                            <i class="fas fa-info-circle"></i> Details
-                        </button>
-                    </div>
-                </div>
+                @forelse($events as $event)
+                    @php
+                        $isPast = $event->end_time->isPast();
+                        $isRegistered = $event->registrations->isNotEmpty();
+                        $filterClass = $isPast ? 'past' : 'upcoming';
+                        if($isRegistered) $filterClass .= ' my-events'; // using 'my-events' as the filter key
+                    @endphp
 
-                <!-- Event Card 2 -->
-                <div class="event-card">
-                    <div class="event-date-badge">
-                        <div class="date-day">05</div>
-                        <div class="date-month">JAN</div>
-                    </div>
-                    <div class="event-content">
-                        <div class="event-header">
-                            <h3>Winter Sports Day</h3>
-                            <span class="event-category sports">Sports</span>
+                    <div class="event-card {{ $filterClass }} {{ $event->category }}" data-category="{{ $event->category }}">
+                        <div class="event-date-badge">
+                            <div class="date-day">{{ $event->start_time->format('d') }}</div>
+                            <div class="date-month">{{ $event->start_time->format('M') }}</div>
                         </div>
-                        <p class="event-description">
-                            Organize and supervise outdoor activities and games for children. Ensure safety protocols are
-                            followed.
-                        </p>
-                        <div class="event-details">
-                            <span class="event-detail">
-                                <i class="fas fa-clock"></i> 9:00 AM - 3:00 PM
-                            </span>
-                            <span class="event-detail">
-                                <i class="fas fa-map-marker-alt"></i> Sports Ground
-                            </span>
-                            <span class="event-detail">
-                                <i class="fas fa-users"></i> 50 Children
-                            </span>
+                        <div class="event-content">
+                            <div class="event-header">
+                                <h3>{{ $event->title }}</h3>
+                                <span class="event-category {{ $event->category }}">{{ ucfirst($event->category) }}</span>
+                            </div>
+                            <p class="event-description">
+                                {{ Str::limit($event->description, 100) }}
+                            </p>
+                            <div class="event-details">
+                                <span class="event-detail">
+                                    <i class="fas fa-clock"></i> {{ $event->start_time->format('h:i A') }} - {{ $event->end_time->format('h:i A') }}
+                                </span>
+                                <span class="event-detail">
+                                    <i class="fas fa-map-marker-alt"></i> {{ $event->location ?? 'TBD' }}
+                                </span>
+                            </div>
                         </div>
-                        <div class="event-role-tag">
-                            <i class="fas fa-user-tag"></i> Your Role: Activity Supervisor
-                        </div>
-                    </div>
-                    <div class="event-actions">
-                        <button class="action-btn primary">
-                            <i class="fas fa-calendar-plus"></i> Confirm Attendance
-                        </button>
-                        <button class="action-btn secondary">
-                            <i class="fas fa-info-circle"></i> Details
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Event Card 3 -->
-                <div class="event-card">
-                    <div class="event-date-badge">
-                        <div class="date-day">12</div>
-                        <div class="date-month">JAN</div>
-                    </div>
-                    <div class="event-content">
-                        <div class="event-header">
-                            <h3>Art Exhibition</h3>
-                            <span class="event-category cultural">Cultural</span>
-                        </div>
-                        <p class="event-description">
-                            Help set up and manage the showcase of children's artwork. Assist parents and guide them through
-                            the exhibition.
-                        </p>
-                        <div class="event-details">
-                            <span class="event-detail">
-                                <i class="fas fa-clock"></i> 10:00 AM - 4:00 PM
-                            </span>
-                            <span class="event-detail">
-                                <i class="fas fa-map-marker-alt"></i> Art Gallery
-                            </span>
-                            <span class="event-detail">
-                                <i class="fas fa-users"></i> 100 Attendees
-                            </span>
-                        </div>
-                        <div class="event-role-tag">
-                            <i class="fas fa-user-tag"></i> Your Role: Exhibition Guide
+                        <div class="event-actions">
+                            @if($isRegistered)
+                                <button class="action-btn secondary" disabled>
+                                    <i class="fas fa-check-circle"></i> Registered
+                                </button>
+                            @elseif(!$isPast)
+                                <button class="action-btn primary">
+                                    <i class="fas fa-calendar-plus"></i> Register
+                                </button>
+                            @endif
                         </div>
                     </div>
-                    <div class="event-actions">
-                        <button class="action-btn primary">
-                            <i class="fas fa-calendar-plus"></i> Volunteer
-                        </button>
-                        <button class="action-btn secondary">
-                            <i class="fas fa-info-circle"></i> Details
-                        </button>
+                @empty
+                    <div class="no-events">
+                        <p>No events found.</p>
                     </div>
-                </div>
-
-                <!-- Event Card 4 -->
-                <div class="event-card">
-                    <div class="event-date-badge">
-                        <div class="date-day">15</div>
-                        <div class="date-month">JAN</div>
-                    </div>
-                    <div class="event-content">
-                        <div class="event-header">
-                            <h3>CPR & Safety Workshop</h3>
-                            <span class="event-category training">Training</span>
-                        </div>
-                        <p class="event-description">
-                            Mandatory training session for all caregivers. Renew CPR certification and learn updated safety
-                            protocols.
-                        </p>
-                        <div class="event-details">
-                            <span class="event-detail">
-                                <i class="fas fa-clock"></i> 1:00 PM - 4:00 PM
-                            </span>
-                            <span class="event-detail">
-                                <i class="fas fa-map-marker-alt"></i> Training Center
-                            </span>
-                            <span class="event-detail">
-                                <i class="fas fa-users"></i> 15 Staff
-                            </span>
-                        </div>
-                        <div class="event-role-tag mandatory">
-                            <i class="fas fa-exclamation-circle"></i> Mandatory Attendance
-                        </div>
-                    </div>
-                    <div class="event-actions">
-                        <button class="action-btn primary">
-                            <i class="fas fa-calendar-check"></i> Confirm
-                        </button>
-                        <button class="action-btn secondary">
-                            <i class="fas fa-info-circle"></i> Details
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Event Card 5 -->
-                <div class="event-card">
-                    <div class="event-date-badge">
-                        <div class="date-day">20</div>
-                        <div class="date-month">JAN</div>
-                    </div>
-                    <div class="event-content">
-                        <div class="event-header">
-                            <h3>Family Picnic Day</h3>
-                            <span class="event-category social">Social</span>
-                        </div>
-                        <p class="event-description">
-                            Organize games and activities for families. Ensure children's safety and facilitate family
-                            engagement activities.
-                        </p>
-                        <div class="event-details">
-                            <span class="event-detail">
-                                <i class="fas fa-clock"></i> 11:00 AM - 5:00 PM
-                            </span>
-                            <span class="event-detail">
-                                <i class="fas fa-map-marker-alt"></i> Central Park
-                            </span>
-                            <span class="event-detail">
-                                <i class="fas fa-users"></i> 75 Families
-                            </span>
-                        </div>
-                        <div class="event-role-tag">
-                            <i class="fas fa-user-tag"></i> Your Role: Activity Coordinator
-                        </div>
-                    </div>
-                    <div class="event-actions">
-                        <button class="action-btn primary">
-                            <i class="fas fa-calendar-plus"></i> Sign Up
-                        </button>
-                        <button class="action-btn secondary">
-                            <i class="fas fa-info-circle"></i> Details
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Event Card 6 - Past Event -->
-                <div class="event-card past">
-                    <div class="event-date-badge">
-                        <div class="date-day">15</div>
-                        <div class="date-month">DEC</div>
-                    </div>
-                    <div class="event-content">
-                        <div class="event-header">
-                            <h3>Holiday Concert</h3>
-                            <span class="event-category cultural">Cultural</span>
-                        </div>
-                        <p class="event-description">
-                            Successfully coordinated children's performances. Great job to all staff members who
-                            participated!
-                        </p>
-                        <div class="event-details">
-                            <span class="event-detail">
-                                <i class="fas fa-clock"></i> 3:00 PM - 5:00 PM
-                            </span>
-                            <span class="event-detail">
-                                <i class="fas fa-map-marker-alt"></i> Auditorium
-                            </span>
-                            <span class="event-detail">
-                                <i class="fas fa-users"></i> 120 Attended
-                            </span>
-                        </div>
-                        <div class="event-role-tag completed">
-                            <i class="fas fa-check-circle"></i> Completed
-                        </div>
-                    </div>
-                    <div class="event-actions">
-                        <button class="action-btn secondary">
-                            <i class="fas fa-images"></i> View Photos
-                        </button>
-                        <button class="action-btn secondary">
-                            <i class="fas fa-file-alt"></i> Report
-                        </button>
-                    </div>
-                </div>
+                @endforelse
             </div>
         </div>
     </div>
@@ -375,22 +183,54 @@
 
 @section('scripts')
     <script>
-        // Filter tabs
-        document.querySelectorAll('.filter-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                // Filter events based on data-filter attribute
-            });
-        });
+        document.addEventListener('DOMContentLoaded', function() {
+            const events = document.querySelectorAll('.event-card');
+            const filterTabs = document.querySelectorAll('.filter-tab');
+            const categoryFilter = document.querySelector('.filter-select');
 
-        // View toggle
-        document.querySelectorAll('.view-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                // Switch between list and calendar view
+            function filterEvents() {
+                const activeTab = document.querySelector('.filter-tab.active').dataset.filter;
+                const category = categoryFilter.value;
+
+                events.forEach(event => {
+                    let show = true;
+
+                    // Tab filter
+                    if (activeTab === 'upcoming' && event.classList.contains('past')) show = false;
+                    if (activeTab === 'past' && !event.classList.contains('past')) show = false;
+                    if (activeTab === 'my-events' && !event.classList.contains('my-events')) show = false;
+
+                    // Category filter
+                    if (category !== 'all' && event.dataset.category !== category) show = false;
+
+                    event.style.display = show ? 'flex' : 'none';
+                });
+            }
+
+            filterTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    filterTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    filterEvents();
+                });
             });
+
+            if (categoryFilter) {
+                categoryFilter.addEventListener('change', filterEvents);
+            }
+
+            // Mobile menu toggle
+            const mobileToggle = document.querySelector('.mobile-toggle');
+            const sidebar = document.getElementById('sidebar');
+
+            if (mobileToggle) {
+                mobileToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('active');
+                });
+            }
+            
+            // Initial filter
+            filterEvents();
         });
     </script>
 @endsection

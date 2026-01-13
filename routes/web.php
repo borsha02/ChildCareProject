@@ -101,6 +101,16 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     Route::get('/messages/{id}', [AdminController::class, 'viewMessage'])->name('admin.messages.view');
     Route::put('/messages/{id}', [AdminController::class, 'editMessage'])->name('admin.messages.edit');
     Route::delete('/messages/{id}', [AdminController::class, 'deleteMessage'])->name('admin.messages.delete');
+
+    // Events (Feature #15)
+    Route::get('/events', [App\Http\Controllers\AdminEventController::class, 'index'])->name('admin.events.index');
+    Route::get('/events/calendar', [App\Http\Controllers\AdminEventController::class, 'calendar'])->name('admin.events.calendar');
+    Route::get('/events/create', [App\Http\Controllers\AdminEventController::class, 'create'])->name('admin.events.create');
+    Route::post('/events', [App\Http\Controllers\AdminEventController::class, 'store'])->name('admin.events.store');
+    Route::post('/events/bulk', [App\Http\Controllers\AdminEventController::class, 'bulkStore'])->name('admin.events.bulk-store');
+    Route::get('/events/{event}/edit', [App\Http\Controllers\AdminEventController::class, 'edit'])->name('admin.events.edit');
+    Route::put('/events/{event}', [App\Http\Controllers\AdminEventController::class, 'update'])->name('admin.events.update');
+    Route::delete('/events/{event}', [App\Http\Controllers\AdminEventController::class, 'destroy'])->name('admin.events.delete');
 });
 
 

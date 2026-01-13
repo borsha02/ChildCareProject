@@ -66,6 +66,10 @@
                 <i class="fas fa-file-alt"></i>
                 <span>Daily Reports</span>
             </a>
+            <a href="{{ route('admin.events.index') }}" class="nav-item {{ request()->routeIs('admin.events*') ? 'active' : '' }}">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Events Management</span>
+            </a>
             <a href="{{ route('admin.invoices') }}" class="nav-item {{ request()->routeIs('admin.invoices') ? 'active' : '' }}">
                 <i class="fas fa-file-invoice-dollar"></i>
                 <span>Billing & Invoices</span>
