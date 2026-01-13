@@ -378,11 +378,9 @@ class CaregiverController extends Controller
 
     public function events()
     {
-        $user = Auth::user();
         $events = Event::whereIn('audience', ['all', 'caregiver'])
-            ->with(['registrations' => function($query) use ($user) {
-                $query->where('user_id', $user->id);
-            }])
+            ->with(['registrations.user.children'])
+            ->withCount('registrations')
             ->orderBy('start_time', 'asc')
             ->get();
             

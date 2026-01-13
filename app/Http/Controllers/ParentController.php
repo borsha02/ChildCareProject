@@ -558,16 +558,61 @@ class ParentController extends Controller
     public function events()
     {
         $user = Auth::user();
-        $events = Event::whereIn('audience', ['all', 'parent'])
+        $events = \App\Models\Event::whereIn('audience', ['all', 'parent'])
             ->with(['registrations' => function($query) use ($user) {
                 $query->where('user_id', $user->id);
             }])
             ->orderBy('start_time', 'asc')
             ->get();
         
+        $children = $user->children;
         $unreadCount = $user->unreadNotifications->count();
 
-        return view('parent.events', compact('events', 'unreadCount'));
+        return view('parent.events', compact('events', 'unreadCount', 'children'));
+    }
+
+    public function registerEvent(Request $request)
+    {
+        $validated = $request->validate([
+            'event_id' => 'required|exists:events,id',
+            'selected_children' => 'required|array|min:1',
+            'selected_children.*' => 'exists:children,id',
+        ]);
+
+        $event = \App\Models\Event::findOrFail($validated['event_id']);
+        $childrenIds = $validated['selected_children'];
+
+        // Check capacity
+        if ($event->capacity) {
+            $currentCount = \App\Models\EventRegistration::where('event_id', $event->id)->count();
+            if (($currentCount + count($childrenIds)) > $event->capacity) {
+                return back()->with('error', 'Sorry, not enough spots available for all selected children.');
+            }
+        }
+
+        $registeredCount = 0;
+        foreach ($childrenIds as $childId) {
+             // Check if child already registered
+             $existing = \App\Models\EventRegistration::where('event_id', $event->id)
+                ->where('child_id', $childId)
+                ->exists();
+             
+             if (!$existing) {
+                 \App\Models\EventRegistration::create([
+                    'event_id' => $event->id,
+                    'user_id' => auth()->id(),
+                    'child_id' => $childId,
+                    'status' => 'registered'
+                ]);
+                $registeredCount++;
+             }
+        }
+
+        if ($registeredCount == 0) {
+             return back()->with('info', 'Selected children are already registered.');
+        }
+
+        return back()->with('success', 'Successfully registered ' . $registeredCount . ' children for the event!');
     }
 
     public function settings()

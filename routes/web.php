@@ -180,6 +180,7 @@ Route::middleware('auth')->prefix('parent')->group(function (){
     Route::post('/notifications/{id}/mark-read', [ParentController::class, 'markNotificationRead'])->name('parent.notifications.mark-read');
     Route::delete('/notifications/{id}', [ParentController::class, 'deleteNotification'])->name('parent.notifications.delete');
     Route::get('/events', [ParentController::class, 'events'])->name('parent.events');
+    Route::post('/events/register', [ParentController::class, 'registerEvent'])->name('parent.events.register');
     Route::get('/settings', [ParentController::class, 'settings'])->name('parent.settings');
     Route::post('/settings', [ParentController::class, 'updateSettings'])->name('parent.settings.update');
     Route::post('/settings/password', [ParentController::class, 'updatePassword'])->name('parent.settings.password');

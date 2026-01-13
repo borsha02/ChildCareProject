@@ -175,7 +175,6 @@
                                 <div class="event-content">
                                     <div class="event-header">
                                         <h3>{{ $event->title }}</h3>
-                                        <span class="event-category {{ $event->category }}">{{ ucfirst($event->category) }}</span>
                                     </div>
                                     <p class="event-description">
                                         {{ Str::limit($event->description, 100) }}
@@ -184,9 +183,11 @@
                                         <span class="event-detail">
                                             <i class="fas fa-clock"></i> {{ $event->start_time->format('h:i A') }} - {{ $event->end_time->format('h:i A') }}
                                         </span>
-                                        <span class="event-detail">
-                                            <i class="fas fa-map-marker-alt"></i> {{ $event->location ?? 'TBD' }}
-                                        </span>
+                                        @if($event->location)
+                                            <span class="event-detail">
+                                                <i class="fas fa-map-marker-alt"></i> {{ $event->location }}
+                                            </span>
+                                        @endif
                                         @if($event->capacity)
                                             <span class="event-detail">
                                                 <i class="fas fa-users"></i> {{ $event->registrations_count ?? 0 }} / {{ $event->capacity }}
@@ -194,13 +195,16 @@
                                         @endif
                                     </div>
                                 </div>
+                                <div style="align-self: center;">
+                                    <span class="event-category {{ $event->category }}">{{ ucfirst($event->category) }}</span>
+                                </div>
                                 <div class="event-actions">
                                     @if($isRegistered)
                                         <button class="action-btn secondary" disabled>
                                             <i class="fas fa-check-circle"></i> Registered
                                         </button>
                                     @elseif(!$isPast)
-                                        <button class="action-btn primary">
+                                        <button type="button" class="action-btn primary" onclick="openRegisterModal({{ $event->id }}, '{{ addslashes($event->title) }}')">
                                             <i class="fas fa-calendar-plus"></i> Register
                                         </button>
                                     @endif
@@ -218,6 +222,51 @@
         </main>
     </div>
 
+    <!-- Registration Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Register for Event</h3>
+                <span class="close-modal" onclick="closeRegisterModal()">&times;</span>
+            </div>
+            <form action="{{ route('parent.events.register') }}" method="POST">
+                @csrf
+                <input type="hidden" name="event_id" id="modalEventId">
+                
+                <div class="modal-body">
+                    <p style="margin-bottom: 15px; color: #6b7280;">Select children to register:</p>
+                    
+                    @if($children->count() > 0)
+                        <div class="checkbox-group">
+                            <label class="checkbox-container select-all">
+                                <input type="checkbox" id="selectAll" onchange="toggleAllChildren(this)">
+                                <span class="checkmark"></span>
+                                Select All
+                            </label>
+                            
+                            @foreach($children as $child)
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="selected_children[]" value="{{ $child->id }}" class="child-checkbox" onchange="updateSelectAll()">
+                                    <span class="checkmark"></span>
+                                    {{ $child->first_name }} {{ $child->last_name }}
+                                </label>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="error-text">No active children found. Please add a child profile first.</p>
+                    @endif
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeRegisterModal()">Cancel</button>
+                    @if($children->count() > 0)
+                        <button type="submit" class="btn-confirm">Confirm Registration</button>
+                    @endif
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const events = document.querySelectorAll('.event-card');
@@ -229,7 +278,7 @@
                 const category = categoryFilter.value;
 
                 events.forEach(event => {
-                    let show = true;
+                    let show = true; // Default to show
 
                     // Tab filter
                     if (activeTab === 'upcoming' && event.classList.contains('past')) show = false;
@@ -239,7 +288,7 @@
                     // Category filter
                     if (category !== 'all' && event.dataset.category !== category) show = false;
 
-                    event.style.display = show ? 'flex' : 'none'; // Assuming flex layout
+                    event.style.display = show ? 'flex' : 'none'; 
                 });
             }
 
@@ -259,7 +308,7 @@
             filterEvents();
         });
 
-        // Mobile menu toggle
+        // Mobile menu toggle (existing code)
         const mobileToggle = document.querySelector('.mobile-toggle');
         const sidebar = document.getElementById('sidebar');
 
@@ -277,6 +326,38 @@
                 }
             }
         });
+
+        // Modal Functions
+        const modal = document.getElementById('registerModal');
+        
+        function openRegisterModal(eventId, eventTitle) {
+            document.getElementById('modalEventId').value = eventId;
+            document.getElementById('modalTitle').innerText = 'Register for: ' + eventTitle;
+            modal.style.display = 'block';
+        }
+
+        function closeRegisterModal() {
+            modal.style.display = 'none';
+        }
+
+        function toggleAllChildren(source) {
+            const checkboxes = document.querySelectorAll('.child-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        function updateSelectAll() {
+            const checkboxes = document.querySelectorAll('.child-checkbox');
+            const selectAll = document.getElementById('selectAll');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            selectAll.checked = allChecked;
+        }
+
+        // Close modal if clicking outside content
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeRegisterModal();
+            }
+        }
     </script>
 </body>
 </html>
