@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Event;
 
@@ -564,7 +565,7 @@ class ParentController extends Controller
             ->orderBy('start_time', 'asc')
             ->get();
         
-        $unreadCount = \App\Models\Notification::where('user_id', $user->id)->where('is_read', false)->count();
+        $unreadCount = $user->unreadNotifications->count();
 
         return view('parent.events', compact('events', 'unreadCount'));
     }

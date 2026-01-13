@@ -207,8 +207,9 @@
                                 </div>
                             </div>
                         @empty
-                            <div class="no-events">
-                                <p>No events found.</p>
+                            <div class="no-events" style="text-align: center; padding: 60px 20px; color: #6b7280;">
+                                <i class="fas fa-calendar-times" style="font-size: 64px; color: #d1d5db; margin-bottom: 20px; display: block;"></i>
+                                <p style="font-size: 18px; margin: 0;">No events found.</p>
                             </div>
                         @endforelse
                     </div>
