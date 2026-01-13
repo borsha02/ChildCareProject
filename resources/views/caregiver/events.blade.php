@@ -47,11 +47,13 @@
                 <div class="filter-actions">
                     <select class="filter-select" id="categoryFilter">
                         <option value="all">All Categories</option>
+                        <option value="general">General</option>
                         <option value="educational">Educational</option>
                         <option value="sports">Sports & Recreation</option>
                         <option value="cultural">Cultural</option>
                         <option value="training">Staff Training</option>
                         <option value="social">Social Events</option>
+                        <option value="holiday">Holiday</option>
                     </select>
                 </div>
             </div>
@@ -85,7 +87,6 @@
                         <div class="event-content">
                             <div class="event-header">
                                 <h3>{{ $event->title }}</h3>
-                                <span class="event-category {{ $event->category }}">{{ ucfirst($event->category) }}</span>
                             </div>
                             <p class="event-description">
                                 {{ Str::limit($event->description, 100) }}
@@ -100,9 +101,17 @@
                                     </span>
                                 @endif
                                 <span class="event-detail">
-                                    <i class="fas fa-users"></i> {{ $event->registrations_count }} {{ Str::plural('Attendee', $event->registrations_count) }}
+                                    @php
+                                        // Check if registrations are primarily children
+                                        $childCount = $event->registrations->whereNotNull('child_id')->count();
+                                        $label = $childCount > 0 ? 'Children' : 'Attendees';
+                                    @endphp
+                                    <i class="fas fa-users"></i> {{ $event->registrations_count }} {{ $label }}
                                 </span>
                             </div>
+                        </div>
+                        <div style="align-self: center;">
+                             <span class="event-category {{ $event->category }}">{{ ucfirst($event->category) }}</span>
                         </div>
                         <div class="event-actions">
                             @if($event->registrations_count > 0)
@@ -204,9 +213,31 @@
             const container = document.getElementById('attendeesListContainer');
             
             if (event.registrations && event.registrations.length > 0) {
+                // Group registrations by user ID
+                const uniqueParents = {};
+                
+                event.registrations.forEach(reg => {
+                    const userId = reg.user.id;
+                    if (!uniqueParents[userId]) {
+                        uniqueParents[userId] = {
+                            user: reg.user,
+                            children: []
+                        };
+                    }
+                    if (reg.child) {
+                        uniqueParents[userId].children.push(reg.child);
+                    }
+                });
+
                 let html = '<div class="attendees-list">';
-                event.registrations.forEach((registration, index) => {
-                    const user = registration.user;
+                
+                Object.values(uniqueParents).forEach(({user, children}) => {
+                    let childrenText = '';
+                    if (children.length > 0) {
+                        const names = children.map(c => c.first_name).join(', ');
+                        childrenText = `<p class="text-sm text-gray-500" style="font-size: 0.85em; margin-top: 4px;">Children: ${names}</p>`;
+                    }
+
                     html += `
                         <div class="attendee-item">
                             <div class="attendee-avatar">${user.name.charAt(0).toUpperCase()}</div>
@@ -214,10 +245,12 @@
                                 <h4>${user.name}</h4>
                                 <p>${user.email || ''}</p>
                                 <span class="attendee-role">${user.role === 'parent' ? 'Parent' : 'Caregiver'}</span>
+                                ${childrenText}
                             </div>
                         </div>
                     `;
                 });
+
                 html += '</div>';
                 container.innerHTML = html;
             } else {
@@ -239,31 +272,33 @@
 
             if (event.registrations) {
                 event.registrations.forEach(registration => {
-                    if (registration.user && registration.user.role === 'parent' && registration.user.children) {
-                        registration.user.children.forEach(child => {
-                            childrenCount++;
-                            const childName = `${child.first_name} ${child.last_name}`;
-                            childrenHtml += `
-                                <div class="attendee-item">
-                                    <div class="attendee-avatar" style="background: linear-gradient(135deg, #fbbf24, #f59e0b);">
-                                        <i class="fas fa-child"></i>
-                                    </div>
-                                    <div class="attendee-info">
-                                        <h4>${childName}</h4>
-                                        <p>Parent: ${registration.user.name}</p>
-                                        <span class="attendee-role" style="background: #fef3c7; color: #92400e;">Child</span>
-                                    </div>
+                    // Only process if it has a linked child
+                    if (registration.child) {
+                        childrenCount++;
+                        const child = registration.child;
+                        const childName = `${child.first_name} ${child.last_name}`;
+                        childrenHtml += `
+                            <div class="attendee-item">
+                                <div class="attendee-avatar" style="background: linear-gradient(135deg, #fbbf24, #f59e0b);">
+                                    <i class="fas fa-child"></i>
                                 </div>
-                            `;
-                        });
-                    }
+                                <div class="attendee-info">
+                                    <h4>${childName}</h4>
+                                    <p>Parent: ${registration.user ? registration.user.name : 'Unknown'}</p>
+                                    <span class="attendee-role" style="background: #fef3c7; color: #92400e;">Child</span>
+                                </div>
+                            </div>
+                        `;
+                    } 
+                    // Fallback for old system: check user.children logic? 
+                    // No, avoid duplication. Only showing explicitly registered children is safer now.
                 });
             }
 
             if (childrenCount > 0) {
                 container.innerHTML = `<div class="attendees-list">${childrenHtml}</div>`;
             } else {
-                container.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 20px;">No children registered for this event.</p>';
+                container.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 20px;">No children explicitly registered for this event.</p>';
             }
 
             document.getElementById('attendeesModal').classList.add('active');
