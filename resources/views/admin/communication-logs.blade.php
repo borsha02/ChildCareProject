@@ -71,10 +71,7 @@
                 </div>
                 <div class="nav-section">
                     <div class="nav-section-title">Communication</div>
-                    <a href="{{ route('admin.announcements') }}" class="nav-item">
-                        <i class="fas fa-bullhorn"></i>
-                        <span>Announcements</span>
-                    </a>
+
                     <a href="{{ route('admin.communication') }}" class="nav-item active">
                         <i class="fas fa-comments"></i>
                         <span>Communication Logs</span>
@@ -189,34 +186,7 @@
                         </div>
                     </div>
 
-                    <div class="report-card meal">
-                        <div class="report-header">
-                            <div class="report-title">
-                                <h3>Notification: New Announcement</h3>
-                                <div class="report-meta">Today, 2:00 PM</div>
-                            </div>
-                            <div class="report-icon meal">
-                                <i class="fas fa-bell"></i>
-                            </div>
-                        </div>
-                        <div class="report-content">
-                            <div class="report-item">
-                                <span class="report-label">To</span>
-                                <span class="report-value">All Parents</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Title</span>
-                                <span class="report-value">Holiday Schedule</span>
-                            </div>
-                            <div class="report-item">
-                                <span class="report-label">Recipients</span>
-                                <span class="report-value">45 users</span>
-                            </div>
-                        </div>
-                        <div class="report-notes">
-                            Holiday schedule announcement sent to all parents.
-                        </div>
-                    </div>
+
 
                     <div class="report-card activity">
                         <div class="report-header">

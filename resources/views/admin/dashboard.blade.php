@@ -183,10 +183,7 @@
                                 <i class="fas fa-file-invoice"></i>
                                 <p>Generate Invoice</p>
                             </a>
-                            <a href="{{ route('admin.announcements') }}" class="action-btn">
-                                <i class="fas fa-bullhorn"></i>
-                                <p>Send Announcement</p>
-                            </a>
+
                             {{-- <a href="{{ route('admin.reports') }}" class="action-btn">
                                 <i class="fas fa-download"></i>
                                 <p>Export Reports</p>

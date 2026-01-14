@@ -71,10 +71,7 @@
                 </div>
                 <div class="nav-section">
                     <div class="nav-section-title">Communication</div>
-                    <a href="{{ route('admin.announcements') }}" class="nav-item">
-                        <i class="fas fa-bullhorn"></i>
-                        <span>Announcements</span>
-                    </a>
+
                     <a href="{{ route('admin.communication') }}" class="nav-item">
                         <i class="fas fa-comments"></i>
                         <span>Communication Logs</span>

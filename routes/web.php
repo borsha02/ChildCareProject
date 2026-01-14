@@ -74,11 +74,7 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     Route::put('/invoices/{id}', [AdminController::class, 'updateInvoice'])->name('admin.invoices.update');
     Route::get('/invoices/{id}/download', [AdminController::class, 'downloadInvoice'])->name('admin.invoices.download');
 
-    // Announcements (Feature #10)
-    Route::get('/announcements', [AdminController::class, 'announcements'])->name('admin.announcements');
-    Route::post('/announcements/create', [AdminController::class, 'createAnnouncement'])->name('admin.announcements.create');
-    Route::put('/announcements/{id}', [AdminController::class, 'updateAnnouncement'])->name('admin.announcements.update');
-    Route::delete('/announcements/{id}', [AdminController::class, 'deleteAnnouncement'])->name('admin.announcements.delete');
+
 
     // Payment Approvals (Feature #11)
     Route::get('/pending', [AdminController::class, 'pendingActions'])->name('admin.pending');

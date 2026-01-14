@@ -880,54 +880,7 @@ class AdminController extends Controller
         return view('admin.analytics', compact('analytics'));
     }
 
-    /**
-     * Feature #10: Announcements
-     */
-    public function announcements()
-    {
-        // Placeholder - will be implemented when Announcement model is created
-        $announcements = [];
 
-        return view('admin.announcements', compact('announcements'));
-    }
-
-    /**
-     * Feature #10: Create announcement
-     */
-    public function createAnnouncement(Request $request)
-    {
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'message' => 'required|string',
-            'target_audience' => 'required|in:all,parents,staff',
-            'priority' => 'required|in:low,medium,high',
-        ]);
-
-        // Will be implemented when Announcement model is created
-
-        return redirect()->route('admin.announcements')
-            ->with('success', 'Announcement sent successfully!');
-    }
-
-    /**
-     * Feature #10: Update announcement
-     */
-    public function updateAnnouncement(Request $request, $id)
-    {
-        // Will be implemented when Announcement model is created
-        return redirect()->route('admin.announcements')
-            ->with('success', 'Announcement updated successfully!');
-    }
-
-    /**
-     * Feature #10: Delete announcement
-     */
-    public function deleteAnnouncement($id)
-    {
-        // Will be implemented when Announcement model is created
-        return redirect()->route('admin.announcements')
-            ->with('success', 'Announcement deleted successfully!');
-    }
 
     /**
      * Feature #11: Approve Payments
@@ -1132,9 +1085,8 @@ class AdminController extends Controller
     {
         // Placeholder - will be implemented when Message model is created
         $messages = [];
-        $announcements = [];
 
-        return view('admin.communication-logs', compact('messages', 'announcements'));
+        return view('admin.communication-logs', compact('messages'));
     }
 
     /**
