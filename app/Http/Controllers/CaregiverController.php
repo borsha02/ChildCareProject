@@ -318,39 +318,48 @@ class CaregiverController extends Controller
 
     public function messages()
     {
-        // Get all children assigned to this caregiver
-        $assignedChildren = auth()->user()->assignedChildren;
-        
-        // Get all unique parents of these children
-        $parents = \App\Models\Child::whereHas('caregivers', function($query) {
+        // 1. Get parents of assigned children
+        $assignedParents = \App\Models\Child::whereHas('caregivers', function($query) {
             $query->where('users.id', auth()->id());
         })
         ->with('parent')
         ->get()
         ->pluck('parent')
         ->unique('id')
-        ->filter(); // Remove null values
+        ->filter();
+
+        // 2. Get any other users we have messaged with (e.g. Admins)
+        $caregiverId = auth()->id();
+        $messagedUserIds = \App\Models\Message::where('sender_id', $caregiverId)
+            ->pluck('receiver_id')
+            ->merge(\App\Models\Message::where('receiver_id', $caregiverId)->pluck('sender_id'))
+            ->unique();
+
+        $messagedUsers = \App\Models\User::whereIn('id', $messagedUserIds)->get();
+
+        // 3. Merge and unique
+        $allPartners = $assignedParents->merge($messagedUsers)->unique('id');
         
         // Build conversations array with latest message and unread count
         $conversations = [];
-        foreach ($parents as $parent) {
-            // Get latest message between caregiver and parent
-            $latestMessage = \App\Models\Message::where(function($query) use ($parent) {
-                $query->where('sender_id', auth()->id())
-                      ->where('receiver_id', $parent->id);
-            })->orWhere(function($query) use ($parent) {
-                $query->where('sender_id', $parent->id)
-                      ->where('receiver_id', auth()->id());
+        foreach ($allPartners as $partner) {
+            // Get latest message between caregiver and partner
+            $latestMessage = \App\Models\Message::where(function($query) use ($partner, $caregiverId) {
+                $query->where('sender_id', $caregiverId)
+                      ->where('receiver_id', $partner->id);
+            })->orWhere(function($query) use ($partner, $caregiverId) {
+                $query->where('sender_id', $partner->id)
+                      ->where('receiver_id', $caregiverId);
             })->latest()->first();
             
-            // Count unread messages from this parent
-            $unreadMessagesCount = \App\Models\Message::where('sender_id', $parent->id)
-                ->where('receiver_id', auth()->id())
+            // Count unread messages from this partner
+            $unreadMessagesCount = \App\Models\Message::where('sender_id', $partner->id)
+                ->where('receiver_id', $caregiverId)
                 ->where('is_read', false)
                 ->count();
             
             $conversations[] = [
-                'parent' => $parent,
+                'partner' => $partner, // Generic 'partner' key, view needs update if it expects 'parent'
                 'latest_message' => $latestMessage,
                 'unread_count' => $unreadMessagesCount,
             ];
@@ -371,76 +380,6 @@ class CaregiverController extends Controller
         return view('caregiver.messages', compact('conversations'));
     }
 
-    public function schedule()
-    {
-        return view('caregiver.schedule');
-    }
-
-    public function events()
-    {
-        $events = Event::whereIn('audience', ['all', 'caregiver'])
-            ->with(['registrations.user.children', 'registrations.child'])
-            ->withCount('registrations')
-            ->orderBy('start_time', 'asc')
-            ->get();
-            
-        return view('caregiver.events', compact('events'));
-    }
-
-    public function notifications()
-    {
-        $notifications = auth()->user()->notifications()->latest()->paginate(10);
-        $unreadCount = auth()->user()->unreadNotifications->count();
-        return view('caregiver.notifications', compact('notifications', 'unreadCount'));
-    }
-
-    public function markNotificationRead($id)
-    {
-        $notification = auth()->user()->notifications()->findOrFail($id);
-        $notification->markAsRead();
-        return redirect()->back()->with('success', 'Notification marked as read.');
-    }
-
-    public function markAllNotificationsRead()
-    {
-        auth()->user()->unreadNotifications->markAsRead();
-        return redirect()->back()->with('success', 'All notifications marked as read.');
-    }
-
-    public function deleteNotification($id)
-    {
-        $notification = auth()->user()->notifications()->findOrFail($id);
-        $notification->delete();
-        return redirect()->back()->with('success', 'Notification deleted.');
-    }
-
-    public function leaveRequests()
-    {
-        $leaveRequests = \App\Models\LeaveRequest::where('user_id', auth()->id())
-            ->orderBy('created_at', 'desc')
-            ->get();
-            
-        return view('caregiver.leave-requests', compact('leaveRequests'));
-    }
-
-    public function storeLeaveRequest(Request $request)
-    {
-        $validated = $request->validate([
-            'leave_type' => 'required|string',
-            'duration_type' => 'required|string',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'reason' => 'required|string|max:500',
-        ]);
-
-        $validated['user_id'] = auth()->id();
-        $validated['status'] = 'pending';
-
-        \App\Models\LeaveRequest::create($validated);
-
-        return redirect()->route('caregiver.leave')->with('success', 'Leave request submitted successfully!');
-    }
-
     public function sendMessage(Request $request)
     {
         $validated = $request->validate([
@@ -449,21 +388,35 @@ class CaregiverController extends Controller
             'child_id' => 'nullable|exists:children,id',
         ]);
 
-        // Verify the receiver is a parent of a child assigned to this caregiver
-        $isValidParent = \App\Models\Child::where('parent_id', $validated['receiver_id'])
+        $receiverId = $validated['receiver_id'];
+
+        // Verify authorization:
+        // 1. Is receiver an assigned parent?
+        $isAssignedParent = \App\Models\Child::where('parent_id', $receiverId)
             ->whereHas('caregivers', function($query) {
                 $query->where('users.id', auth()->id());
             })
             ->exists();
 
-        if (!$isValidParent) {
+        // 2. Is receiver an admin?
+        $receiver = \App\Models\User::find($receiverId);
+        $isAdmin = $receiver && $receiver->role === 'admin';
+
+        // 3. Is there existing history?
+        $hasHistory = \App\Models\Message::where(function($q) use ($receiverId) {
+            $q->where('sender_id', auth()->id())->where('receiver_id', $receiverId);
+        })->orWhere(function($q) use ($receiverId) {
+            $q->where('sender_id', $receiverId)->where('receiver_id', auth()->id());
+        })->exists();
+
+        if (!$isAssignedParent && !$isAdmin && !$hasHistory) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
         // Create the message
         $message = \App\Models\Message::create([
             'sender_id' => auth()->id(),
-            'receiver_id' => $validated['receiver_id'],
+            'receiver_id' => $receiverId,
             'child_id' => $validated['child_id'] ?? null,
             'message' => $validated['message'],
             'is_read' => false,
@@ -478,33 +431,46 @@ class CaregiverController extends Controller
         ]);
     }
 
-    public function getConversation(Request $request, $parentId)
+    public function getConversation(Request $request, $partnerId)
     {
-        // Verify the parent has a child assigned to this caregiver
-        $isAssigned = \App\Models\Child::where('parent_id', $parentId)
+        // 1. Is Assigned Parent?
+        $isAssigned = \App\Models\Child::where('parent_id', $partnerId)
             ->whereHas('caregivers', function($query) {
                 $query->where('users.id', auth()->id());
             })
             ->exists();
 
-        if (!$isAssigned) {
+        // 2. Is Admin?
+        $partner = \App\Models\User::find($partnerId);
+        $isAdmin = $partner && $partner->role === 'admin';
+
+        // 3. Has History?
+        $hasHistory = \App\Models\Message::where(function($query) use ($partnerId) {
+            $query->where('sender_id', auth()->id())
+                  ->where('receiver_id', $partnerId);
+        })->orWhere(function($query) use ($partnerId) {
+            $query->where('sender_id', $partnerId)
+                  ->where('receiver_id', auth()->id());
+        })->exists();
+
+        if (!$isAssigned && !$isAdmin && !$hasHistory) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Fetch all messages between caregiver and parent
-        $messages = \App\Models\Message::where(function($query) use ($parentId) {
+        // Fetch all messages between caregiver and partner
+        $messages = \App\Models\Message::where(function($query) use ($partnerId) {
             $query->where('sender_id', auth()->id())
-                  ->where('receiver_id', $parentId);
-        })->orWhere(function($query) use ($parentId) {
-            $query->where('sender_id', $parentId)
+                  ->where('receiver_id', $partnerId);
+        })->orWhere(function($query) use ($partnerId) {
+            $query->where('sender_id', $partnerId)
                   ->where('receiver_id', auth()->id());
         })
         ->with(['sender', 'receiver', 'child'])
         ->orderBy('created_at', 'asc')
         ->get();
 
-        // Mark unread messages from parent as read
-        \App\Models\Message::where('sender_id', $parentId)
+        // Mark unread messages from partner as read
+        \App\Models\Message::where('sender_id', $partnerId)
             ->where('receiver_id', auth()->id())
             ->where('is_read', false)
             ->update([

@@ -1,146 +1,279 @@
-@extends('layouts.caregiver')
-
-@section('title', 'Messages')
-
-@section('styles')
-@vite(['resources/css/caregiver/dashboard.css', 'resources/css/caregiver/messages.css'])
-@endsection
-
-@section('content')
-    <div class="top-bar">
-        <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
-            <i class="fas fa-bars"></i>
-        </button>
-        <div style="display: flex; align-items: center;">
-            <a href="{{ route('caregiver.dashboard') }}" class="back-dashboard-icon">
-                <i class="fas fa-arrow-left"></i>
-            </a>
-            <h1>Messages</h1>
-        </div>
-        <div class="top-bar-actions">
-            <div class="search-box">
-                <input type="text" placeholder="Search messages...">
-                <i class="fas fa-search"></i>
-            </div>
-        </div>
-    </div>
-
-    <div class="content-area p-0">
-        <div class="messages-container">
-            <div class="messages-layout">
-                <!-- Conversations List -->
-                <div class="conversations-panel">
-                    <div class="panel-header">
-                        <h2>Conversations</h2>
-                    </div>
-                    <div class="conversations-list">
-                        @forelse($conversations as $index => $conversation)
-                            @php
-                                $parent = $conversation['parent'];
-                                $latestMessage = $conversation['latest_message'];
-                                $unreadCount = $conversation['unread_count'];
-                                $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($parent->name) . '&background=10b981&color=fff';
-                                $messagePreview = $latestMessage ? Str::limit($latestMessage->message, 40) : 'No messages yet';
-                                $timeAgo = $latestMessage ? $latestMessage->created_at->diffForHumans() : '';
-                            @endphp
-                            <div class="conversation-item {{ $index === 0 ? 'active' : '' }}" 
-                                 data-parent-id="{{ $parent->id }}"
-                                 data-parent-name="{{ $parent->name }}">
-                                <div class="conversation-avatar">
-                                    <img src="{{ $avatarUrl }}" alt="{{ $parent->name }}">
-                                </div>
-                                <div class="conversation-info">
-                                    <h4>{{ $parent->name }}</h4>
-                                    <p>{{ $messagePreview }}</p>
-                                </div>
-                                <div class="conversation-meta">
-                                    <span class="time">{{ $timeAgo }}</span>
-                                    @if($unreadCount > 0)
-                                        <span class="unread-badge">{{ $unreadCount }}</span>
-                                    @endif
-                                </div>
-                            </div>
-                        @empty
-                            <div class="no-conversations">
-                                <p>No parents to message yet. Children will be assigned to you by the admin.</p>
-                            </div>
-                        @endforelse
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - Caregiver Portal</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    @vite(['resources/css/messages.css'])
+    <style>
+        /* Caregiver Branding Overrides */
+        .sidebar {
+            background: linear-gradient(180deg, #059669 0%, #047857 100%);
+        }
+        .nav-item.active {
+            border-left-color: #fbbf24;
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .nav-item:hover {
+            border-left-color: #fbbf24;
+        }
+        .mobile-toggle {
+            background: #059669;
+        }
+        .icon-btn:hover {
+            background: #059669;
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-baby"></i>
+                    <h2>Childcare</h2>
+                </div>
+                <div class="user-info">
+                    <div class="user-avatar">{{ substr(Auth::user()->name ?? 'User', 0, 2) }}</div>
+                    <div class="user-details">
+                        <h4>{{ Auth::user()->name }}</h4>
+                        <p>Caregiver</p>
                     </div>
                 </div>
+            </div>
 
-                <!-- Chat Area -->
-                <div class="chat-panel" id="chatPanel">
-                    @if(count($conversations) > 0)
+            <nav class="nav-menu">
+                <div class="nav-section">
+                    <div class="nav-section-title">Main Menu</div>
+                    <a href="{{ route('caregiver.dashboard') }}" class="nav-item">
+                        <i class="fas fa-home"></i>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="{{ route('caregiver.assigned') }}" class="nav-item">
+                        <i class="fas fa-users"></i>
+                        <span>Assigned Children</span>
+                    </a>
+                    <a href="{{ route('caregiver.schedule') }}" class="nav-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>My Schedule</span>
+                    </a>
+                    <a href="{{ route('caregiver.attendance') }}" class="nav-item">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Attendance</span>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-section-title">Activities</div>
+                    <a href="{{ route('caregiver.daily-reports') }}" class="nav-item">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Daily Reports</span>
+                    </a>
+                    <a href="{{ route('caregiver.health') }}" class="nav-item">
+                        <i class="fas fa-heartbeat"></i>
+                        <span>Health Records</span>
+                    </a>
+                    <a href="{{ route('caregiver.events') }}" class="nav-item">
+                        <i class="fas fa-calendar-days"></i>
+                        <span>Events</span>
+                    </a>
+                    <a href="{{ route('caregiver.ratings') }}" class="nav-item">
+                        <i class="fas fa-star"></i>
+                        <span>Ratings</span>
+                    </a>
+                    <a href="{{ route('caregiver.messages') }}" class="nav-item active">
+                        <i class="fas fa-comments"></i>
+                        <span>Messages</span>
                         @php
-                            $firstParent = $conversations[0]['parent'];
-                            $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($firstParent->name) . '&background=10b981&color=fff';
+                            $unreadMessagesTotal = collect($conversations)->sum('unread_count');
                         @endphp
-                        <div class="chat-header">
-                            <div class="chat-user-info">
-                                <div class="chat-avatar">
-                                    <img src="{{ $avatarUrl }}" alt="{{ $firstParent->name }}" id="chatAvatarImg">
-                                </div>
-                                <div class="chat-user-details">
-                                    <h3 id="chatUserName">{{ $firstParent->name }}</h3>
-                                    <p id="chatUserRole">Parent</p>
-                                </div>
-                            </div>
-                            <div class="chat-actions">
-                                <button class="chat-action-btn" title="More">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                </button>
-                            </div>
-                        </div>
-                    @else
-                        <div class="chat-header">
-                            <div class="chat-user-info">
-                                <div class="chat-user-details">
-                                    <h3>No Conversations</h3>
-                                    <p>Select a parent to start messaging</p>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
-
-                    <div class="chat-messages" id="chatMessages">
-                        @if(count($conversations) > 0)
-                            <div class="message-date">Loading messages...</div>
-                        @else
-                            <div class="empty-chat">
-                                <i class="fas fa-comments empty-chat-icon"></i>
-                                <p>No conversations yet</p>
-                            </div>
+                        @if($unreadMessagesTotal > 0)
+                            <span class="badge">{{ $unreadMessagesTotal }}</span>
                         @endif
-                    </div>
+                    </a>
+                    <a href="{{ route('caregiver.notifications') }}" class="nav-item">
+                        <i class="fas fa-bell"></i>
+                        <span>Notifications</span>
+                        @php
+                            $unreadNotifications = Auth::user()->unreadNotifications->count();
+                        @endphp
+                        @if($unreadNotifications > 0)
+                            <span class="badge">{{ $unreadNotifications }}</span>
+                        @endif
+                    </a>
+                </div>
 
-                    <div class="chat-input-area">
-                        <button class="attach-btn" title="Attach file">
-                            <i class="fas fa-paperclip"></i>
-                        </button>
-                        <input type="text" class="chat-input" id="messageInput" placeholder="Type a message...">
-                        <button class="emoji-btn" title="Emoji">
-                            <i class="fas fa-smile"></i>
-                        </button>
-                        <button class="send-btn" id="sendMessageBtn">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
+                <div class="nav-section">
+                    <div class="nav-section-title">Personal</div>
+                    <a href="{{ route('caregiver.leave') }}" class="nav-item">
+                        <i class="fas fa-calendar-times"></i>
+                        <span>Leave Requests</span>
+                    </a>
+                    <a href="{{ route('logout') }}" class="nav-item"
+                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </a>
+                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+                        @csrf
+                    </form>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="top-bar">
+                <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div style="display: flex; align-items: center;">
+                    <a href="{{ route('caregiver.dashboard') }}" class="back-dashboard-icon">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1>Messages</h1>
+                </div>
+                <div class="top-bar-actions">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search messages...">
+                        <i class="fas fa-search"></i>
                     </div>
                 </div>
             </div>
-        </div>
+
+            <div class="content-area">
+                <div class="messages-container">
+                    <div class="messages-layout">
+                        <!-- Conversations List -->
+                        <div class="conversations-panel">
+                            <div class="panel-header">
+                                <h2>Conversations</h2>
+                            </div>
+                            <div class="conversations-list">
+                                @forelse($conversations as $index => $conversation)
+                                    @php
+                                        $partner = $conversation['partner'];
+                                        $latestMessage = $conversation['latest_message'];
+                                        $unreadCount = $conversation['unread_count'];
+                                        
+                                        // Show "Administrator" for admins instead of their name
+                                        $isAdmin = $partner->role === 'admin';
+                                        $displayName = $isAdmin ? 'Administrator' : $partner->name;
+                                        $displayRole = $isAdmin ? 'Admin' : ucfirst($partner->role);
+                                        $avatarName = $isAdmin ? 'Admin' : $partner->name;
+                                        $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($avatarName) . '&background=059669&color=fff';
+                                        $messagePreview = $latestMessage ? Str::limit($latestMessage->message, 40) : 'No messages yet';
+                                        $timeAgo = $latestMessage ? $latestMessage->created_at->diffForHumans() : '';
+                                    @endphp
+                                    <div class="conversation-item {{ $index === 0 ? 'active' : '' }}" 
+                                         data-partner-id="{{ $partner->id }}"
+                                         data-partner-name="{{ $displayName }}"
+                                         data-partner-role="{{ $displayRole }}">
+                                        <div class="conversation-avatar">
+                                            <img src="{{ $avatarUrl }}" alt="{{ $displayName }}">
+                                        </div>
+                                        <div class="conversation-info">
+                                            <h4>{{ $displayName }}</h4>
+                                            <p>{{ $messagePreview }}</p>
+                                        </div>
+                                        <div class="conversation-meta">
+                                            <span class="time">{{ $timeAgo }}</span>
+                                            @if($unreadCount > 0)
+                                                <span class="unread-badge">{{ $unreadCount }}</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="no-conversations">
+                                        <p>No conversations yet.</p>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+
+                        <!-- Chat Area -->
+                        <div class="chat-panel" id="chatPanel">
+                            @if(count($conversations) > 0)
+                                @php
+                                    $firstPartner = $conversations[0]['partner'];
+                                    $isFirstAdmin = $firstPartner->role === 'admin';
+                                    $firstDisplayName = $isFirstAdmin ? 'Administrator' : $firstPartner->name;
+                                    $firstDisplayRole = $isFirstAdmin ? 'Admin' : ucfirst($firstPartner->role);
+                                    $firstAvatarName = $isFirstAdmin ? 'Admin' : $firstPartner->name;
+                                    $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($firstAvatarName) . '&background=059669&color=fff';
+                                @endphp
+                                <div class="chat-header">
+                                    <div class="chat-user-info">
+                                        <div class="chat-avatar">
+                                            <img src="{{ $avatarUrl }}" alt="{{ $firstPartner->name }}" id="chatAvatarImg">
+                                        </div>
+                                        <div class="chat-user-details">
+                                            <h3 id="chatUserName">{{ $firstDisplayName }}</h3>
+                                            <p id="chatUserRole">{{ $firstDisplayRole }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="chat-actions">
+                                        <button class="chat-action-btn" title="More">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="chat-header">
+                                    <div class="chat-user-info">
+                                        <div class="chat-user-details">
+                                            <h3>No Conversations</h3>
+                                            <p>Select a user to start messaging</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <div class="chat-messages" id="chatMessages">
+                                @if(count($conversations) > 0)
+                                    <div class="message-date">Loading messages...</div>
+                                @else
+                                    <div class="empty-chat">
+                                        <i class="fas fa-comments" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+                                        <p>No messages yet.</p>
+                                    </div>
+                                @endif
+                            </div>
+
+                            @if(count($conversations) > 0)
+                                <div class="chat-input-area">
+                                    <button class="attach-btn" title="Attach file">
+                                        <i class="fas fa-paperclip"></i>
+                                    </button>
+                                    <input type="text" class="chat-input" id="messageInput" placeholder="Type a message...">
+                                    <button class="emoji-btn" title="Emoji">
+                                        <i class="fas fa-smile"></i>
+                                    </button>
+                                    <button class="send-btn" id="sendMessageBtn">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
 
     <script>
         // Global variables
-        let currentParentId = null;
+        let currentPartnerId = null;
         const csrfToken = '{{ csrf_token() }}';
 
         // Load conversation on page load if there are conversations
         document.addEventListener('DOMContentLoaded', function() {
             const firstConversation = document.querySelector('.conversation-item');
             if (firstConversation) {
-                currentParentId = firstConversation.dataset.parentId;
-                loadConversation(currentParentId);
+                currentPartnerId = firstConversation.dataset.partnerId;
+                loadConversation(currentPartnerId);
             }
         });
 
@@ -152,17 +285,20 @@
                 // Add active class to clicked item
                 this.classList.add('active');
 
-                // Get parent info
-                currentParentId = this.dataset.parentId;
-                const parentName = this.dataset.parentName;
+                // Get partner info
+                currentPartnerId = this.dataset.partnerId;
+                const partnerName = this.dataset.partnerName;
+                const partnerRole = this.dataset.partnerRole;
                 const avatarUrl = this.querySelector('.conversation-avatar img').src;
 
                 // Update chat header
-                document.getElementById('chatUserName').textContent = parentName;
+                document.getElementById('chatUserName').textContent = partnerName;
+                const roleEl = document.getElementById('chatUserRole');
+                if (roleEl) roleEl.textContent = partnerRole;
                 document.getElementById('chatAvatarImg').src = avatarUrl;
 
                 // Load conversation messages
-                loadConversation(currentParentId);
+                loadConversation(currentPartnerId);
 
                 // Remove unread badge
                 const unreadBadge = this.querySelector('.unread-badge');
@@ -173,11 +309,11 @@
         });
 
         // Load conversation messages
-        function loadConversation(parentId) {
+        function loadConversation(partnerId) {
             const chatMessages = document.getElementById('chatMessages');
             chatMessages.innerHTML = '<div class="message-date">Loading messages...</div>';
 
-            fetch(`/caregiver/messages/conversation/${parentId}`, {
+            fetch(`/caregiver/messages/conversation/${partnerId}`, {
                 method: 'GET',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken,
@@ -204,8 +340,8 @@
             if (messages.length === 0) {
                 chatMessages.innerHTML = `
                     <div class="empty-chat">
-                        <i class="fas fa-comments empty-chat-icon"></i>
-                        <p class="empty-chat-text">No messages yet. Start the conversation!</p>
+                        <i class="fas fa-comments" style="font-size: 48px; color: #ccc; margin-bottom: 16px;"></i>
+                        <p style="color: #999;">No messages yet. Start the conversation!</p>
                     </div>
                 `;
                 return;
@@ -245,7 +381,7 @@
                         </div>
                     `;
                 } else {
-                    const senderAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender.name)}&background=10b981&color=fff`;
+                    const senderAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender.name)}&background=059669&color=fff`;
                     messageDiv.innerHTML = `
                         <div class="message-avatar">
                             <img src="${senderAvatar}" alt="${escapeHtml(message.sender.name)}">
@@ -284,14 +420,14 @@
         }
 
         function sendMessage() {
-            if (!messageInput || !messageInput.value.trim() || !currentParentId) {
+            if (!messageInput || !messageInput.value.trim() || !currentPartnerId) {
                 return;
             }
 
             const messageText = messageInput.value.trim();
             messageInput.value = '';
 
-            fetch('/caregiver/messages', {
+            fetch(`/caregiver/messages`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -299,7 +435,7 @@
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({
-                    receiver_id: currentParentId,
+                    receiver_id: currentPartnerId,
                     message: messageText,
                 })
             })
@@ -310,7 +446,7 @@
                     appendMessage(data.message, true);
                     
                     // Update conversation preview
-                    updateConversationPreview(currentParentId, messageText);
+                    updateConversationPreview(currentPartnerId, messageText);
                 }
             })
             .catch(error => {
@@ -348,7 +484,7 @@
                     </div>
                 `;
             } else {
-                const senderAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender.name)}&background=10b981&color=fff`;
+                const senderAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(message.sender.name)}&background=059669&color=fff`;
                 messageDiv.innerHTML = `
                     <div class="message-avatar">
                         <img src="${senderAvatar}" alt="${escapeHtml(message.sender.name)}">
@@ -367,8 +503,8 @@
         }
 
         // Update conversation preview
-        function updateConversationPreview(parentId, messageText) {
-            const conversation = document.querySelector(`[data-parent-id="${parentId}"]`);
+        function updateConversationPreview(partnerId, messageText) {
+            const conversation = document.querySelector(`[data-partner-id="${partnerId}"]`);
             if (conversation) {
                 const preview = conversation.querySelector('.conversation-info p');
                 if (preview) {
@@ -378,6 +514,14 @@
                 if (time) {
                     time.textContent = 'Just now';
                 }
+                
+                // Move to top to indicate recent activity
+                const list = conversation.parentElement;
+                list.insertBefore(conversation, list.firstChild);
+                
+                // Ensure active class remains if it was active
+                document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
+                conversation.classList.add('active');
             }
         }
 
@@ -402,5 +546,25 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // Mobile menu toggle
+        const mobileToggle = document.querySelector('.mobile-toggle');
+        const sidebar = document.getElementById('sidebar');
+
+        if (mobileToggle) {
+            mobileToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+            });
+        }
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768) {
+                if (sidebar && !sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
+                    sidebar.classList.remove('active');
+                }
+            }
+        });
     </script>
-@endsection
+</body>
+</html>

@@ -480,34 +480,45 @@ class ParentController extends Controller
             ->where('status', '!=', 'pending')
             ->get();
         
-        // Get all unique caregivers assigned to these children
-        $caregivers = \App\Models\Child::where('parent_id', auth()->id())
+        // 1. Get assigned caregivers
+        $assignedCaregivers = \App\Models\Child::where('parent_id', auth()->id())
             ->with('caregivers')
             ->get()
             ->pluck('caregivers')
             ->flatten()
             ->unique('id');
+
+        // 2. Get any other users we have messaged with (e.g. Admins)
+        $messagedUserIds = \App\Models\Message::where('sender_id', auth()->id())
+            ->pluck('receiver_id')
+            ->merge(\App\Models\Message::where('receiver_id', auth()->id())->pluck('sender_id'))
+            ->unique();
+            
+        $messagedUsers = \App\Models\User::whereIn('id', $messagedUserIds)->get();
+
+        // 3. Merge and unique
+        $allConversationPartners = $assignedCaregivers->merge($messagedUsers)->unique('id');
         
         // Build conversations array with latest message and unread count
         $conversations = [];
-        foreach ($caregivers as $caregiver) {
-            // Get latest message between parent and caregiver
-            $latestMessage = \App\Models\Message::where(function($query) use ($caregiver) {
+        foreach ($allConversationPartners as $partner) {
+            // Get latest message between parent and partner
+            $latestMessage = \App\Models\Message::where(function($query) use ($partner) {
                 $query->where('sender_id', auth()->id())
-                      ->where('receiver_id', $caregiver->id);
-            })->orWhere(function($query) use ($caregiver) {
-                $query->where('sender_id', $caregiver->id)
+                      ->where('receiver_id', $partner->id);
+            })->orWhere(function($query) use ($partner) {
+                $query->where('sender_id', $partner->id)
                       ->where('receiver_id', auth()->id());
             })->latest()->first();
             
-            // Count unread messages from this caregiver
-            $unreadMessagesCount = \App\Models\Message::where('sender_id', $caregiver->id)
+            // Count unread messages from this partner
+            $unreadMessagesCount = \App\Models\Message::where('sender_id', $partner->id)
                 ->where('receiver_id', auth()->id())
                 ->where('is_read', false)
                 ->count();
             
             $conversations[] = [
-                'caregiver' => $caregiver,
+                'caregiver' => $partner, // Keeping key 'caregiver' for view compatibility
                 'latest_message' => $latestMessage,
                 'unread_count' => $unreadMessagesCount,
             ];
@@ -936,14 +947,27 @@ class ParentController extends Controller
 
     public function getConversation(Request $request, $caregiverId)
     {
-        // Verify the caregiver is assigned to one of the parent's children
+        // Verify the caregiver is assigned to one of the parent's children OR they are an admin OR there is an existing conversation
         $isAssigned = \App\Models\Child::where('parent_id', auth()->id())
             ->whereHas('caregivers', function($query) use ($caregiverId) {
                 $query->where('users.id', $caregiverId);
             })
             ->exists();
+            
+        // Also allow if user is admin or if we have message history
+        $targetUser = \App\Models\User::find($caregiverId);
+        $isAdmin = $targetUser && $targetUser->role === 'admin';
+        
+        // Check for existing messages
+        $hasHistory = \App\Models\Message::where(function($query) use ($caregiverId) {
+            $query->where('sender_id', auth()->id())
+                  ->where('receiver_id', $caregiverId);
+        })->orWhere(function($query) use ($caregiverId) {
+            $query->where('sender_id', $caregiverId)
+                  ->where('receiver_id', auth()->id());
+        })->exists();
 
-        if (!$isAssigned) {
+        if (!$isAssigned && !$isAdmin && !$hasHistory) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

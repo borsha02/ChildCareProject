@@ -147,21 +147,28 @@
                             <div class="conversations-list">
                                 @forelse($conversations as $index => $conversation)
                                     @php
-                                        $caregiver = $conversation['caregiver'];
+                                        $partner = $conversation['caregiver'];
                                         $latestMessage = $conversation['latest_message'];
                                         $unreadCount = $conversation['unread_count'];
-                                        $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($caregiver->name) . '&background=4f46e5&color=fff';
+                                        
+                                        $isPartnerAdmin = $partner->role === 'admin';
+                                        $displayName = $isPartnerAdmin ? 'Administrator' : $partner->name;
+                                        $displayRole = $isPartnerAdmin ? 'Administrator' : 'Caregiver';
+                                        $avatarName = $isPartnerAdmin ? 'Admin' : $partner->name;
+                                        
+                                        $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($avatarName) . '&background=4f46e5&color=fff';
                                         $messagePreview = $latestMessage ? Str::limit($latestMessage->message, 40) : 'No messages yet';
                                         $timeAgo = $latestMessage ? $latestMessage->created_at->diffForHumans() : '';
                                     @endphp
                                     <div class="conversation-item {{ $index === 0 ? 'active' : '' }}" 
-                                         data-caregiver-id="{{ $caregiver->id }}"
-                                         data-caregiver-name="{{ $caregiver->name }}">
+                                         data-caregiver-id="{{ $partner->id }}"
+                                         data-caregiver-name="{{ $displayName }}"
+                                         data-user-role="{{ $displayRole }}">
                                         <div class="conversation-avatar">
-                                            <img src="{{ $avatarUrl }}" alt="{{ $caregiver->name }}">
+                                            <img src="{{ $avatarUrl }}" alt="{{ $displayName }}">
                                         </div>
                                         <div class="conversation-info">
-                                            <h4>{{ $caregiver->name }}</h4>
+                                            <h4>{{ $displayName }}</h4>
                                             <p>{{ $messagePreview }}</p>
                                         </div>
                                         <div class="conversation-meta">
@@ -173,7 +180,7 @@
                                     </div>
                                 @empty
                                     <div class="no-conversations">
-                                        <p>No caregivers assigned yet. Please contact the admin to assign a caregiver to your child.</p>
+                                        <p>No messages yet.</p>
                                     </div>
                                 @endforelse
                             </div>
@@ -183,17 +190,21 @@
                         <div class="chat-panel" id="chatPanel">
                             @if(count($conversations) > 0)
                                 @php
-                                    $firstCaregiver = $conversations[0]['caregiver'];
-                                    $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($firstCaregiver->name) . '&background=4f46e5&color=fff';
+                                    $firstPartner = $conversations[0]['caregiver'];
+                                    $isFirstAdmin = $firstPartner->role === 'admin';
+                                    $firstDisplayName = $isFirstAdmin ? 'Administrator' : $firstPartner->name;
+                                    $firstDisplayRole = $isFirstAdmin ? 'Administrator' : 'Caregiver';
+                                    $firstAvatarName = $isFirstAdmin ? 'Admin' : $firstPartner->name;
+                                    $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($firstAvatarName) . '&background=4f46e5&color=fff';
                                 @endphp
                                 <div class="chat-header">
                                     <div class="chat-user-info">
                                         <div class="chat-avatar">
-                                            <img src="{{ $avatarUrl }}" alt="{{ $firstCaregiver->name }}" id="chatAvatarImg">
+                                            <img src="{{ $avatarUrl }}" alt="{{ $firstDisplayName }}" id="chatAvatarImg">
                                         </div>
                                         <div class="chat-user-details">
-                                            <h3 id="chatUserName">{{ $firstCaregiver->name }}</h3>
-                                            <p id="chatUserRole">Caregiver</p>
+                                            <h3 id="chatUserName">{{ $firstDisplayName }}</h3>
+                                            <p id="chatUserRole">{{ $firstDisplayRole }}</p>
                                         </div>
                                     </div>
                                     <div class="chat-actions">
@@ -207,7 +218,7 @@
                                     <div class="chat-user-info">
                                         <div class="chat-user-details">
                                             <h3>No Conversations</h3>
-                                            <p>Select a caregiver to start messaging</p>
+                                            <p>Select a user to start messaging</p>
                                         </div>
                                     </div>
                                 </div>
@@ -298,10 +309,12 @@
                 // Get caregiver info
                 currentCaregiverId = this.dataset.caregiverId;
                 const caregiverName = this.dataset.caregiverName;
+                const userRole = this.dataset.userRole;
                 const avatarUrl = this.querySelector('.conversation-avatar img').src;
 
                 // Update chat header
                 document.getElementById('chatUserName').textContent = caregiverName;
+                document.getElementById('chatUserRole').textContent = userRole;
                 document.getElementById('chatAvatarImg').src = avatarUrl;
 
                 // Load conversation messages

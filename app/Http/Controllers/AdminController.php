@@ -1079,14 +1079,150 @@ class AdminController extends Controller
     }
 
     /**
-     * Feature #14: Communication Logs
+     * Feature #11: Communication Logs
      */
     public function communicationLogs()
     {
-        // Placeholder - will be implemented when Message model is created
-        $messages = [];
+        $adminId = auth()->id();
+        
+        // 1. Get IDs of users who have exchanged messages with admin
+        $messagedUserIds = \App\Models\Message::where('sender_id', $adminId)
+            ->pluck('receiver_id')
+            ->merge(\App\Models\Message::where('receiver_id', $adminId)->pluck('sender_id'))
+            ->unique();
 
-        return view('admin.communication-logs', compact('messages'));
+        $partners = \App\Models\User::whereIn('id', $messagedUserIds)->get();
+
+        // Build conversations array
+        $conversations = [];
+        foreach ($partners as $partner) {
+            // Get latest message
+            $latestMessage = \App\Models\Message::where(function($query) use ($adminId, $partner) {
+                $query->where('sender_id', $adminId)
+                      ->where('receiver_id', $partner->id);
+            })->orWhere(function($query) use ($adminId, $partner) {
+                $query->where('sender_id', $partner->id)
+                      ->where('receiver_id', $adminId);
+            })->latest()->first();
+
+            // Count unread messages from this partner
+            $unreadMessagesCount = \App\Models\Message::where('sender_id', $partner->id)
+                ->where('receiver_id', $adminId)
+                ->where('is_read', false)
+                ->count();
+
+            $conversations[] = [
+                'partner' => $partner,
+                'latest_message' => $latestMessage,
+                'unread_count' => $unreadMessagesCount,
+            ];
+        }
+
+        // Sort by latest message
+        usort($conversations, function($a, $b) {
+            $timeA = $a['latest_message'] ? $a['latest_message']->created_at : null;
+            $timeB = $b['latest_message'] ? $b['latest_message']->created_at : null;
+            if (!$timeA && !$timeB) return 0;
+            if (!$timeA) return 1;
+            if (!$timeB) return -1;
+            return $timeB <=> $timeA;
+        });
+
+        // Fetch users for "New Message" dropdown (for new conversations)
+        $parents = \App\Models\User::where('role', 'parent')->where('status', 'active')->orderBy('name')->get();
+        $staff = \App\Models\User::where('role', 'caregiver')->where('status', 'active')->orderBy('name')->get();
+
+        return view('admin.communication-logs', compact('conversations', 'parents', 'staff'));
+    }
+
+    public function getConversation($userId)
+    {
+        $adminId = auth()->id();
+
+        // Fetch messages
+        $messages = \App\Models\Message::where(function($query) use ($adminId, $userId) {
+            $query->where('sender_id', $adminId)->where('receiver_id', $userId);
+        })->orWhere(function($query) use ($adminId, $userId) {
+            $query->where('sender_id', $userId)->where('receiver_id', $adminId);
+        })
+        ->with(['sender', 'receiver'])
+        ->orderBy('created_at', 'asc')
+        ->get();
+
+        // Mark as read
+        \App\Models\Message::where('sender_id', $userId)
+            ->where('receiver_id', $adminId)
+            ->where('is_read', false)
+            ->update(['is_read' => true, 'read_at' => now()]);
+
+        return response()->json(['success' => true, 'messages' => $messages]);
+    }
+
+    public function sendMessage(Request $request)
+    {
+        $validated = $request->validate([
+            'recipient_id' => 'nullable', 
+            'receiver_id' => 'nullable', // Allow alias
+            'message' => 'required|string',
+        ]);
+
+        $senderId = auth()->id();
+        $recipientId = $request->input('recipient_id') ?? $request->input('receiver_id');
+        
+        if (!$recipientId) {
+             return response()->json(['error' => 'Recipient is required'], 422);
+        }
+
+        $messageContent = $validated['message'];
+        $message = null;
+
+        if ($recipientId === 'all_parents') {
+            $recipients = \App\Models\User::where('role', 'parent')->where('status', 'active')->get();
+            foreach ($recipients as $recipient) {
+                \App\Models\Message::create([
+                    'sender_id' => $senderId,
+                    'receiver_id' => $recipient->id,
+                    'message' => $messageContent,
+                    'is_read' => false,
+                ]);
+            }
+            $successMsg = 'Message sent to all parents successfully.';
+
+        } elseif ($recipientId === 'all_staff') {
+            $recipients = \App\Models\User::where('role', 'caregiver')->where('status', 'active')->get();
+            foreach ($recipients as $recipient) {
+                \App\Models\Message::create([
+                    'sender_id' => $senderId,
+                    'receiver_id' => $recipient->id,
+                    'message' => $messageContent,
+                    'is_read' => false,
+                ]);
+            }
+            $successMsg = 'Message sent to all staff successfully.';
+
+        } else {
+            // Single recipient
+            $message = \App\Models\Message::create([
+                'sender_id' => $senderId,
+                'receiver_id' => $recipientId,
+                'message' => $messageContent,
+                'is_read' => false,
+            ]);
+            $successMsg = 'Message sent successfully.';
+        }
+
+        if ($request->wantsJson()) {
+            if ($message) {
+                $message->load(['sender', 'receiver']);
+            }
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'flash' => $successMsg
+            ]);
+        }
+
+        return redirect()->route('admin.communication')->with('success', $successMsg);
     }
 
     /**

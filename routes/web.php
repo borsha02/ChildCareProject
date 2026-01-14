@@ -92,8 +92,11 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     Route::post('/settings/update', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
     Route::post('/settings/classrooms', [AdminController::class, 'manageClassrooms'])->name('admin.settings.classrooms');
 
-    // Communication Logs (Feature #14)
-    Route::get('/communication-logs', [AdminController::class, 'communicationLogs'])->name('admin.communication');
+    // Communication (Feature #11)
+    Route::get('/communication', [AdminController::class, 'communicationLogs'])->name('admin.communication');
+    Route::redirect('/communication-logs', '/admin/communication'); // Redirect old URL
+    Route::post('/communication/send', [AdminController::class, 'sendMessage'])->name('admin.communication.send');
+    Route::get('/communication/conversation/{userId}', [AdminController::class, 'getConversation'])->name('admin.communication.conversation');
     Route::get('/messages/{id}', [AdminController::class, 'viewMessage'])->name('admin.messages.view');
     Route::put('/messages/{id}', [AdminController::class, 'editMessage'])->name('admin.messages.edit');
     Route::delete('/messages/{id}', [AdminController::class, 'deleteMessage'])->name('admin.messages.delete');
