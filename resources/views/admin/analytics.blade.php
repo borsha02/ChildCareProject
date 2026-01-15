@@ -120,16 +120,12 @@
                     <h1>Analytics Dashboard</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <select class="filter-select">
-                        <option>Last 7 Days</option>
-                        <option>Last 30 Days</option>
-                        <option>Last 3 Months</option>
-                        <option>Last Year</option>
+                    <select class="filter-select" onchange="window.location.href = '?period=' + this.value">
+                        <option value="7_days" {{ ($analytics['period'] ?? '') == '7_days' ? 'selected' : '' }}>Last 7 Days</option>
+                        <option value="30_days" {{ ($analytics['period'] ?? '') == '30_days' ? 'selected' : '' }}>Last 30 Days</option>
+                        <option value="3_months" {{ ($analytics['period'] ?? '') == '3_months' ? 'selected' : '' }}>Last 3 Months</option>
+                        <option value="1_year" {{ ($analytics['period'] ?? '') == '1_year' ? 'selected' : '' }}>Last Year</option>
                     </select>
-                    <button class="export-btn">
-                        <i class="fas fa-download"></i>
-                        Export Report
-                    </button>
                 </div>
             </div>
 
@@ -138,10 +134,10 @@
                 <div class="metrics-row">
                     <div class="metric-card">
                         <div class="metric-label">Total Revenue</div>
-                        <div class="metric-value">${{ number_format($analytics['enrollment']['total'] ?? 0) }}</div>
+                        <div class="metric-value">{{ number_format($analytics['payments']['total'] ?? 0, 2) }}</div>
                         <div class="metric-change positive">
                             <i class="fas fa-arrow-up"></i>
-                            12% from last month
+                            
                         </div>
                     </div>
                     <div class="metric-card green">
@@ -149,15 +145,15 @@
                         <div class="metric-value">{{ $analytics['enrollment']['active'] ?? 0 }}</div>
                         <div class="metric-change positive">
                             <i class="fas fa-arrow-up"></i>
-                            8 new this month
+                            
                         </div>
                     </div>
                     <div class="metric-card orange">
                         <div class="metric-label">Avg Attendance</div>
-                        <div class="metric-value">{{ $analytics['feedback']['positive'] ?? 0 }}%</div>
+                        <div class="metric-value">{{ $analytics['attendance']['average'] ?? 0 }}%</div>
                         <div class="metric-change positive">
                             <i class="fas fa-arrow-up"></i>
-                            3% improvement
+                            
                         </div>
                     </div>
                     <div class="metric-card purple">
@@ -165,7 +161,7 @@
                         <div class="metric-value">{{ $analytics['feedback']['positive'] ?? 0 }}%</div>
                         <div class="metric-change positive">
                             <i class="fas fa-arrow-up"></i>
-                            5% increase
+                            
                         </div>
                     </div>
                 </div>
@@ -195,6 +191,20 @@
                     </div>
 
                     <!-- Feedback Distribution -->
+                    @php
+                        $pos = $analytics['feedback']['positive'] ?? 0;
+                        $neu = $analytics['feedback']['neutral'] ?? 0;
+                        $neg = $analytics['feedback']['negative'] ?? 0;
+                        
+                        // Calculate degrees
+                        $degPos = ($pos / 100) * 360;
+                        $degNeu = ($neu / 100) * 360;
+                        $degNeg = ($neg / 100) * 360; // Remainder
+                        
+                        // Conic gradient stops
+                        $stop1 = $degPos;
+                        $stop2 = $degPos + $degNeu;
+                    @endphp
                     <div class="analytics-card">
                         <div class="card-header">
                             <h3>Parent Feedback</h3>
@@ -204,9 +214,9 @@
                         </div>
                         <div class="chart-container">
                             <div class="pie-chart-container">
-                                <div class="pie-chart">
+                                <div class="pie-chart" style="background: conic-gradient(#10b981 0deg {{ $stop1 }}deg, #fbbf24 {{ $stop1 }}deg {{ $stop2 }}deg, #ef4444 {{ $stop2 }}deg 360deg);">
                                     <div class="pie-center">
-                                        <h4>{{ $analytics['feedback']['positive'] ?? 85 }}%</h4>
+                                        <h4>{{ $pos }}%</h4>
                                         <p>Positive</p>
                                     </div>
                                 </div>
@@ -217,7 +227,7 @@
                                             <h5>Positive</h5>
                                             <p>Very satisfied</p>
                                         </div>
-                                        <div class="legend-value">{{ $analytics['feedback']['positive'] ?? 85 }}%</div>
+                                        <div class="legend-value">{{ $pos }}%</div>
                                     </div>
                                     <div class="legend-item">
                                         <div class="legend-color yellow"></div>
@@ -225,7 +235,7 @@
                                             <h5>Neutral</h5>
                                             <p>Satisfied</p>
                                         </div>
-                                        <div class="legend-value">{{ $analytics['feedback']['neutral'] ?? 10 }}%</div>
+                                        <div class="legend-value">{{ $neu }}%</div>
                                     </div>
                                     <div class="legend-item">
                                         <div class="legend-color red"></div>
@@ -233,7 +243,7 @@
                                             <h5>Negative</h5>
                                             <p>Needs improvement</p>
                                         </div>
-                                        <div class="legend-value">{{ $analytics['feedback']['negative'] ?? 5 }}%</div>
+                                        <div class="legend-value">{{ $neg }}%</div>
                                     </div>
                                 </div>
                             </div>
@@ -242,6 +252,9 @@
                 </div>
 
                 <!-- Revenue Chart -->
+                @php
+                    $maxRevenue = max($analytics['payments']['data'] ?? [0]) ?: 1;
+                @endphp
                 <div class="analytics-card">
                     <div class="card-header">
                         <h3>Monthly Revenue Trend</h3>
@@ -252,76 +265,19 @@
                     <div class="chart-container">
                         <div class="bar-chart">
                             @foreach($analytics['payments']['labels'] ?? ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'] as $index => $month)
+                            @php
+                                $val = $analytics['payments']['data'][$index] ?? 0;
+                                $height = ($val / $maxRevenue) * 100;
+                            @endphp
                             <div class="bar-item">
-                                <div class="bar" style="height: {{ (($analytics['payments']['data'][$index] ?? 0) / 200) }}%; background: linear-gradient(180deg, #8b5cf6, #7c3aed);">
-                                    <span class="bar-value">${{ number_format($analytics['payments']['data'][$index] ?? 0) }}</span>
+                                <div class="bar" style="height: {{ $height }}%; background: linear-gradient(180deg, #8b5cf6, #7c3aed);">
+                                    <span class="bar-value">{{ number_format($val) }}</span>
                                 </div>
                                 <div class="bar-label">{{ $month }}</div>
                             </div>
                             @endforeach
                         </div>
                     </div>
-                </div>
-
-                <!-- Enrollment Statistics -->
-                <div class="analytics-card">
-                    <div class="card-header">
-                        <h3>Enrollment Statistics</h3>
-                        <div class="card-icon orange">
-                            <i class="fas fa-users"></i>
-                        </div>
-                    </div>
-                    <table class="stats-table">
-                        <thead>
-                            <tr>
-                                <th>Metric</th>
-                                <th>Count</th>
-                                <th>Trend</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Total Enrolled</td>
-                                <td>{{ $analytics['enrollment']['total'] ?? 120 }}</td>
-                                <td>
-                                    <span class="trend-badge up">
-                                        <i class="fas fa-arrow-up"></i>
-                                        8.5%
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>New This Month</td>
-                                <td>{{ $analytics['enrollment']['new_this_month'] ?? 8 }}</td>
-                                <td>
-                                    <span class="trend-badge up">
-                                        <i class="fas fa-arrow-up"></i>
-                                        12%
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Active Students</td>
-                                <td>{{ $analytics['enrollment']['active'] ?? 115 }}</td>
-                                <td>
-                                    <span class="trend-badge up">
-                                        <i class="fas fa-arrow-up"></i>
-                                        5%
-                                    </span>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>Inactive Students</td>
-                                <td>{{ $analytics['enrollment']['inactive'] ?? 5 }}</td>
-                                <td>
-                                    <span class="trend-badge down">
-                                        <i class="fas fa-arrow-down"></i>
-                                        2%
-                                    </span>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </main>

@@ -852,33 +852,136 @@ class AdminController extends Controller
     /**
      * Feature #9: Analytics Dashboard
      */
-    public function analytics()
+    public function analytics(Request $request)
     {
-        // System-wide analytics
+        $period = $request->input('period', '7_days');
+        
+        // Determine date range based on period
+        $startDate = now();
+        switch($period) {
+            case '7_days': $startDate = now()->subDays(7); break;
+            case '30_days': $startDate = now()->subDays(30); break;
+            case '3_months': $startDate = now()->subMonths(3); break;
+            case '1_year': $startDate = now()->subYear(); break;
+            default: $startDate = now()->subDays(7); break;
+        }
+
+        // 1. Enrollment Statistics (Snapshots are hard without history table, so we stick to current)
+        // We could filter 'newThisMonth' based on the period though
+        $totalEnrolled = \App\Models\Child::count();
+        $activeChildren = \App\Models\Child::where('status', 'active')->count();
+        $inactiveChildren = \App\Models\Child::where('status', 'inactive')->count();
+        
+        // New registrations in the selected period
+        $newRegistrations = \App\Models\Child::where('created_at', '>=', $startDate)->count();
+
+        // 2. Revenue Statistics (In the selected period)
+        $totalRevenue = \App\Models\Invoice::where('status', 'paid')
+            ->where('updated_at', '>=', $startDate)
+            ->sum('amount');
+        
+        // Monthly Revenue Chart Data (Always show last 6 months context, or adjust to period?)
+        // Let's keep the chart logic showing "Context" (last 6 months) but the Stat Card shows "Total Revenue" for the *period*.
+        $paymentsLabels = [];
+        $paymentsData = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $paymentsLabels[] = $date->format('M');
+            $paymentsData[] = \App\Models\Invoice::where('status', 'paid')
+                ->whereYear('updated_at', $date->year)
+                ->whereMonth('updated_at', $date->month)
+                ->sum('amount');
+        }
+
+        // 3. Attendance Statistics 
+        // Showing attendance trend for the period would be complex if period is 1 year. 
+        // Let's keep the chart as "Recent Weekly Trend" (last 7 days) regardless of large filters, 
+        // OR if filter is 30_days, show 4 weeks?
+        // For simplicity while maintaining UI: Keep Chart as Daily bars.
+        // If period > 7 days, maybe show last 7 days still in chart? 
+        // Let's stick to showing Last 7 days in the chart for readability on this specific view card
+        // But the "Avg Attendance" metric card will reflect the PERIOD.
+        
+        $attendanceLabels = [];
+        $attendanceData = []; 
+        for ($i = 6; $i >= 0; $i--) { // Last 7 days including today
+            $date = now()->subDays($i);
+            $attendanceLabels[] = $date->format('D');
+            
+            $totalActive = $activeChildren > 0 ? $activeChildren : 1; 
+            $presentCount = DB::table('attendances')
+                ->whereDate('date', $date->format('Y-m-d'))
+                ->whereIn('status', ['present', 'late'])
+                ->count();
+            
+            $attendanceData[] = round(($presentCount / $totalActive) * 100);
+        }
+
+        // Calculate Average Attendance Rate over the selected PERIOD (not just chart days)
+        // This query gets avg rate over the full $startDate period
+        // Optimization: Get count of all attendance records in period / (active children * days)
+        // Estimation: Average of daily percentages
+        $periodDays = now()->diffInDays($startDate);
+        $periodDays = $periodDays < 1 ? 1 : $periodDays;
+        
+        $totalPresentInPeriod = DB::table('attendances')
+            ->whereDate('date', '>=', $startDate)
+            ->whereIn('status', ['present', 'late'])
+            ->count();
+        
+        // Approximation: Total present / (Active Children * Days)
+        // This assumes active children count was constant. It's an estimate.
+        $denominator = ($activeChildren * $periodDays);
+        $avgAttendanceRate = $denominator > 0 ? round(($totalPresentInPeriod / $denominator) * 100) : 0;
+        
+        // Cap at 100 just in case
+        $avgAttendanceRate = min($avgAttendanceRate, 100);
+
+
+        // 4. Feedback / Ratings (All time or Period?)
+        // Let's do Period for counting "New" ratings, but "Distribution" usually implies "Current Sentiment" (All time).
+        // Let's keep Distribution as "All Time" because dropping to 0 for "7 days" might look empty.
+        // But the "Parent Satisfaction" text says "5% increase", implying trend.
+        // Let's just calculate All Time for the Pie Chart.
+        $positiveRatings = \App\Models\Rating::where('rating', '>=', 4)->count();
+        $neutralRatings = \App\Models\Rating::where('rating', 3)->count();
+        $negativeRatings = \App\Models\Rating::where('rating', '<', 3)->count();
+        $totalRatings = $positiveRatings + $neutralRatings + $negativeRatings;
+        
+        $feedbackPositivePct = $totalRatings > 0 ? round(($positiveRatings / $totalRatings) * 100) : 0;
+        $feedbackNeutralPct = $totalRatings > 0 ? round(($neutralRatings / $totalRatings) * 100) : 0;
+        $feedbackNegativePct = $totalRatings > 0 ? round(($negativeRatings / $totalRatings) * 100) : 0;
+
+
         $analytics = [
+            'period' => $period, // Pass back to view
             'attendance' => [
-                'labels' => ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-                'data' => [85, 90, 88, 92, 87], // Placeholder data
+                'labels' => $attendanceLabels,
+                'data' => $attendanceData,
+                'average' => $avgAttendanceRate,
             ],
             'payments' => [
-                'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                'data' => [12000, 15000, 13500, 16000, 14500, 17000], // Placeholder data
+                'labels' => $paymentsLabels,
+                'data' => $paymentsData,
+                'total' => $totalRevenue,
             ],
             'feedback' => [
-                'positive' => 85,
-                'neutral' => 10,
-                'negative' => 5,
+                'positive' => $feedbackPositivePct,
+                'neutral' => $feedbackNeutralPct,
+                'negative' => $feedbackNegativePct,
             ],
             'enrollment' => [
-                'total' => 120,
-                'new_this_month' => 8,
-                'active' => 115,
-                'inactive' => 5,
+                'total' => $totalEnrolled,
+                'new_period' => $newRegistrations, // Renamed from new_this_month
+                'active' => $activeChildren,
+                'inactive' => $inactiveChildren,
             ],
         ];
 
         return view('admin.analytics', compact('analytics'));
     }
+
+
 
 
 
