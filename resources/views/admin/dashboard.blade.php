@@ -81,7 +81,7 @@
                             <i class="fas fa-dollar-sign"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>${{ number_format($stats['pending_payments'] ?? 0) }}</h3>
+                            <h3>{{ number_format($stats['pending_payments'] ?? 0) }}</h3>
                             <p>Pending Payments</p>
                         </div>
                     </a>
@@ -90,7 +90,7 @@
                             <i class="fas fa-chart-line"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>${{ number_format($stats['total_revenue'] ?? 0) }}</h3>
+                            <h3>{{ number_format($stats['total_revenue'] ?? 0) }}</h3>
                             <p>Total Revenue</p>
                         </div>
                     </a>

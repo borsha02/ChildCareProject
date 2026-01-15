@@ -82,10 +82,7 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     Route::post('/payments/{id}/approve', [AdminController::class, 'approvePayment'])->name('admin.payments.approve');
     Route::post('/payments/{id}/reject', [AdminController::class, 'rejectPayment'])->name('admin.payments.reject');
 
-    // Backup & Restore (Feature #12)
-    Route::get('/backup-restore', [AdminController::class, 'backupRestore'])->name('admin.backup');
-    Route::post('/backup/create', [AdminController::class, 'createBackup'])->name('admin.backup.create');
-    Route::post('/backup/restore', [AdminController::class, 'restoreBackup'])->name('admin.backup.restore');
+
 
     // Settings & Configurations (Feature #13)
     Route::get('/settings', [AdminController::class, 'settings'])->name('admin.settings');

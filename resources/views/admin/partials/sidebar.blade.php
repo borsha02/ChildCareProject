@@ -96,10 +96,6 @@
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
             </a> 
-            <a href="{{ route('admin.backup') }}" class="nav-item {{ request()->routeIs('admin.backup') ? 'active' : '' }}">
-                <i class="fas fa-database"></i>
-                <span>Backup & Restore</span>
-            </a> 
             <a href="{{ route('logout') }}" class="nav-item"
                 onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                 <i class="fas fa-sign-out-alt"></i>

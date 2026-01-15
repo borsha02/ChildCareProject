@@ -30,10 +30,10 @@ class AdminController extends Controller
                 'total_users' => User::count(),
                 'total_parents' => User::where('role', 'parent')->count(),
                 'total_staff' => User::where('role', 'caregiver')->count(),
-                'total_children' => \App\Models\Child::where('status', '!=', 'pending')->count(), // Only enrolled/active/inactive items
-                'active_today' => 0, // Will be updated with attendance data
-                'pending_payments' => 0, // Will be updated with payment data
-                'total_revenue' => 0, // Will be updated with payment data
+                'total_children' => \App\Models\Child::where('status', '!=', 'pending')->count(), 
+                'active_today' => DB::table('attendances')->whereDate('date', today())->whereIn('status', ['present', 'late'])->count(),
+                'pending_payments' => \App\Models\Invoice::where('status', 'pending')->sum('amount'),
+                'total_revenue' => \App\Models\Invoice::where('status', 'paid')->sum('amount'),
                 'pending_approvals' => 0, // Reset to 0 as we use specific badges now
                 'pending_applications' => $pendingApplications,
                 'pending_registrations' => $pendingRegistrations,
@@ -1070,55 +1070,7 @@ class AdminController extends Controller
             ->with('success', 'Payment rejected!');
     }
 
-    /**
-     * Feature #12: Backup & Restore
-     */
-    public function backupRestore()
-    {
-        // Get list of available backups
-        $backups = [];
 
-        return view('admin.backup-restore', compact('backups'));
-    }
-
-    /**
-     * Feature #12: Create backup
-     */
-    public function createBackup()
-    {
-        // Implement database backup logic
-        try {
-            $filename = 'backup_' . date('Y-m-d_H-i-s') . '.sql';
-            // Backup logic will be implemented
-
-            return redirect()->back()
-                ->with('success', 'Backup created successfully!');
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Backup failed: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Feature #12: Restore from backup
-     */
-    public function restoreBackup(Request $request)
-    {
-        $validated = $request->validate([
-            'backup_file' => 'required|string',
-        ]);
-
-        // Implement restore logic
-        try {
-            // Restore logic will be implemented
-
-            return redirect()->back()
-                ->with('success', 'Database restored successfully!');
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Restore failed: ' . $e->getMessage());
-        }
-    }
 
     /**
      * Feature #13: Manage Configurations

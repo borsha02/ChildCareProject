@@ -598,38 +598,33 @@ class CaregiverController extends Controller
     {
         $user = auth()->user();
         
-        $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
             'phone' => 'nullable|string|max:20',
-            'dob' => 'nullable|date',
-            'address' => 'nullable|string|max:255',
         ]);
 
-        $user->update([
-            'name' => $request->name,
-            'phone' => $request->phone,
-            'dob' => $request->dob,
-            'address' => $request->address,
-        ]);
+        $user->update($validated);
 
-        return redirect()->back()->with('success', 'Profile updated successfully.');
+        return back()->with('success', 'Profile updated successfully.');
     }
 
     public function updatePassword(Request $request)
     {
         $request->validate([
-            'current_password' => 'required',
-            'new_password' => 'required|string|min:8|confirmed',
+            'current_password' => 'required|current_password',
+            'password' => 'required|confirmed|min:8',
         ]);
-
-        if (!\Illuminate\Support\Facades\Hash::check($request->current_password, auth()->user()->password)) {
-            return back()->withErrors(['current_password' => 'Current password does not match.']);
-        }
 
         auth()->user()->update([
-            'password' => \Illuminate\Support\Facades\Hash::make($request->new_password),
+            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
         ]);
 
-        return redirect()->back()->with('success', 'Password updated successfully.');
+        return back()->with('success', 'Password updated successfully.');
+    }
+
+    public function schedule()
+    {
+        return view('caregiver.schedule');
     }
 }
