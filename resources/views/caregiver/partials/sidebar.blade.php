@@ -82,6 +82,10 @@
                 <i class="fas fa-calendar-times"></i>
                 <span>Leave Requests</span>
             </a>
+            <a href="{{ route('caregiver.settings') }}" class="nav-item {{ request()->routeIs('caregiver.settings') ? 'active' : '' }}">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
             <a href="{{ route('logout') }}" class="nav-item"
                 onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                 <i class="fas fa-sign-out-alt"></i>

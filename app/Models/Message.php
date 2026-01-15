@@ -13,6 +13,8 @@ class Message extends Model
         'message',
         'is_read',
         'read_at',
+        'attachment',
+        'attachment_type',
     ];
 
     protected $casts = [

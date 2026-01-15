@@ -897,9 +897,26 @@ class ParentController extends Controller
     {
         $validated = $request->validate([
             'receiver_id' => 'required|exists:users,id',
-            'message' => 'required|string',
+            'message' => 'nullable|string',
             'child_id' => 'nullable|exists:children,id',
+            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx,txt',
         ]);
+
+
+        if (empty($validated['message']) && !$request->hasFile('attachment')) {
+            return response()->json(['success' => false, 'message' => 'Message or attachment is required'], 422);
+        }
+
+        $attachmentPath = null;
+        $attachmentType = null;
+
+        // Handle file upload
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $attachmentPath = $file->storeAs('attachments', $filename, 'public');
+            $attachmentType = $file->getMimeType();
+        }
 
         // Create the message
         $message = \App\Models\Message::create([
@@ -908,6 +925,8 @@ class ParentController extends Controller
             'child_id' => $validated['child_id'] ?? null,
             'message' => $validated['message'],
             'is_read' => false,
+            'attachment' => $attachmentPath,
+            'attachment_type' => $attachmentType,
         ]);
 
         // Load relationships for response

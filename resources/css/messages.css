@@ -577,6 +577,7 @@ body {
     gap: 12px;
     align-items: center;
     background: white;
+    position: relative;
 }
 
 .attach-btn,
@@ -749,4 +750,54 @@ body {
     text-align: center;
     color: #6b7280;
     font-size: 14px;
+}
+
+/* Attachment Styles */
+.message-attachment {
+    margin-top: 8px;
+    max-width: 100%;
+}
+
+.message-attachment.image img {
+    max-width: 250px;
+    max-height: 200px;
+    border-radius: 8px;
+    cursor: pointer;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.message-attachment.image img:hover {
+    transform: scale(1.02);
+}
+
+.message-attachment.file a {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.message.sent .message-attachment.file a {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.message-attachment.file a:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.message.sent .message-attachment.file a:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.message-attachment.file i {
+    font-size: 18px;
 }

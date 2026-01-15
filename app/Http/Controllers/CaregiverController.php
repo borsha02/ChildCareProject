@@ -384,9 +384,14 @@ class CaregiverController extends Controller
     {
         $validated = $request->validate([
             'receiver_id' => 'required|exists:users,id',
-            'message' => 'required|string',
+            'message' => 'nullable|string',
             'child_id' => 'nullable|exists:children,id',
+            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx,txt',
         ]);
+
+        if (empty($validated['message']) && !$request->hasFile('attachment')) {
+            return response()->json(['success' => false, 'message' => 'Message or attachment is required'], 422);
+        }
 
         $receiverId = $validated['receiver_id'];
 
@@ -413,6 +418,17 @@ class CaregiverController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
+        $attachmentPath = null;
+        $attachmentType = null;
+
+        // Handle file upload
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $attachmentPath = $file->storeAs('attachments', $filename, 'public');
+            $attachmentType = $file->getMimeType();
+        }
+
         // Create the message
         $message = \App\Models\Message::create([
             'sender_id' => auth()->id(),
@@ -420,6 +436,8 @@ class CaregiverController extends Controller
             'child_id' => $validated['child_id'] ?? null,
             'message' => $validated['message'],
             'is_read' => false,
+            'attachment' => $attachmentPath,
+            'attachment_type' => $attachmentType,
         ]);
 
         // Load relationships for response
@@ -504,5 +522,114 @@ class CaregiverController extends Controller
             ->latest()
             ->get();
         return view('caregiver.ratings', compact('ratings'));
+    }
+    public function events()
+    {
+        $events = \App\Models\Event::with(['registrations.user', 'registrations.child'])
+            ->withCount('registrations')
+            ->orderBy('start_time', 'desc')
+            ->get();
+
+        return view('caregiver.events', compact('events'));
+    }
+    public function notifications()
+    {
+        $notifications = auth()->user()->notifications()->latest()->paginate(10);
+        $unreadCount = auth()->user()->unreadNotifications->count();
+        return view('caregiver.notifications', compact('notifications', 'unreadCount'));
+    }
+
+    public function markAllNotificationsRead(Request $request)
+    {
+        auth()->user()->unreadNotifications->markAsRead();
+        return back()->with('success', 'All notifications marked as read.');
+    }
+
+    public function markNotificationRead($id)
+    {
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+        return back()->with('success', 'Notification marked as read.');
+    }
+
+    public function deleteNotification($id)
+    {
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->delete();
+        return back()->with('success', 'Notification deleted.');
+    }
+    public function leaveRequests()
+    {
+        $leaveRequests = \App\Models\LeaveRequest::where('user_id', auth()->id())
+            ->orderBy('created_at', 'desc')
+            ->get();
+            
+        return view('caregiver.leave-requests', compact('leaveRequests'));
+    }
+
+    public function storeLeaveRequest(Request $request)
+    {
+        $request->validate([
+            'leave_type' => 'required|string',
+            'duration_type' => 'required|string',
+            'start_date' => 'required|date|after_or_equal:today',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'reason' => 'required|string',
+        ]);
+
+        \App\Models\LeaveRequest::create([
+            'user_id' => auth()->id(),
+            'leave_type' => $request->leave_type,
+            'duration_type' => $request->duration_type,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'reason' => $request->reason,
+            'status' => 'Pending',
+        ]);
+
+        return redirect()->back()->with('success', 'Leave request submitted successfully.');
+    }
+    public function settings()
+    {
+        return view('caregiver.settings');
+    }
+
+    public function updateSettings(Request $request)
+    {
+        $user = auth()->user();
+        
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'dob' => 'nullable|date',
+            'address' => 'nullable|string|max:255',
+        ]);
+
+        $user->update([
+            'name' => $request->name,
+            'phone' => $request->phone,
+            'dob' => $request->dob,
+            'address' => $request->address,
+        ]);
+
+        return redirect()->back()->with('success', 'Profile updated successfully.');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if (!\Illuminate\Support\Facades\Hash::check($request->current_password, auth()->user()->password)) {
+            return back()->withErrors(['current_password' => 'Current password does not match.']);
+        }
+
+        auth()->user()->update([
+            'password' => \Illuminate\Support\Facades\Hash::make($request->new_password),
+        ]);
+
+        return redirect()->back()->with('success', 'Password updated successfully.');
     }
 }

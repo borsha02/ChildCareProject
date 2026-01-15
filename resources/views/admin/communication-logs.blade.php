@@ -223,7 +223,8 @@
 
                             @if(count($conversations) > 0)
                                 <div class="chat-input-area">
-                                    <button class="attach-btn" title="Attach file">
+                                    <input type="file" id="fileInput" style="display: none;" accept="image/*,.pdf,.doc,.docx,.txt">
+                                    <button class="attach-btn" title="Attach file" id="attachBtn">
                                         <i class="fas fa-paperclip"></i>
                                     </button>
                                     <input type="text" class="chat-input" id="messageInput" placeholder="Type a message...">
@@ -412,12 +413,13 @@
                         <div class="message-content">
                             <div class="message-bubble">
                                 <p>${escapeHtml(message.message)}</p>
+                                ${formatAttachment(message)}
                             </div>
                             <span class="message-time">${messageTime}</span>
                         </div>
                     `;
                 } else {
-                    const senderName = message.sender.name;
+                    const senderName = message.sender ? message.sender.name : 'Unknown';
                     const senderAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(senderName)}&background=3b82f6&color=fff`;
                     messageDiv.innerHTML = `
                         <div class="message-avatar">
@@ -426,6 +428,7 @@
                         <div class="message-content">
                             <div class="message-bubble">
                                 <p>${escapeHtml(message.message)}</p>
+                                ${formatAttachment(message)}
                             </div>
                             <span class="message-time">${messageTime}</span>
                         </div>
@@ -457,30 +460,35 @@
         }
 
         function sendMessage() {
-            if (!messageInput || !messageInput.value.trim() || !currentUserId) {
+            if (!messageInput || (!messageInput.value.trim() && !selectedFile) || !currentUserId) {
                 return;
             }
 
             const messageText = messageInput.value.trim();
+            const formData = new FormData();
+            formData.append('recipient_id', currentUserId);
+            formData.append('message', messageText);
+            if (selectedFile) {
+                formData.append('attachment', selectedFile);
+            }
+
+            // Clear input and attachment immediately for responsive feel
             messageInput.value = '';
+            removeFileAttachment();
 
             fetch('/admin/communication/send', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({
-                    recipient_id: currentUserId,
-                    message: messageText,
-                })
+                body: formData
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
                     appendMessage(data.message, true);
-                    updateConversationPreview(currentUserId, messageText);
+                    updateConversationPreview(currentUserId, messageText || 'Attachment');
                 }
             })
             .catch(error => {
@@ -561,9 +569,40 @@
         }
 
         function escapeHtml(text) {
+            if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function formatAttachment(message) {
+            if (!message.attachment) return '';
+            
+            const url = `/storage/${message.attachment}`;
+            const isImage = message.attachment_type && message.attachment_type.startsWith('image/');
+            
+            if (isImage) {
+                return `
+                    <div class="message-attachment image">
+                        <a href="${url}" target="_blank">
+                            <img src="${url}" alt="Attachment">
+                        </a>
+                    </div>
+                `;
+            } else {
+                const icon = getFileIcon(message.attachment_type || '');
+                const fileName = message.attachment.split('/').pop().split('_').slice(1).join('_') || 'Attachment';
+                
+                return `
+                    <div class="message-attachment file">
+                        <a href="${url}" target="_blank">
+                            <i class="${icon}"></i>
+                            <span>${escapeHtml(fileName)}</span>
+                            <i class="fas fa-download" style="font-size: 12px; margin-left: auto; opacity: 0.6;"></i>
+                        </a>
+                    </div>
+                `;
+            }
         }
         
         // Sidebar toggle for mobile
@@ -572,6 +611,182 @@
         if (mobileToggle) {
             mobileToggle.addEventListener('click', () => sidebar.classList.toggle('active'));
         }
+
+        // Emoji picker functionality
+        const emojiBtn = document.querySelector('.emoji-btn');
+        const emojis = ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '😶‍🌫️', '🥴', '😵', '🤯', '🤠', '🥳', '🥸', '😎', '🤓', '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '👋', '🤚', '🖐️', '✋', '🖖', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅', '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻', '👃', '🧠', '🫀', '🫁', '🦷', '🦴', '👀', '👁️', '👅', '👄', '💋', '🩸', '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹', '🈲', '🅰️', '🅱️', '🆎', '🆑', '🅾️', '🆘', '❌', '⭕', '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️', '🚷', '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕', '❓', '❔', '‼️', '⁉️', '🔅', '🔆', '〽️', '⚠️', '🚸', '🔱', '⚜️', '🔰', '♻️', '✅', '🈯', '💹', '❇️', '✳️', '❎', '🌐', '💠', '🔠', '🔡', '🔢', '🔣', '🔤', '🅿️', '🆗', '🆙', '🆒', '🆕', '🆓', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔢'];
+        
+        let emojiPicker = null;
+
+        if (emojiBtn) {
+            emojiBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                
+                // Remove existing picker if any
+                if (emojiPicker) {
+                    emojiPicker.remove();
+                    emojiPicker = null;
+                    return;
+                }
+
+                // Create emoji picker
+                emojiPicker = document.createElement('div');
+                emojiPicker.style.cssText = `
+                    position: absolute;
+                    bottom: 70px;
+                    right: 60px;
+                    background: white;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 12px;
+                    padding: 12px;
+                    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+                    display: grid;
+                    grid-template-columns: repeat(8, 1fr);
+                    gap: 4px;
+                    max-height: 300px;
+                    overflow-y: auto;
+                    z-index: 1000;
+                    width: 320px;
+                `;
+
+                emojis.forEach(emoji => {
+                    const emojiSpan = document.createElement('span');
+                    emojiSpan.textContent = emoji;
+                    emojiSpan.style.cssText = `
+                        cursor: pointer;
+                        font-size: 24px;
+                        padding: 8px;
+                        border-radius: 6px;
+                        text-align: center;
+                        transition: background 0.2s;
+                    `;
+                    emojiSpan.addEventListener('mouseenter', () => {
+                        emojiSpan.style.background = '#f3f4f6';
+                    });
+                    emojiSpan.addEventListener('mouseleave', () => {
+                        emojiSpan.style.background = 'transparent';
+                    });
+                    emojiSpan.addEventListener('click', () => {
+                        const input = document.getElementById('messageInput');
+                        if (input) {
+                            input.value += emoji;
+                            input.focus();
+                        }
+                        emojiPicker.remove();
+                        emojiPicker = null;
+                    });
+                    emojiPicker.appendChild(emojiSpan);
+                });
+
+                document.querySelector('.chat-input-area').appendChild(emojiPicker);
+            });
+        }
+
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', (e) => {
+            if (emojiPicker && !e.target.closest('.emoji-btn') && !e.target.closest('.chat-input-area')) {
+                emojiPicker.remove();
+                emojiPicker = null;
+            }
+        });
+
+        // File attachment functionality
+        const attachBtn = document.getElementById('attachBtn');
+        const fileInput = document.getElementById('fileInput');
+        let selectedFile = null;
+        let filePreview = null;
+
+        if (attachBtn && fileInput) {
+            attachBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    // Check file size (max 10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('File size must be less than 10MB');
+                        fileInput.value = '';
+                        return;
+                    }
+
+                    selectedFile = file;
+                    showFilePreview(file);
+                }
+            });
+        }
+
+        function showFilePreview(file) {
+            // Remove existing preview if any
+            if (filePreview) {
+                filePreview.remove();
+            }
+
+            // Create preview element
+            filePreview = document.createElement('div');
+            filePreview.style.cssText = `
+                position: absolute;
+                bottom: 100%;
+                left: 20px;
+                right: 20px;
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 10px 15px;
+                box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                z-index: 1000;
+                margin-bottom: 10px;
+            `;
+
+            const fileIcon = getFileIcon(file.type);
+            const fileName = file.name.length > 25 ? file.name.substring(0, 25) + '...' : file.name;
+            const fileSize = formatFileSize(file.size);
+
+            filePreview.innerHTML = `
+                <i class="${fileIcon}" style="font-size: 24px; color: #3b82f6;"></i>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-weight: 600; font-size: 14px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${fileName}</div>
+                    <div style="font-size: 12px; color: #666;">${fileSize}</div>
+                </div>
+                <button onclick="removeFileAttachment()" style="background: none; border: none; cursor: pointer; color: #ef4444; font-size: 18px; padding: 0; width: 24px; height: 24px;">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+            document.querySelector('.chat-input-area').appendChild(filePreview);
+        }
+
+        function removeFileAttachment() {
+            if (filePreview) {
+                filePreview.remove();
+                filePreview = null;
+            }
+            selectedFile = null;
+            fileInput.value = '';
+        }
+
+        function getFileIcon(fileType) {
+            if (fileType.startsWith('image/')) return 'fas fa-image';
+            if (fileType.includes('pdf')) return 'fas fa-file-pdf';
+            if (fileType.includes('word') || fileType.includes('document')) return 'fas fa-file-word';
+            if (fileType.includes('text')) return 'fas fa-file-alt';
+            return 'fas fa-file';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        // Make removeFileAttachment globally accessible
+        window.removeFileAttachment = removeFileAttachment;
     </script>
 </body>
 </html>

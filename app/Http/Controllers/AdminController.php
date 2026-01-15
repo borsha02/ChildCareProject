@@ -1163,14 +1163,30 @@ class AdminController extends Controller
         $validated = $request->validate([
             'recipient_id' => 'nullable', 
             'receiver_id' => 'nullable', // Allow alias
-            'message' => 'required|string',
+            'message' => 'nullable|string',
+            'attachment' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,pdf,doc,docx,txt',
         ]);
+
+        if (empty($validated['message']) && !$request->hasFile('attachment')) {
+            return response()->json(['success' => false, 'message' => 'Message or attachment is required'], 422);
+        }
 
         $senderId = auth()->id();
         $recipientId = $request->input('recipient_id') ?? $request->input('receiver_id');
         
         if (!$recipientId) {
              return response()->json(['error' => 'Recipient is required'], 422);
+        }
+
+        $attachmentPath = null;
+        $attachmentType = null;
+
+        // Handle file upload
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $attachmentPath = $file->storeAs('attachments', $filename, 'public');
+            $attachmentType = $file->getMimeType();
         }
 
         $messageContent = $validated['message'];
@@ -1184,6 +1200,8 @@ class AdminController extends Controller
                     'receiver_id' => $recipient->id,
                     'message' => $messageContent,
                     'is_read' => false,
+                    'attachment' => $attachmentPath,
+                    'attachment_type' => $attachmentType,
                 ]);
             }
             $successMsg = 'Message sent to all parents successfully.';
@@ -1196,6 +1214,8 @@ class AdminController extends Controller
                     'receiver_id' => $recipient->id,
                     'message' => $messageContent,
                     'is_read' => false,
+                    'attachment' => $attachmentPath,
+                    'attachment_type' => $attachmentType,
                 ]);
             }
             $successMsg = 'Message sent to all staff successfully.';
@@ -1207,6 +1227,8 @@ class AdminController extends Controller
                 'receiver_id' => $recipientId,
                 'message' => $messageContent,
                 'is_read' => false,
+                'attachment' => $attachmentPath,
+                'attachment_type' => $attachmentType,
             ]);
             $successMsg = 'Message sent successfully.';
         }
