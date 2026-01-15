@@ -216,7 +216,8 @@
                         @foreach($children as $child)
                         <option value="{{ $child->id }}" 
                                 data-package="{{ $child->package }}"
-                                data-enrollment="{{ \Carbon\Carbon::parse($child->enrollment_date)->format('M d, Y') }}">
+                                data-enrollment="{{ \Carbon\Carbon::parse($child->enrollment_date)->format('M d, Y') }}"
+                                data-is-sibling="{{ $child->is_sibling ? 'true' : 'false' }}">
                             {{ $child->first_name }} {{ $child->last_name }} (Parent: {{ $child->parent->name ?? 'N/A' }})
                         </option>
                         @endforeach
@@ -248,20 +249,32 @@
     </div>
 
     <script>
+        // Pass fees from controller
+        const feeSettings = @json($fees ?? ['weekly' => 0, 'monthly' => 0, 'sibling_discount' => 0]);
+
         // Auto-fill amount based on package and show enrollment date
         document.getElementById('child_id').addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
             const packageType = selectedOption.getAttribute('data-package');
             const enrollmentDate = selectedOption.getAttribute('data-enrollment');
+            const isSibling = selectedOption.getAttribute('data-is-sibling') === 'true';
             
             const amountInput = document.getElementById('amount');
             const enrollmentInfo = document.getElementById('enrollment-info');
             
-            // Amount logic
+            // Amount logic - Dynamic from Settings with Sibling Discount
             if (packageType === 'weekly') {
-                amountInput.value = 1500;
+                amountInput.value = feeSettings.weekly;
             } else if (packageType === 'monthly') {
-                amountInput.value = 5000;
+                let amount = parseFloat(feeSettings.monthly);
+                
+                // Apply Sibling Discount only for Monthly package
+                if (isSibling && feeSettings.sibling_discount > 0) {
+                    const discount = (amount * feeSettings.sibling_discount) / 100;
+                    amount = amount - discount;
+                }
+                
+                amountInput.value = amount.toFixed(2);
             } else {
                 amountInput.value = '';
             }

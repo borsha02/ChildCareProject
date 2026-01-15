@@ -82,12 +82,13 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     Route::post('/payments/{id}/approve', [AdminController::class, 'approvePayment'])->name('admin.payments.approve');
     Route::post('/payments/{id}/reject', [AdminController::class, 'rejectPayment'])->name('admin.payments.reject');
 
-
-
+    
     // Settings & Configurations (Feature #13)
     Route::get('/settings', [AdminController::class, 'settings'])->name('admin.settings');
     Route::post('/settings/update', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
-    Route::post('/settings/classrooms', [AdminController::class, 'manageClassrooms'])->name('admin.settings.classrooms');
+    Route::post('/classrooms', [AdminController::class, 'storeClassroom'])->name('admin.classrooms.store');
+    Route::put('/classrooms/{id}', [AdminController::class, 'updateClassroom'])->name('admin.classrooms.update');
+    Route::delete('/classrooms/{id}', [AdminController::class, 'deleteClassroom'])->name('admin.classrooms.delete');
 
     // Communication (Feature #11)
     Route::get('/communication', [AdminController::class, 'communicationLogs'])->name('admin.communication');

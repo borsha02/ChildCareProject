@@ -766,6 +766,24 @@ class AdminController extends Controller
         // Fetch children with parents for the generation modal
         $children = \App\Models\Child::with('parent')->where('status', '!=', 'pending')->get();
 
+        // Process children to identify siblings for discount eligibility
+        // Logic: Group by parent. First child (by id/enrollment) pays full. Subsequent pay discounted.
+        $children = $children->map(function ($child) {
+            // Get all children of this parent, sorted by ID (assuming lower ID = older/first enrolled)
+            $siblings = \App\Models\Child::where('parent_id', $child->parent_id)
+                ->where('status', '!=', 'pending')
+                ->orderBy('id')
+                ->get();
+            
+            // Check if this child is the first one
+            $isFirstChild = $siblings->first()->id === $child->id;
+            
+            // If NOT first child, they are a "sibling" eligible for discount
+            $child->is_sibling = !$isFirstChild;
+            
+            return $child;
+        });
+
         $stats = [
             'total_invoices' => $invoices->count(),
             'paid_invoices' => $invoices->where('status', 'paid')->count(),
@@ -777,7 +795,14 @@ class AdminController extends Controller
             'overdue_amount' => $invoices->where('status', 'overdue')->sum('amount'),
         ];
 
-        return view('admin.invoices', compact('invoices', 'stats', 'children'));
+        // Fetch fees for JS auto-fill
+        $fees = [
+            'weekly' => \App\Models\AdminSetting::where('key', 'weekly_fee')->value('value') ?? 0,
+            'monthly' => \App\Models\AdminSetting::where('key', 'monthly_fee')->value('value') ?? 0,
+            'sibling_discount' => \App\Models\AdminSetting::where('key', 'sibling_discount')->value('value') ?? 0,
+        ];
+
+        return view('admin.invoices', compact('invoices', 'stats', 'children', 'fees'));
     }
 
     /**
@@ -1077,27 +1102,35 @@ class AdminController extends Controller
      */
     public function settings()
     {
-        // Get system configurations
+        // Get system configurations from DB
         $settings = [
             'fees' => [
-                'registration_fee' => 0,
-                'monthly_fee' => 0,
-                'late_pickup_fee' => 0,
+                'weekly_fee' => \App\Models\AdminSetting::where('key', 'weekly_fee')->value('value') ?? 0,
+                'monthly_fee' => \App\Models\AdminSetting::where('key', 'monthly_fee')->value('value') ?? 0,
+                'sibling_discount' => \App\Models\AdminSetting::where('key', 'sibling_discount')->value('value') ?? 0,
             ],
             'timings' => [
-                'opening_time' => '07:00',
-                'closing_time' => '18:00',
+                'opening_time' => \App\Models\AdminSetting::where('key', 'opening_time')->value('value') ?? '07:00',
+                'closing_time' => \App\Models\AdminSetting::where('key', 'closing_time')->value('value') ?? '18:00',
+                'breakfast_time' => \App\Models\AdminSetting::where('key', 'breakfast_time')->value('value') ?? '08:00',
+                'lunch_time' => \App\Models\AdminSetting::where('key', 'lunch_time')->value('value') ?? '12:00',
+                'snack_time' => \App\Models\AdminSetting::where('key', 'snack_time')->value('value') ?? '15:00',
+                'nap_time' => \App\Models\AdminSetting::where('key', 'nap_time')->value('value') ?? '13:00',
             ],
-            'classrooms' => [],
+            'classrooms' => \App\Models\Classroom::all(),
             'general' => [
-                'system_name' => 'Childcare Management System',
-                'contact_email' => '',
-                'contact_phone' => '',
-                'address' => '',
+                'system_name' => \App\Models\AdminSetting::where('key', 'system_name')->value('value') ?? 'Childcare Management System',
+                'contact_email' => \App\Models\AdminSetting::where('key', 'contact_email')->value('value') ?? '',
+                'contact_phone' => \App\Models\AdminSetting::where('key', 'contact_phone')->value('value') ?? '',
+                'address' => \App\Models\AdminSetting::where('key', 'address')->value('value') ?? '',
+                'max_capacity' => \App\Models\AdminSetting::where('key', 'max_capacity')->value('value') ?? 0,
             ],
         ];
 
-        return view('admin.settings', compact('settings'));
+        $available_classes = \App\Models\Child::distinct()->pluck('class')->filter()->values();
+        $caregivers = \App\Models\User::where('role', 'caregiver')->get();
+
+        return view('admin.settings', compact('settings', 'available_classes', 'caregivers'));
     }
 
     /**
@@ -1106,18 +1139,37 @@ class AdminController extends Controller
     public function updateSettings(Request $request)
     {
         $validated = $request->validate([
-            'registration_fee' => 'nullable|numeric|min:0',
+            'weekly_fee' => 'nullable|numeric|min:0',
             'monthly_fee' => 'nullable|numeric|min:0',
-            'late_pickup_fee' => 'nullable|numeric|min:0',
+            'sibling_discount' => 'nullable|numeric|min:0|max:100',
             'opening_time' => 'nullable|date_format:H:i',
             'closing_time' => 'nullable|date_format:H:i',
+            'breakfast_time' => 'nullable|date_format:H:i',
+            'lunch_time' => 'nullable|date_format:H:i',
+            'snack_time' => 'nullable|date_format:H:i',
+            'nap_time' => 'nullable|date_format:H:i',
             'system_name' => 'nullable|string|max:255',
             'contact_email' => 'nullable|email',
             'contact_phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
+            'max_capacity' => 'nullable|integer|min:0',
         ]);
 
-        // Will be implemented when Settings model is created
+        // Save settings to DB
+        $settings = $request->only([
+            'weekly_fee', 'monthly_fee', 'sibling_discount',
+            'opening_time', 'closing_time', 'breakfast_time', 'lunch_time', 'snack_time', 'nap_time',
+            'system_name', 'contact_email', 'contact_phone', 'address', 'max_capacity'
+        ]);
+
+        foreach ($settings as $key => $value) {
+            if (!is_null($value)) {
+                \App\Models\AdminSetting::updateOrCreate(
+                    ['key' => $key],
+                    ['value' => $value]
+                );
+            }
+        }
 
         return redirect()->route('admin.settings')
             ->with('success', 'Settings updated successfully!');
@@ -1126,11 +1178,44 @@ class AdminController extends Controller
     /**
      * Feature #13: Manage classrooms
      */
-    public function manageClassrooms(Request $request)
+    public function storeClassroom(Request $request)
     {
-        // Will be implemented when Classroom model is created
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'class' => 'required|string|max:255',
+            'capacity' => 'required|integer|min:1',
+            'teacher_name' => 'nullable|string|max:255',
+        ]);
+
+        \App\Models\Classroom::create($validated);
+
         return redirect()->route('admin.settings')
-            ->with('success', 'Classroom settings updated successfully!');
+            ->with('success', 'Classroom added successfully!');
+    }
+
+    public function updateClassroom(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'class' => 'required|string|max:255',
+            'capacity' => 'required|integer|min:1',
+            'teacher_name' => 'nullable|string|max:255',
+        ]);
+
+        $classroom = \App\Models\Classroom::findOrFail($id);
+        $classroom->update($validated);
+
+        return redirect()->route('admin.settings')
+            ->with('success', 'Classroom updated successfully!');
+    }
+
+    public function deleteClassroom($id)
+    {
+        $classroom = \App\Models\Classroom::findOrFail($id);
+        $classroom->delete();
+
+        return redirect()->route('admin.settings')
+            ->with('success', 'Classroom deleted successfully!');
     }
 
     /**
