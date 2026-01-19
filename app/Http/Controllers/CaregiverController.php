@@ -623,8 +623,115 @@ class CaregiverController extends Controller
         return back()->with('success', 'Password updated successfully.');
     }
 
-    public function schedule()
+    public function schedule(Request $request)
     {
-        return view('caregiver.schedule');
+        // 1. Determine Selected Date
+        $selectedDate = $request->has('date') 
+            ? \Carbon\Carbon::parse($request->date) 
+            : now();
+        
+        $prevDate = $selectedDate->copy()->subDay()->format('Y-m-d');
+        $nextDate = $selectedDate->copy()->addDay()->format('Y-m-d');
+
+        // 2. Fetch Timings (Routine)
+        $timings = [
+            'opening_time' => \App\Models\AdminSetting::where('key', 'opening_time')->value('value') ?? '07:00',
+            'closing_time' => \App\Models\AdminSetting::where('key', 'closing_time')->value('value') ?? '18:00',
+            'breakfast_time' => \App\Models\AdminSetting::where('key', 'breakfast_time')->value('value') ?? '08:00',
+            'lunch_time' => \App\Models\AdminSetting::where('key', 'lunch_time')->value('value') ?? '12:00',
+            'snack_time' => \App\Models\AdminSetting::where('key', 'snack_time')->value('value') ?? '15:00',
+            'nap_time' => \App\Models\AdminSetting::where('key', 'nap_time')->value('value') ?? '13:00',
+        ];
+
+        // 3. Fetch Events (Database) for selected date only
+        $events = \App\Models\Event::whereDate('start_time', $selectedDate)
+            ->orderBy('start_time')
+            ->get();
+
+        // 4. Build Day Schedule Structure
+        $dateKey = $selectedDate->format('Y-m-d');
+        $dayName = $selectedDate->format('l');
+        $isWeekend = in_array($dayName, ['Friday', 'Saturday']);
+        
+        // Check for Holiday Event
+        $holidayEvent = $events->where('category', 'holiday')->first();
+
+        $daySchedule = [
+            'date' => $selectedDate->copy(),
+            'is_today' => $selectedDate->isToday(),
+            'is_holiday' => $holidayEvent ? true : false,
+            'holiday_name' => $holidayEvent ? $holidayEvent->title : null,
+            'is_weekend' => $isWeekend,
+            'items' => []
+        ];
+
+        if (!$daySchedule['is_holiday'] && !$isWeekend) {
+            // Add Routine Items
+            $daySchedule['items'][] = [
+                'time' => $timings['opening_time'],
+                'title' => 'Facility Opens',
+                'description' => 'Morning Arrival & Check-in',
+                'type' => 'routine',
+                'icon' => 'fas fa-door-open'
+            ];
+            $daySchedule['items'][] = [
+                'time' => $timings['breakfast_time'],
+                'title' => 'Breakfast',
+                'description' => 'Healthy breakfast served',
+                'type' => 'routine',
+                'icon' => 'fas fa-utensils'
+            ];
+            $daySchedule['items'][] = [
+                'time' => $timings['lunch_time'],
+                'title' => 'Lunch Time',
+                'description' => 'Nutritious lunch served',
+                'type' => 'routine',
+                'icon' => 'fas fa-hamburger'
+            ];
+            $daySchedule['items'][] = [
+                'time' => $timings['nap_time'],
+                'title' => 'Nap Time',
+                'description' => 'Rest period for children',
+                'type' => 'routine',
+                'icon' => 'fas fa-bed'
+            ];
+            $daySchedule['items'][] = [
+                'time' => $timings['snack_time'],
+                'title' => 'Afternoon Snack',
+                'description' => 'Light snack served',
+                'type' => 'routine',
+                'icon' => 'fas fa-cookie'
+            ];
+            $daySchedule['items'][] = [
+                'time' => $timings['closing_time'],
+                'title' => 'Facility Closes',
+                'description' => 'Pickup & Departure',
+                'type' => 'routine',
+                'icon' => 'fas fa-door-closed'
+            ];
+        }
+
+        // Add Database Events for this day
+        $daysEvents = $events->where('category', '!=', 'holiday');
+
+        foreach ($daysEvents as $event) {
+            $daySchedule['items'][] = [
+                'time' => $event->start_time->format('H:i'),
+                'title' => $event->title,
+                'description' => $event->description ?? $event->location,
+                'type' => 'event',
+                'icon' => 'fas fa-calendar-check'
+            ];
+        }
+
+        // Sort items by time
+        usort($daySchedule['items'], function($a, $b) {
+            return strcmp($a['time'], $b['time']);
+        });
+
+        // Fetch Assigned Classrooms
+        $classrooms = \App\Models\Classroom::where('teacher_name', auth()->user()->name)->get();
+
+        return view('caregiver.schedule', compact('daySchedule', 'timings', 'classrooms', 'selectedDate', 'prevDate', 'nextDate'));
     }
 }

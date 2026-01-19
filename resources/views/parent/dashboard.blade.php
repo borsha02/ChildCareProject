@@ -156,7 +156,7 @@
                             <i class="fas fa-file-invoice"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>${{ number_format($pendingPayment, 2) }}</h3>
+                            <h3>{{ number_format($pendingPayment, 2) }}</h3>
                             <p>Pending Payment</p>
                         </div>
                     </a>
@@ -229,36 +229,22 @@
                             <a href="{{ route('parent.events') }}" class="view-all">View All</a>
                         </div>
                         <div class="event-list">
+                            @forelse($upcomingEvents as $event)
                             <div class="event-item">
                                 <div class="event-date">
-                                    <div class="day">25</div>
-                                    <div class="month">DEC</div>
+                                    <div class="day">{{ $event->start_time->format('d') }}</div>
+                                    <div class="month">{{ $event->start_time->format('M') }}</div>
                                 </div>
                                 <div class="event-info">
-                                    <h4>Christmas Party</h4>
-                                    <p>10:00 AM - Main Hall</p>
+                                    <h4>{{ $event->title }}</h4>
+                                    <p>{{ $event->start_time->format('g:i A') }} - {{ $event->location }}</p>
                                 </div>
                             </div>
-                            <div class="event-item">
-                                <div class="event-date">
-                                    <div class="day">28</div>
-                                    <div class="month">DEC</div>
-                                </div>
-                                <div class="event-info">
-                                    <h4>Parent-Teacher Meeting</h4>
-                                    <p>2:00 PM - Conference Room</p>
-                                </div>
+                            @empty
+                            <div class="event-item" style="justify-content: center; border: none;">
+                                <p style="color: var(--text-muted); text-align: center;">No upcoming events.</p>
                             </div>
-                            <div class="event-item">
-                                <div class="event-date">
-                                    <div class="day">01</div>
-                                    <div class="month">JAN</div>
-                                </div>
-                                <div class="event-info">
-                                    <h4>New Year Celebration</h4>
-                                    <p>11:00 AM - Main Hall</p>
-                                </div>
-                            </div>
+                            @endforelse
                         </div>
                     </div>
                 </div>

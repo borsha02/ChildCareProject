@@ -26,8 +26,13 @@ class ParentController extends Controller
         // Card 3: Pending Payment (Placeholder)
         $pendingPayment = 0;
 
-        // Card 4: Upcoming Events (Placeholder)
-        $upcomingEventsCount = 0;
+        // Card 4: Upcoming Events
+        $upcomingEventsQuery = \App\Models\Event::whereDate('start_time', '>=', now())
+            ->whereIn('audience', ['all', 'parent'])
+            ->orderBy('start_time');
+        
+        $upcomingEventsCount = $upcomingEventsQuery->count();
+        $upcomingEvents = $upcomingEventsQuery->take(3)->get();
 
         // Card 5: Assigned Caregivers
         $caregiversCount = \App\Models\Child::where('parent_id', auth()->id())
@@ -127,7 +132,8 @@ class ParentController extends Controller
             'upcomingEventsCount',
             'caregiversCount',
             'healthRecordsCount',
-            'todaysActivities'
+            'todaysActivities',
+            'upcomingEvents'
         ));
     }
 
