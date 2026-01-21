@@ -35,8 +35,8 @@
             <a href="{{ route('admin.children') }}" class="nav-item {{ request()->routeIs('admin.children') ? 'active' : '' }}">
                 <i class="fas fa-child"></i>
                 <span>Child Records</span>
-                @if(($stats['pending_registrations'] ?? 0) > 0)
-                    <span class="badge">{{ $stats['pending_registrations'] }}</span>
+                @if(isset($pendingRegistrationsCount) && $pendingRegistrationsCount > 0)
+                    <span class="badge" style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: auto;">{{ $pendingRegistrationsCount }}</span>
                 @endif
             </a>
             <a href="{{ route('admin.staff') }}" class="nav-item {{ request()->routeIs('admin.staff') ? 'active' : '' }}">
@@ -77,7 +77,9 @@
             <a href="{{ route('admin.payments.pending') }}" class="nav-item {{ request()->routeIs('admin.payments.pending') ? 'active' : '' }}">
                 <i class="fas fa-credit-card"></i>
                 <span>Payment Approvals</span>
-                <span class="badge">{{ $stats['pending_payments'] ?? 0 }}</span>
+                @if(isset($pendingPaymentsCount) && $pendingPaymentsCount > 0)
+                    <span class="badge" style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-left: auto;">{{ $pendingPaymentsCount }}</span>
+                @endif
             </a>
         </div>
 

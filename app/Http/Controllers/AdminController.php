@@ -33,7 +33,7 @@ class AdminController extends Controller
                 'total_children' => \App\Models\Child::where('status', '!=', 'pending')->count(), 
                 'active_today' => DB::table('attendances')->whereDate('date', today())->whereIn('status', ['present', 'late'])->count(),
                 'pending_payments' => \App\Models\Invoice::where('status', 'pending')->sum('amount'),
-                'total_revenue' => \App\Models\Invoice::where('status', 'paid')->sum('amount'),
+                'total_revenue' => \App\Models\Payment::whereIn('status', ['Approved', 'Completed'])->sum('amount'),
                 'pending_approvals' => 0, // Reset to 0 as we use specific badges now
                 'pending_applications' => $pendingApplications,
                 'pending_registrations' => $pendingRegistrations,
@@ -901,7 +901,7 @@ class AdminController extends Controller
         $newRegistrations = \App\Models\Child::where('created_at', '>=', $startDate)->count();
 
         // 2. Revenue Statistics (In the selected period)
-        $totalRevenue = \App\Models\Invoice::where('status', 'paid')
+        $totalRevenue = \App\Models\Payment::whereIn('status', ['Approved', 'Completed'])
             ->where('updated_at', '>=', $startDate)
             ->sum('amount');
         
@@ -912,7 +912,7 @@ class AdminController extends Controller
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
             $paymentsLabels[] = $date->format('M');
-            $paymentsData[] = \App\Models\Invoice::where('status', 'paid')
+            $paymentsData[] = \App\Models\Payment::whereIn('status', ['Approved', 'Completed'])
                 ->whereYear('updated_at', $date->year)
                 ->whereMonth('updated_at', $date->month)
                 ->sum('amount');
@@ -988,7 +988,8 @@ class AdminController extends Controller
             'payments' => [
                 'labels' => $paymentsLabels,
                 'data' => $paymentsData,
-                'total' => $totalRevenue,
+                'total_period' => $totalRevenue,
+                'total_life' => \App\Models\Payment::whereIn('status', ['Approved', 'Completed'])->sum('amount'),
             ],
             'feedback' => [
                 'positive' => $feedbackPositivePct,
@@ -1067,6 +1068,11 @@ class AdminController extends Controller
     {
         $payment = \App\Models\Payment::findOrFail($id);
         $payment->update(['status' => 'Approved']);
+        
+        // Update associated invoice status
+        if ($payment->invoice) {
+            $payment->invoice->update(['status' => 'paid']);
+        }
         
         return redirect()->back()
             ->with('success', 'Payment approved successfully!');

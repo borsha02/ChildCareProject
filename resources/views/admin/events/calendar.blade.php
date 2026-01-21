@@ -26,7 +26,7 @@
 <body>
     <div class="dashboard-container">
         <!-- Sidebar -->
-        @include('admin.partials.sidebar', ['stats' => $stats ?? [], 'pendingJobAppsCount' => $pendingJobAppsCount ?? 0])
+        @include('admin.partials.sidebar')
 
         <!-- Main Content -->
         <main class="main-content">

@@ -32,7 +32,7 @@
 </head>
 <body>
     <div class="dashboard-container">
-        @include('admin.partials.sidebar', ['stats' => $stats ?? [], 'pendingJobAppsCount' => $pendingJobAppsCount ?? 0])
+        @include('admin.partials.sidebar')
 
         <main class="main-content">
             <div class="top-bar">

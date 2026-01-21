@@ -27,10 +27,17 @@ class AppServiceProvider extends ServiceProvider
             $view->with('unreadCount', $unreadCount);
         });
 
-        // Share pending job applications count with all admin views
+        // Share pending data with all admin views
         \Illuminate\Support\Facades\View::composer('admin.*', function ($view) {
             $pendingJobAppsCount = \App\Models\JobApplication::where('status', 'pending')->count();
-            $view->with('pendingJobAppsCount', $pendingJobAppsCount);
+            $pendingPaymentsCount = \App\Models\Payment::whereNotIn('status', ['Approved', 'Rejected'])->count();
+            $pendingRegistrationsCount = \App\Models\Child::where('status', 'pending')->count();
+            
+            $view->with([
+                'pendingJobAppsCount' => $pendingJobAppsCount,
+                'pendingPaymentsCount' => $pendingPaymentsCount,
+                'pendingRegistrationsCount' => $pendingRegistrationsCount,
+            ]);
         });
     }
 }
