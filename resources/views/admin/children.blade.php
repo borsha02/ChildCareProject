@@ -225,7 +225,9 @@
                                     <div class="detail-label">Assigned Caregiver</div>
                                     <div class="detail-value">
                                         @if($child->caregivers->count() > 0)
-                                            {{ $child->caregivers->pluck('name')->join(', ') }}
+                                            {{ $child->caregivers->map(function($caregiver) {
+                                                return $caregiver->name . ' (' . ucfirst($caregiver->shift ?? 'N/A') . ')';
+                                            })->join(', ') }}
                                         @else
                                             <span style="color: #9ca3af; font-style: italic;">Unassigned</span>
                                         @endif
@@ -716,7 +718,7 @@
                     </div>
                     <div class="detail-group">
                          <label style="font-weight: bold; display: block; margin-bottom: 5px;">Assigned Caregivers</label>
-                         <p>${(child.caregivers && child.caregivers.length > 0) ? child.caregivers.map(c => c.name).join(', ') : 'None'}</p>
+                         <p>${(child.caregivers && child.caregivers.length > 0) ? child.caregivers.map(c => `${c.name} (${c.shift ? c.shift.charAt(0).toUpperCase() + c.shift.slice(1) : 'N/A'})`).join(', ') : 'None'}</p>
                     </div>
                     <div class="detail-group">
                         <label style="font-weight: bold; display: block; margin-bottom: 5px;">Parent Phone</label>
@@ -765,7 +767,7 @@
                 child.caregivers.forEach(cg => {
                     html += `
                         <li style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f3f4f6; margin-bottom: 5px; border-radius: 4px;">
-                            <span>${cg.name}</span>
+                            <span>${cg.name} <strong>(${cg.shift ? cg.shift.charAt(0).toUpperCase() + cg.shift.slice(1) : 'N/A'})</strong></span>
                             <button type="button" onclick="removeCaregiver(${child.id}, ${cg.id})" style="background: none; border: none; color: #ef4444; cursor: pointer;">
                                 <i class="fas fa-times"></i>
                             </button>

@@ -275,6 +275,25 @@ class AdminController extends Controller
              return redirect()->back()->with('error', "Caregiver limit reached. This caregiver is already assigned to 2 children.")->withFragment('enrolled');
         }
 
+        // Check if child already has a full-time caregiver
+        $existingFullTime = $child->caregivers()->where('shift', 'full-time')->first();
+        if ($existingFullTime) {
+            return redirect()->back()->with('error', "This child is already assigned to a Full-Time caregiver (" . $existingFullTime->name . "). No other caregivers can be assigned.")->withFragment('enrolled');
+        }
+
+        // If assigning a full-time caregiver, check if anyone else is assigned
+        if ($caregiver->shift === 'full-time' && $child->caregivers()->count() > 0) {
+             return redirect()->back()->with('error', "Cannot assign a Full-Time caregiver because this child already has other caregivers assigned.")->withFragment('enrolled');
+        }
+
+        // Check if child already has a caregiver for this shift (for non-full-time)
+        if ($caregiver->shift && $caregiver->shift !== 'full-time') {
+            $existingShiftCaregiver = $child->caregivers()->where('shift', $caregiver->shift)->first();
+            if ($existingShiftCaregiver) {
+                return redirect()->back()->with('error', "This child already has a " . ucfirst($caregiver->shift) . " shift caregiver assigned (" . $existingShiftCaregiver->name . ").")->withFragment('enrolled');
+            }
+        }
+
         // Check if already assigned to this specific child
         if (!$child->caregivers->contains($validated['caregiver_id'])) {
             $child->caregivers()->attach($validated['caregiver_id']);
@@ -544,8 +563,53 @@ class AdminController extends Controller
 
         $staff->update($validated);
 
+        // Reload relationships to ensure fresh data
+        $staff->load('assignedChildren');
+        
+        \Log::info("UpdateStaff: Staff {$staff->id} updated. Shift: {$staff->shift}. Assigned Children Count: " . $staff->assignedChildren->count());
+
+        // Check for conflicts in assigned children
+        $removedCount = 0;
+        foreach ($staff->assignedChildren as $child) {
+            $conflict = false;
+            
+            // Debug logging
+            \Log::info("Checking conflict for Staff: {$staff->id} ({$staff->shift}), Child: {$child->id}");
+
+            if ($staff->shift === 'full-time') {
+                if ($child->caregivers()->where('users.id', '!=', $staff->id)->exists()) {
+                    $conflict = true;
+                    \Log::info("Conflict detected: Child has other caregivers when switching to full-time.");
+                }
+            } else {
+                // If now morning/evening
+                $fullTimeExists = $child->caregivers()->where('users.id', '!=', $staff->id)->where('shift', 'full-time')->exists();
+                $sameShiftExists = $child->caregivers()->where('users.id', '!=', $staff->id)->where('shift', $staff->shift)->exists();
+                
+                \Log::info("FullTimeExists: " . ($fullTimeExists ? 'yes' : 'no'));
+                \Log::info("SameShiftExists: " . ($sameShiftExists ? 'yes' : 'no') . " (Looking for shift: {$staff->shift})");
+
+                if ($fullTimeExists) {
+                    $conflict = true;
+                } elseif ($sameShiftExists) {
+                    $conflict = true;
+                }
+            }
+
+            if ($conflict) {
+                \Log::info("Detaching staff {$staff->id} from child {$child->id}");
+                $child->caregivers()->detach($staff->id);
+                $removedCount++;
+            }
+        }
+
+        $message = 'Staff details updated successfully!';
+        if ($removedCount > 0) {
+            $message .= " Note: Removed from ({$removedCount}) children due to shift conflicts.";
+        }
+
         return redirect()->route('admin.staff')
-            ->with('success', 'Staff details updated successfully!');
+            ->with('success', $message);
     }
 
     /**

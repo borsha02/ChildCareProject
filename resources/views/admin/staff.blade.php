@@ -305,8 +305,8 @@
                         <div class="form-group">
                             <label for="shift">Shift</label>
                             <select id="shift" name="shift">
-                                <option value="morning">Morning (7AM - 3PM)</option>
-                                <option value="afternoon">Afternoon (3PM - 11PM)</option>
+                                <option value="morning">Morning (7AM - 1PM)</option>
+                                <option value="evening">Evening (1PM - 7PM)</option>
                                 <option value="full-time">Full Time</option>
                             </select>
                         </div>
