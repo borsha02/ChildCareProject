@@ -87,18 +87,18 @@
                             <tr>
                                 <th>Child Name</th>
                                 <th>Class</th>
+                                <th>Check-in Time</th>
+                                <th>Check-out Time</th>
                                 <th>Status</th>
-                                <th>Check-In Time</th>
-                                <th>Check-Out Time</th>
-                                <th>Actions</th>
+                                <th>Notes</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="attendanceTableBody">
                             @forelse($children as $child)
                                 @php
                                     $record = $child->attendances->first();
-                                    $status = $record ? $record->status : 'absent'; // Default to absent if no record
-                                    // Override if future date? But for simple logic, no record = absent
+                                    $status = $record ? $record->status : 'present'; // Default to present
                                 @endphp
                             <tr data-status="{{ $status }}" data-package="{{ strtolower($child->package) }}">
                                 <td>
@@ -112,34 +112,39 @@
                                         </div>
                                     </div>
                                 </td>
+                                <!-- ... rest of row ... -->
                                 <td>{{ $child->class }}</td>
                                 <td>
-                                    <span class="status-badge {{ $status }}">
-                                        {{ ucfirst($status) }}
-                                    </span>
+                                    <input type="time" class="time-input check-in" value="{{ $record && $record->check_in_time ? \Carbon\Carbon::parse($record->check_in_time)->format('H:i') : '' }}">
                                 </td>
                                 <td>
-                                    <span class="time-badge">
-                                        {{ $record && $record->check_in_time ? \Carbon\Carbon::parse($record->check_in_time)->format('g:i A') : '-' }}
-                                    </span>
+                                    <input type="time" class="time-input check-out" value="{{ $record && $record->check_out_time ? \Carbon\Carbon::parse($record->check_out_time)->format('H:i') : '' }}">
                                 </td>
                                 <td>
-                                    <span class="time-badge">
-                                        {{ $record && $record->check_out_time ? \Carbon\Carbon::parse($record->check_out_time)->format('g:i A') : '-' }}
-                                    </span>
+                                    <select class="status-select" onchange="updateRowStyle(this)">
+                                        <option value="present" {{ $status == 'present' ? 'selected' : '' }}>Present</option>
+                                        <option value="absent" {{ $status == 'absent' ? 'selected' : '' }}>Absent</option>
+                                        <option value="late" {{ $status == 'late' ? 'selected' : '' }}>Late</option>
+                                        <option value="excused" {{ $status == 'excused' ? 'selected' : '' }}>Excused</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" class="notes-input" value="{{ $record ? $record->notes : '' }}" placeholder="Add notes...">
                                 </td>
                                 <td>
                                     <div class="action-buttons">
-                                        {{-- <button class="action-icon view" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button> --}}
-                                        <span title="Managed by Caregiver" style="color:#999; font-size: 0.8em;">Read-only</span>
+                                        <button class="btn-save-row" 
+                                                id="btn-{{ $child->id }}"
+                                                onclick="saveAttendance(this, {{ $child->id }})" 
+                                                title="Save Attendance">
+                                            Save
+                                        </button>
                                     </div>
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" style="text-align: center; padding: 20px;">No enrolled children found.</td>
+                                <td colspan="7" style="text-align: center; padding: 20px;">No enrolled children found.</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -147,15 +152,14 @@
 
                     <!-- Pagination -->
                     <div class="pagination">
-                        <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
-                        <button class="page-btn active">1</button>
-                        <button class="page-btn">2</button>
-                        <button class="page-btn">3</button>
-                        <button class="page-btn">4</button>
-                        <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+                         @if(method_exists($children, 'links'))
+                            {{ $children->links() }}
+                         @endif
                     </div>
                 </div>
             </div>
+            <!-- Toast Container -->
+            <div class="toast-container" id="toastContainer"></div>
         </main>
     </div>
 
@@ -206,11 +210,185 @@
             });
         });
 
-        // Export attendance
-        function exportAttendance() {
-            alert('Exporting attendance report...\nThis will download a CSV/Excel file with all attendance data.');
-            // In real implementation, this would trigger a download
+        function updateRowStyle(select) {
+            const row = select.closest('tr');
+            const status = select.value;
+            row.dataset.status = status;
         }
+
+        function saveAttendance(btn, childId) {
+            const row = btn.closest('tr');
+            const status = row.querySelector('.status-select').value;
+            const checkIn = row.querySelector('.check-in').value;
+            const checkOut = row.querySelector('.check-out').value;
+            const notes = row.querySelector('.notes-input').value; // Get notes
+            const date = document.getElementById('attendance_date').value;
+            const childName = row.querySelector('.student-details h4').innerText;
+
+            // --- Validation Logic (Matches Caregiver View) ---
+            let errorMessages = [];
+            let hasError = false;
+            
+            // 1. Check-in time required for Present/Late status
+            if ((status === 'present' || status === 'late') && !checkIn) {
+                hasError = true;
+                errorMessages.push(`Check-in time is required when status is ${status.charAt(0).toUpperCase() + status.slice(1)}`);
+            }
+
+            // 2. Validate time range for check-in
+            if (checkIn && (checkIn < '08:00' || checkIn > '18:00')) {
+                hasError = true;
+                errorMessages.push(`Check-in time must be between 8:00 AM and 6:00 PM`);
+            }
+
+            // 3. Validate time range for check-out
+            if (checkOut && (checkOut < '08:00' || checkOut > '18:30')) {
+                hasError = true;
+                errorMessages.push(`Check-out time must be between 8:00 AM and 6:30 PM`);
+            }
+
+            // 4. Validate check-out requires check-in
+            if (checkOut && !checkIn) {
+                hasError = true;
+                errorMessages.push(`Check-in time is required before setting check-out time`);
+            }
+
+            // 5. Validate check-out is after check-in
+            if (checkOut && checkIn && checkOut <= checkIn) {
+                hasError = true;
+                errorMessages.push(`Check-out time must be after check-in time`);
+            }
+
+            if (hasError) {
+                showToast(errorMessages.join('\n'), 'error');
+                resetBtn();
+                return;
+            }
+
+            // Show saving state
+            const originalText = 'Save';
+            const originalBg = '#3b82f6'; // Blue
+            
+            btn.innerHTML = 'Saving...';
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+
+            fetch('{{ route("admin.attendance.update") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    child_id: childId,
+                    date: date,
+                    status: status,
+                    check_in_time: checkIn,
+                    check_out_time: checkOut,
+                    notes: notes 
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update row data attribute
+                    row.dataset.status = status;
+                    
+                    // Success State
+                    btn.innerHTML = 'Saved!';
+                    btn.style.backgroundColor = '#10b981'; // Green
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                    
+                    showToast('Attendance saved successfully!', 'success');
+                } else {
+                    showToast(data.message || 'Error saving attendance', 'error');
+                    resetBtn();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                
+                // Try to parse validation error response if possible
+                if (error.status === 422 && error.data) {
+                    let msg = '';
+                    if (error.data.errors) {
+                        for (let key in error.data.errors) {
+                            msg += error.data.errors[key][0] + '\n';
+                        }
+                    } else {
+                        msg = error.data.message || 'Validation error';
+                    }
+                    showToast(msg, 'error');
+                } else {
+                    showToast('An error occurred while saving.', 'error');
+                }
+                resetBtn();
+            });
+
+            function resetBtn() {
+                btn.innerHTML = 'Save';
+                btn.style.backgroundColor = '#ef4444'; // Red error indication
+                btn.disabled = false;
+                btn.style.opacity = '1';
+
+                setTimeout(() => {
+                    // Only revert if the user hasn't clicked again (we could track this, but simple revert is usually fine)
+                    // If the text is still 'Save' and bg is Red, revert it.
+                    if (btn.innerHTML === 'Save' && btn.style.backgroundColor === 'rgb(239, 68, 68)') { // check for red
+                         btn.style.backgroundColor = ''; // Revert to CSS default
+                    }
+                     // Or just force revert to be safe
+                     btn.style.backgroundColor = ''; 
+                }, 2000);
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type} show`;
+            
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            
+            toast.innerHTML = `
+                <i class="fas ${icon} toast-icon"></i>
+                <span class="toast-message">${message.replace(/\n/g, '<br>')}</span>
+            `;
+
+            container.appendChild(toast);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (container.contains(toast)) {
+                        container.removeChild(toast);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // Reset button state when any input changes in a row
+        document.querySelectorAll('.attendance-table tbody tr').forEach(row => {
+            row.querySelectorAll('input, select').forEach(input => {
+                const resetRowBtn = () => {
+                    const btn = row.querySelector('.btn-save-row');
+                    if (btn) {
+                        btn.innerText = 'Save';
+                        btn.style.backgroundColor = ''; // Revert to original CSS color
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                    }
+                };
+
+                input.addEventListener('change', resetRowBtn);
+                if (input.tagName === 'INPUT') {
+                    input.addEventListener('input', resetRowBtn);
+                }
+            });
+        });
 
         // Mobile menu toggle
         const mobileToggle = document.querySelector('.mobile-toggle');

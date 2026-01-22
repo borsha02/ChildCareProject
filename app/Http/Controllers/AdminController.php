@@ -634,6 +634,61 @@ class AdminController extends Controller
             ->with('success', 'Staff assigned to child successfully!');
     }
 
+    public function updateAttendance(Request $request)
+    {
+        $request->validate([
+            'child_id' => 'required|exists:children,id',
+            'date' => 'required|date',
+            'status' => 'required|in:present,absent,late,excused',
+            'check_in_time' => [
+                'nullable', 
+                function ($attribute, $value, $fail) use ($request) {
+                    $status = $request->input('status');
+                    if (in_array($status, ['present', 'late']) && empty($value)) {
+                        $fail('Check-in time is required when status is ' . ucfirst($status) . '.');
+                    }
+                    if ($value && ($value < '08:00' || $value > '18:00')) {
+                        $fail('Check-in time must be between 08:00 AM and 06:00 PM.');
+                    }
+                },
+            ],
+            'check_out_time' => [
+                'nullable',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($value && ($value < '08:00' || $value > '18:30')) {
+                        $fail('Check-out time must be between 08:00 AM and 06:30 PM.');
+                    }
+                    
+                    $checkInTime = $request->input('check_in_time');
+                    if ($value && empty($checkInTime)) {
+                        $fail('Check-in time is required before setting check-out time.');
+                    }
+                    
+                    if ($value && $checkInTime && $value <= $checkInTime) {
+                        $fail('Check-out time must be after check-in time.');
+                    }
+                },
+            ],
+            'notes' => 'nullable|string|max:255',
+        ]);
+
+        $attendance = \App\Models\Attendance::updateOrCreate(
+            [
+                'child_id' => $request->child_id,
+                'date' => $request->date,
+            ],
+            [
+                'status' => $request->status,
+                'check_in_time' => $request->check_in_time,
+                'check_out_time' => $request->check_out_time,
+                'caregiver_id' => auth()->id(), // Admin ID
+                'notes' => $request->notes,
+            ]
+        );
+
+        return response()->json(['success' => true, 'message' => 'Attendance updated successfully.']);
+    }
+
     /**
      * Feature #5: View staff ratings and reviews
      */

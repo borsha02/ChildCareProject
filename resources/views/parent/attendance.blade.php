@@ -336,6 +336,7 @@
                         <th>Status</th>
                         <th>Check In</th>
                         <th>Check Out</th>
+                        <th>Marked By</th> <!-- New Column -->
                         <th>Notes</th>
                     </tr>
                 </thead>
@@ -354,11 +355,18 @@
                             <td><span class="status-badge {{ $attendance->status }}">{{ ucfirst($attendance->status) }}</span></td>
                             <td><span class="time-in">{{ $attendance->check_in_time ? \Carbon\Carbon::parse($attendance->check_in_time)->format('g:i A') : '-' }}</span></td>
                             <td><span class="time-out">{{ $attendance->check_out_time ? \Carbon\Carbon::parse($attendance->check_out_time)->format('g:i A') : '-' }}</span></td>
+                            <td>
+                                <!-- Display who marked the attendance -->
+                                <span class="marked-by" style="font-size: 0.9em; color: #555;">
+                                    <i class="fas fa-user-edit" style="margin-right: 4px; color: #888;"></i>
+                                    {{ ($attendance->caregiver && $attendance->caregiver->role === 'admin') ? 'Admin' : ($attendance->caregiver->name ?? 'System') }}
+                                </span>
+                            </td>
                             <td>{{ $attendance->notes ?? '-' }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">
+                            <td colspan="7" style="text-align: center; color: #64748b; padding: 20px;">
                                 No attendance records found.
                             </td>
                         </tr>
