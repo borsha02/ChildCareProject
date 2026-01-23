@@ -364,11 +364,16 @@ class ParentController extends Controller
         $attendanceRate = $totalDays > 0 ? round(($daysPresent / $totalDays) * 100, 2) : 0;
         
         // Fetch recent attendance history (last 20 records)
-        $recentAttendance = \App\Models\Attendance::whereIn('child_id', $childIds)
+        // Fetch recent attendance history (last 20 records)
+        $recentAttendanceQuery = \App\Models\Attendance::whereIn('child_id', $childIds)
             ->with('child')
-            ->latest('date')
-            ->take(20)
-            ->get();
+            ->latest('date');
+
+        if ($childId && in_array($childId, $childIds->toArray())) {
+            $recentAttendanceQuery->where('child_id', $childId);
+        }
+
+        $recentAttendance = $recentAttendanceQuery->take(20)->get();
         
         // Get month info for calendar generation
         $firstDayOfMonth = \Carbon\Carbon::create($year, $month, 1);
@@ -686,13 +691,31 @@ class ParentController extends Controller
     {
         $unreadCount = auth()->user()->unreadNotifications->count();
         
-        // Fetch caregivers similar to how it's done in messages method
-        $caregivers = \App\Models\Child::where('parent_id', auth()->id())
+        // Fetch children and their caregivers
+        $children = \App\Models\Child::where('parent_id', auth()->id())
             ->with('caregivers')
-            ->get()
-            ->pluck('caregivers')
-            ->flatten()
-            ->unique('id');
+            ->get();
+
+        $caregiversMap = [];
+        $caregiverChildren = [];
+
+        foreach ($children as $child) {
+            foreach ($child->caregivers as $caregiver) {
+                if (!isset($caregiversMap[$caregiver->id])) {
+                    $caregiversMap[$caregiver->id] = $caregiver;
+                    $caregiverChildren[$caregiver->id] = [];
+                }
+                // Store names in a separate array first
+                $caregiverChildren[$caregiver->id][] = $child->first_name;
+            }
+        }
+        
+        // Assign the aggregated children to the caregiver objects
+        foreach ($caregiversMap as $id => $caregiver) {
+            $caregiver->assigned_children = $caregiverChildren[$id];
+        }
+        
+        $caregivers = collect($caregiversMap);
 
         // Check which caregivers have been rated by the parent
         $ratedCaregiverIds = \App\Models\Rating::where('parent_id', auth()->id())

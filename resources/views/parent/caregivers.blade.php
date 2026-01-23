@@ -119,10 +119,10 @@
                     <h1>Assigned Caregivers</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <div class="search-box">
+                  <!--  <div class="search-box">
                         <input type="text" placeholder="Search caregivers...">
                         <i class="fas fa-search"></i>
-                    </div>
+                    </div> -->
                 </div>
             </div>
 
@@ -137,6 +137,11 @@
                                 <h3>{{ $caregiver->name }}</h3>
                                 <p class="role">Caregiver</p>
                                 <p class="contact"><i class="far fa-envelope"></i> {{ $caregiver->email }}</p> 
+                                @if(!empty($caregiver->assigned_children))
+                                    <p class="child-assigned" style="font-size: 0.9em; color: #4b5563; margin-top: 5px;">
+                                        <i class="fas fa-child" style="color: #4f46e5;"></i> Assigned to: {{ implode(', ', $caregiver->assigned_children) }}
+                                    </p>
+                                @endif
                             </div>
                             <div class="caregiver-actions">
                                 @if(session('success') && $caregivers->where('id', session('rated_caregiver_id'))->first()?->id == $caregiver->id)

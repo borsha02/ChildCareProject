@@ -119,10 +119,10 @@
                     <h1>Help & Support</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <div class="search-box">
+                 <!--   <div class="search-box">
                         <input type="text" placeholder="Search help topics...">
                         <i class="fas fa-search"></i>
-                    </div>
+                    </div> -->
                     <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
                         <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>

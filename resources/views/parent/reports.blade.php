@@ -120,10 +120,10 @@
                     <h1>Progress Reports</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <div class="search-box">
+                   <!-- <div class="search-box">
                         <input type="text" placeholder="Search...">
                         <i class="fas fa-search"></i>
-                    </div>
+                    </div> -->
                     <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
                         <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
@@ -152,7 +152,7 @@
 
                         <div class="filter-group">
                             <label>Date:</label>
-                            <input type="date" name="date" class="filter-select" value="{{ $date }}" onchange="this.form.submit()" autocomplete="off">
+                            <input type="date" name="date" id="reportDateInput" class="filter-select" value="{{ $date }}" onchange="this.form.submit()" autocomplete="off">
                         </div>
                     </form>
 
@@ -239,9 +239,9 @@
                     <div class="card">
                         <div class="card-header">
                             <h2><i class="fas fa-file-alt"></i> Recent Reports</h2>
-                            <button class="view-all-btn" onclick="updateFilters('view_all', '{{ request('view_all') ? '0' : '1' }}')">
+                            <!-- <button class="view-all-btn" onclick="updateFilters('view_all', '{{ request('view_all') ? '0' : '1' }}')">
                                 {{ request('view_all') ? 'Show Less' : 'View All' }}
-                            </button>
+                            </button> -->
                         </div>
                         <table class="reports-table">
                             <thead>
@@ -527,6 +527,21 @@
                 if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
                     sidebar.classList.remove('active');
                 }
+            }
+        });
+        // Client-side date logic for Reports
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateInput = document.getElementById('reportDateInput');
+            
+            if (dateInput) {
+                // Set max date to today
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const localToday = `${year}-${month}-${day}`;
+                
+                dateInput.max = localToday;
             }
         });
     </script>

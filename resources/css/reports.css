@@ -212,6 +212,10 @@ body {
     cursor: pointer;
     position: relative;
     transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
 }
 
 .icon-btn:hover {

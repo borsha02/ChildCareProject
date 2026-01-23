@@ -119,10 +119,10 @@
                     <h1>Attendance Tracking</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <div class="search-box">
+                   <!-- <div class="search-box">
                         <input type="text" placeholder="Search...">
                         <i class="fas fa-search"></i>
-                    </div>
+                    </div> -->
                     <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
                         <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
@@ -186,13 +186,17 @@
                 <div class="card-header">
                     <h2>Monthly Calendar</h2>
                     <div class="month-selector">
-                        <button class="month-btn" onclick="previousMonth()">
+                        @php
+                            $prevDate = \Carbon\Carbon::create($year, $month, 1)->subMonth();
+                            $nextDate = \Carbon\Carbon::create($year, $month, 1)->addMonth();
+                        @endphp
+                        <a href="{{ route('parent.attendance', array_merge(request()->query(), ['month' => $prevDate->month, 'year' => $prevDate->year])) }}" class="month-btn">
                             <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <span class="current-month" id="currentMonth">December 2025</span>
-                        <button class="month-btn" onclick="nextMonth()">
+                        </a>
+                        <span class="current-month" id="currentMonth">{{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }}</span>
+                        <a href="{{ route('parent.attendance', array_merge(request()->query(), ['month' => $nextDate->month, 'year' => $nextDate->year])) }}" class="month-btn">
                             <i class="fas fa-chevron-right"></i>
-                        </button>
+                        </a>
                     </div>
                 </div>
 
@@ -208,7 +212,6 @@
 
                     <!-- Calendar Days (Dynamic) -->
                     @php
-                        $today = \Carbon\Carbon::now();
                         // Empty cells before first day
                         for ($i = 0; $i < $startDayOfWeek; $i++) {
                             echo '<div class="calendar-day empty"></div>';
@@ -217,32 +220,28 @@
                         // Days of the month
                         for ($day = 1; $day <= $daysInMonth; $day++) {
                             $currentDate = \Carbon\Carbon::create($year, $month, $day);
-                            $isToday = $currentDate->isToday();
-                            $isFuture = $currentDate->isFuture();
+                            $dateString = $currentDate->format('Y-m-d');
                             
                             // Get attendance for this day
                             $dayAttendance = $calendarData[$day] ?? [];
-                            $status = 'future';
-                            $statusText = '';
+                            $status = ''; // Will be set by JS for future/today, or PHP for past records
+                            $statusText = 'No Record';
                             
-                            if (!$isFuture && count($dayAttendance) > 0) {
+                            if (count($dayAttendance) > 0) {
                                 // If multiple children, show the most common status
                                 $statuses = collect($dayAttendance)->pluck('status');
-                                $status = $statuses->first(); // or use mode/most common
+                                $status = $statuses->first(); 
                                 $statusText = ucfirst($status);
-                            } elseif (!$isFuture) {
-                                $status = 'absent';
-                                $statusText = 'No Record';
+                            } else {
+                                $status = 'absent'; // Default for past days with no record
                             }
                             
                             $classes = "calendar-day $status";
-                            if ($isToday) $classes .= ' today';
+                            // Removed server-side today/future checks to rely on JS
                             
-                            echo "<div class='$classes'>";
+                            echo "<div class='$classes' data-date='$dateString'>";
                             echo "<span class='day-number'>$day</span>";
-                            if ($statusText) {
-                                echo "<span class='day-status'>$statusText</span>";
-                            }
+                            echo "<span class='day-status'>$statusText</span>";
                             echo '</div>';
                         }
                     @endphp
@@ -256,11 +255,15 @@
                     </div>
                     <div class="legend-item">
                         <div class="legend-color absent"></div>
-                        <span>Absent</span>
+                        <span>Absent/No Record</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color future"></div>
                         <span>Future</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color today-legend" style="border: 2px solid #fbbf24; background: transparent; width: 14px; height: 14px;"></div>
+                        <span>Today</span>
                     </div>
                 </div>
             </div>
@@ -379,27 +382,37 @@
     </div>
 
     <script>
-        // Month navigation
-        let currentMonth = new Date();
+        // Client-side date logic for Calendar
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get local today string YYYY-MM-DD
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const localToday = `${year}-${month}-${day}`;
 
-        function previousMonth() {
-            currentMonth.setMonth(currentMonth.getMonth() - 1);
-            updateMonthDisplay();
-        }
+            // Process all calendar days
+            document.querySelectorAll('.calendar-day[data-date]').forEach(cell => {
+                const cellDate = cell.getAttribute('data-date');
+                
+                // Highlight Today
+                if (cellDate === localToday) {
+                    cell.classList.add('today');
+                }
 
-        function nextMonth() {
-            currentMonth.setMonth(currentMonth.getMonth() + 1);
-            updateMonthDisplay();
-        }
-
-        function updateMonthDisplay() {
-            const monthNames = ["January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"];
-            document.getElementById('currentMonth').textContent =
-                monthNames[currentMonth.getMonth()] + ' ' + currentMonth.getFullYear();
-        }
-
-
+                // Block/Style Future Dates
+                if (cellDate > localToday) {
+                    cell.classList.remove('absent', 'present', 'late'); // Remove any server-sidestatus
+                    cell.classList.add('future-blocked');
+                    
+                    const statusSpan = cell.querySelector('.day-status');
+                    if (statusSpan) {
+                        statusSpan.textContent = ' ';
+                        // Optionally completely hide it or change text
+                    }
+                }
+            });
+        });
 
         // Mobile menu toggle
         const mobileToggle = document.querySelector('.mobile-toggle');
