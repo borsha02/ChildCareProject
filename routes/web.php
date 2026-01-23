@@ -24,6 +24,7 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     // Dashboard & Analytics
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/analytics', [AdminController::class, 'analytics'])->name('admin.analytics');
+    Route::post('/analytics/report', [AdminController::class, 'generateAnalyticsReport'])->name('admin.analytics.report');
     Route::get('/activities', [AdminController::class, 'activities'])->name('admin.activities');
 
     // User Management (Feature #2, #3)

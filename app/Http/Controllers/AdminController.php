@@ -33,7 +33,7 @@ class AdminController extends Controller
                 'total_children' => \App\Models\Child::where('status', '!=', 'pending')->count(), 
                 'active_today' => DB::table('attendances')->whereDate('date', today())->whereIn('status', ['present', 'late'])->count(),
                 'pending_payments' => \App\Models\Invoice::where('status', 'pending')->sum('amount'),
-                'total_revenue' => \App\Models\Payment::whereIn('status', ['Approved', 'Completed'])->sum('amount'),
+                'total_revenue' => \App\Models\Payment::where('status', 'Approved')->sum('amount'),
                 'pending_approvals' => 0, // Reset to 0 as we use specific badges now
                 'pending_applications' => $pendingApplications,
                 'pending_registrations' => $pendingRegistrations,
@@ -1143,7 +1143,7 @@ class AdminController extends Controller
         $newRegistrations = \App\Models\Child::where('created_at', '>=', $startDate)->count();
 
         // 2. Revenue Statistics (In the selected period)
-        $totalRevenue = \App\Models\Payment::whereIn('status', ['Approved', 'Completed'])
+        $totalRevenue = \App\Models\Payment::where('status', 'Approved')
             ->where('updated_at', '>=', $startDate)
             ->sum('amount');
         
@@ -1154,7 +1154,7 @@ class AdminController extends Controller
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
             $paymentsLabels[] = $date->format('M');
-            $paymentsData[] = \App\Models\Payment::whereIn('status', ['Approved', 'Completed'])
+            $paymentsData[] = \App\Models\Payment::where('status', 'Approved')
                 ->whereYear('updated_at', $date->year)
                 ->whereMonth('updated_at', $date->month)
                 ->sum('amount');
@@ -1170,10 +1170,17 @@ class AdminController extends Controller
         // But the "Avg Attendance" metric card will reflect the PERIOD.
         
         $attendanceLabels = [];
-        $attendanceData = []; 
-        for ($i = 6; $i >= 0; $i--) { // Last 7 days including today
-            $date = now()->subDays($i);
-            $attendanceLabels[] = $date->format('D');
+        $attendanceData = [];
+
+        // Chart Navigation Logic: Always show 7 days window based on offset
+        $weekOffset = $request->input('week_offset', 0);
+        $chartEndDate = now()->subWeeks($weekOffset);
+        $chartStartDate = $chartEndDate->copy()->subDays(6);
+
+        for ($i = 0; $i <= 6; $i++) { 
+            $date = $chartStartDate->copy()->addDays($i);
+            // Format: "D d/M" e.g. "Mon 23/Jan" for clarity
+            $attendanceLabels[] = $date->format('D d/M');
             
             $totalActive = $activeChildren > 0 ? $activeChildren : 1; 
             $presentCount = DB::table('attendances')
@@ -1184,8 +1191,8 @@ class AdminController extends Controller
             $attendanceData[] = round(($presentCount / $totalActive) * 100);
         }
 
-        // Calculate Average Attendance Rate over the selected PERIOD (not just chart days)
-        // This query gets avg rate over the full $startDate period
+        // Calculate Average Attendance Rate over the selected PERIOD (metrics card)
+        // This query gets avg rate over the full $startDate period defined by global filter
         // Optimization: Get count of all attendance records in period / (active children * days)
         // Estimation: Average of daily percentages
         $periodDays = now()->diffInDays($startDate);
@@ -1222,6 +1229,7 @@ class AdminController extends Controller
 
         $analytics = [
             'period' => $period, // Pass back to view
+            'week_offset' => $weekOffset, // Pass offset back
             'attendance' => [
                 'labels' => $attendanceLabels,
                 'data' => $attendanceData,
@@ -1231,7 +1239,7 @@ class AdminController extends Controller
                 'labels' => $paymentsLabels,
                 'data' => $paymentsData,
                 'total_period' => $totalRevenue,
-                'total_life' => \App\Models\Payment::whereIn('status', ['Approved', 'Completed'])->sum('amount'),
+                'total_life' => \App\Models\Payment::where('status', 'Approved')->sum('amount'),
             ],
             'feedback' => [
                 'positive' => $feedbackPositivePct,
@@ -1249,9 +1257,56 @@ class AdminController extends Controller
         return view('admin.analytics', compact('analytics'));
     }
 
+    public function generateAnalyticsReport(Request $request)
+    {
+        $request->validate([
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+        ]);
 
+        $startDate = \Carbon\Carbon::parse($request->start_date);
+        $endDate = \Carbon\Carbon::parse($request->end_date)->endOfDay();
 
+        // 1. Enrollment Stats
+        $totalEnrolled = \App\Models\Child::count(); // Point in time
+        $newRegistrations = \App\Models\Child::whereBetween('created_at', [$startDate, $endDate])->count();
+        $activeChildren = \App\Models\Child::where('status', 'active')->count();
 
+        // 2. Revenue Stats (Strictly Approved in Range)
+        $totalRevenue = \App\Models\Payment::where('status', 'Approved')
+            ->whereBetween('updated_at', [$startDate, $endDate])
+            ->sum('amount');
+
+        // 3. Attendance Stats
+        $periodDays = $startDate->diffInDays($endDate) + 1;
+        $totalPresentInPeriod = DB::table('attendances')
+            ->whereBetween('date', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->whereIn('status', ['present', 'late'])
+            ->count();
+            
+        $avgAttendanceRate = ($activeChildren * $periodDays) > 0 
+            ? round(($totalPresentInPeriod / ($activeChildren * $periodDays)) * 100) 
+            : 0;
+        $avgAttendanceRate = min($avgAttendanceRate, 100);
+
+        // 4. Feedback (in period)
+        $newRatings = \App\Models\Rating::whereBetween('created_at', [$startDate, $endDate])->count();
+        $avgRating = \App\Models\Rating::whereBetween('created_at', [$startDate, $endDate])->avg('rating');
+
+        $reportData = [
+            'start_date' => $startDate->format('M d, Y'),
+            'end_date' => $endDate->format('M d, Y'),
+            'generated_at' => now()->format('M d, Y H:i:s'),
+            'revenue' => $totalRevenue,
+            'new_registrations' => $newRegistrations,
+            'avg_attendance' => $avgAttendanceRate,
+            'total_active_children' => $activeChildren,
+            'new_feedback_count' => $newRatings,
+            'avg_feedback_rating' => $avgRating ?? 0,
+        ];
+
+        return view('admin.analytics-report', compact('reportData'));
+    }
 
     /**
      * Feature #11: Approve Payments

@@ -26,7 +26,10 @@
                     </a>
                     <h1>Analytics Dashboard</h1>
                 </div>
-                <div class="top-bar-actions">
+                <div class="top-bar-actions" style="display: flex; gap: 10px;">
+                    <button class="btn-primary" onclick="openReportModal()" style="padding: 8px 15px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                        <i class="fas fa-file-alt"></i> Generate Report
+                    </button>
                     <select class="filter-select" onchange="window.location.href = '?period=' + this.value">
                         <option value="7_days" {{ ($analytics['period'] ?? '') == '7_days' ? 'selected' : '' }}>Last 7 Days</option>
                         <option value="30_days" {{ ($analytics['period'] ?? '') == '30_days' ? 'selected' : '' }}>Last 30 Days</option>
@@ -79,8 +82,20 @@
                     <div class="analytics-card">
                         <div class="card-header">
                             <h3>Weekly Attendance</h3>
-                            <div class="card-icon blue">
-                                <i class="fas fa-calendar-check"></i>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                @php
+                                    $currentOffset = $analytics['week_offset'] ?? 0;
+                                    $period = $analytics['period'] ?? '7_days';
+                                @endphp
+                                <a href="?period={{ $period }}&week_offset={{ $currentOffset + 1 }}" style="text-decoration: none; color: #6b7280; font-size: 14px; padding: 2px 8px; border: 1px solid #ddd; border-radius: 4px;" title="Previous Week">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                                <span style="font-size: 13px; color: #666; font-weight: 500;">
+                                    @if($currentOffset == 0) Current Week @else {{ abs($currentOffset) }} Weeks Ago @endif
+                                </span>
+                                <a href="?period={{ $period }}&week_offset={{ $currentOffset - 1 }}" style="text-decoration: none; color: #6b7280; font-size: 14px; padding: 2px 8px; border: 1px solid #ddd; border-radius: 4px; pointer-events: {{ $currentOffset <= 0 ? 'none' : 'auto' }}; opacity: {{ $currentOffset <= 0 ? '0.5' : '1' }};" title="Next Week">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
                             </div>
                         </div>
                         <div class="chart-container">
@@ -162,7 +177,7 @@
                 @php
                     $maxRevenue = max($analytics['payments']['data'] ?? [0]) ?: 1;
                 @endphp
-                <div class="analytics-card">
+               <!-- <div class="analytics-card">
                     <div class="card-header">
                         <h3>Monthly Revenue Trend</h3>
                         <div class="card-icon purple">
@@ -185,12 +200,62 @@
                             @endforeach
                         </div>
                     </div>
-                </div>
+                </div> -->
+            </div>
+        </main>
             </div>
         </main>
     </div>
 
+    <!-- Report Generation Modal -->
+    <div id="reportModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: white; padding: 25px; border-radius: 10px; width: 400px; max-width: 90%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px;">Generate Custom Report</h2>
+                <button onclick="closeReportModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #666;">&times;</button>
+            </div>
+            
+            <form action="{{ route('admin.analytics.report') }}" method="POST" target="_blank">
+                @csrf
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Start Date</label>
+                    <input type="date" name="start_date" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">End Date</label>
+                    <input type="date" name="end_date" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+                
+                <div class="form-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" onclick="closeReportModal()" style="padding: 10px 20px; background: #e5e7eb; border: none; border-radius: 6px; cursor: pointer;">Cancel</button>
+                    <button type="submit" style="padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                        <i class="fas fa-print"></i> Generate
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
+        // Modal functions
+        const reportModal = document.getElementById('reportModal');
+        
+        function openReportModal() {
+            reportModal.style.display = 'flex';
+        }
+        
+        function closeReportModal() {
+            reportModal.style.display = 'none';
+        }
+        
+        // Close outside click
+        reportModal.addEventListener('click', (e) => {
+            if(e.target === reportModal) {
+                closeReportModal();
+            }
+        });
+
         // Mobile menu toggle
         const mobileToggle = document.querySelector('.mobile-toggle');
         const sidebar = document.getElementById('sidebar');
@@ -204,7 +269,7 @@
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (e) => {
             if (window.innerWidth <= 768) {
-                if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
+                if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target) && e.target !== reportModal && !reportModal.contains(e.target)) {
                     sidebar.classList.remove('active');
                 }
             }

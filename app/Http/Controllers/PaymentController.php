@@ -139,7 +139,7 @@ class PaymentController extends Controller
             ->with(['invoice.child', 'invoice.parent'])
             ->firstOrFail();
 
-        // Verify ownership (optional but recommended)
+        // Verify ownership (  recommended)
         $user = auth()->user();
         if ($user->role !== 'admin' && $payment->invoice->parent_id != $user->id) {
             abort(403);
