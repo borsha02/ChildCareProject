@@ -40,7 +40,7 @@
                         social, and emotional development in a safe, nurturing environment.
                     </p>
 
-                    <div class="flex flex-wrap justify-center gap-3 sm:gap-4 pt-3 sm:pt-4">
+                   <!-- <div class="flex flex-wrap justify-center gap-3 sm:gap-4 pt-3 sm:pt-4">
                         <button
                             class="bg-teal-600 text-white px-6 sm:px-10 py-3 sm:py-4 font-semibold
                                 hover:bg-teal-700 transition-colors
@@ -53,7 +53,7 @@
                                     d="M5 12h14m-7-7l7 7-7 7" />
                             </svg>
                         </button>
-                    </div>
+                    </div>-->
                 </div>
             </section>
 
@@ -138,7 +138,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"></path>
                     </svg>
                     <div class="font-semibold">Sun - Thu</div>
-                    <div class="text-sm opacity-90">8:00 AM - 7:00 PM</div>
+                    <div class="text-sm opacity-90">8:00 AM - 6:00 PM</div>
                 </div>
 
                 {{-- Groups --}}
@@ -149,7 +149,7 @@
                             d="M17 20h5v-2a4 4 0 00-4-4h-1M9 20H4v-2a4 4 0 014-4h1M16 3.13a4 4 0 010 7.75M8 3.13a4 4 0 000 7.75"/>
                     </svg>
                     <div class="font-semibold">Small Groups</div>
-                    <div class="text-sm opacity-90">1:6 Staff Ratio</div>
+                    <div class="text-sm opacity-90">1:5 Caregiver Ratio</div>
                 </div>
 
                 {{-- Location --}}
@@ -174,7 +174,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 21h6"/>
                     </svg>
                     <div class="font-semibold">Daily Updates</div>
-                    <div class="text-sm opacity-90">Photos & Reports</div>
+                    <div class="text-sm opacity-90">Message & Reports</div>
                 </div>
 
             </div>

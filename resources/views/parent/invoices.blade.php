@@ -14,7 +14,7 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <i class="fas fa-baby"></i>
-                    <h2>Childcare</h2>
+                    <h2>Little Stars Childcare</h2>
                 </div>
                 <div class="user-info">
                     <div class="user-details">
@@ -221,9 +221,11 @@
                                 </div>
                                 <div class="facility-info">
                                     <h4>From:</h4>
-                                    <p><strong>Little Stars ChildCare Center</strong></p>
-                                    <p>123 Childcare Lane</p>
-                                    <p>City, State, Zip</p>
+                                    <p><strong>{{ $settings['system_name'] ?? 'Childcare Center' }}</strong></p>
+                                    <p>{{ $settings['address'] ?? 'Address Not Configured' }}</p>
+                                    @if(!empty($settings['contact_phone']))
+                                    <p>{{ $settings['contact_phone'] }}</p>
+                                    @endif
                                 </div>
                             </div>
 
@@ -236,11 +238,23 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td>Tuition/Care Services</td>
-                                        <td>{{ $latestInvoice->child->first_name }} {{ $latestInvoice->child->last_name }}</td>
-                                        <td>{{ number_format($latestInvoice->amount, 2) }}</td>
-                                    </tr>
+                                    @if(($latestInvoice->discount ?? 0) > 0)
+                                        <tr>
+                                            <td>Tuition/Care Services</td>
+                                            <td>{{ $latestInvoice->child->first_name }} {{ $latestInvoice->child->last_name }}</td>
+                                            <td>{{ number_format($latestInvoice->amount + $latestInvoice->discount, 2) }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2" style="color: #666; font-style: italic;">Discount Applied</td>
+                                            <td style="color: #666;">- {{ number_format($latestInvoice->discount, 2) }}</td>
+                                        </tr>
+                                    @else
+                                        <tr>
+                                            <td>Tuition/Care Services</td>
+                                            <td>{{ $latestInvoice->child->first_name }} {{ $latestInvoice->child->last_name }}</td>
+                                            <td>{{ number_format($latestInvoice->amount, 2) }}</td>
+                                        </tr>
+                                    @endif
                                 </tbody>
                             </table>
 
@@ -315,7 +329,7 @@
                         </div>
                         <div class="info-content">
                             <h4>Payment Information</h4>
-                            <p>Payments are due by the last day of each month. Late payments may incur a 250 Taka late fee. For payment assistance or questions, please contact our billing department at info.littlestars.childcarecenter@gmail.com or call (555) 987-6543.</p>
+                            <p>Payments are due by the last day of each month. Late payments may incur a 250 Taka late fee. For payment assistance or questions, please contact our billing department at {{ $settings['contact_email'] ?? 'info.littlestars.childcarecenter@gmail.com' }} or call {{ $settings['contact_phone'] ?? '(555) 987-6543' }}.</p>
                         </div>
                     </div>
                 </div>
@@ -336,9 +350,12 @@
                 <label>Child</label>
                 <input type="text" id="view_child_name" readonly>
             </div>
-            <div class="form-group">
                 <label>Amount</label>
                 <input type="text" id="view_amount" readonly>
+            </div>
+            <div class="form-group" id="view_discount_group" style="display:none;">
+                <label>Discount Applied</label>
+                <input type="text" id="view_discount" readonly style="color: #d97706;">
             </div>
             <div class="form-group">
                 <label>Due Date</label>
@@ -376,6 +393,16 @@
             document.getElementById('view_invoice_number').value = invoice.invoice_number;
             document.getElementById('view_child_name').value = (invoice.child ? invoice.child.first_name + ' ' + (invoice.child.last_name || '') : 'N/A');
             document.getElementById('view_amount').value = parseFloat(invoice.amount).toFixed(2);
+            
+            // Discount Logic
+            const discountGroup = document.getElementById('view_discount_group');
+            if (invoice.discount && parseFloat(invoice.discount) > 0) {
+                discountGroup.style.display = 'block';
+                document.getElementById('view_discount').value = '- ' + parseFloat(invoice.discount).toFixed(2);
+            } else {
+                discountGroup.style.display = 'none';
+            }
+
             document.getElementById('view_due_date').value = new Date(invoice.due_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
             
             // Status

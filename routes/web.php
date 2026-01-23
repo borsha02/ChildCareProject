@@ -64,6 +64,7 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     // Attendance (Feature #6)
     Route::get('/attendance', [AdminController::class, 'attendance'])->name('admin.attendance');
     Route::get('/attendance/export', [AdminController::class, 'exportAttendance'])->name('admin.attendance.export');
+    Route::get('/attendance/absent-pdf', [AdminController::class, 'exportAbsentChildrenPDF'])->name('admin.attendance.absent-pdf');
     Route::post('/attendance/update', [AdminController::class, 'updateAttendance'])->name('admin.attendance.update'); // New route
 
     // Daily Reports (Feature #7)

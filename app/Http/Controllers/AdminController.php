@@ -957,6 +957,29 @@ class AdminController extends Controller
     }
 
     /**
+     * Export absent children list as PDF
+     */
+    public function exportAbsentChildrenPDF(Request $request)
+    {
+        $date = $request->input('date', date('Y-m-d'));
+
+        // Fetch children who are absent on the selected date
+        $absentChildren = \App\Models\Child::where('status', '!=', 'pending')
+            ->with(['attendances' => function($query) use ($date) {
+                $query->whereDate('date', $date);
+            }, 'parent'])
+            ->get()
+            ->filter(function($child) {
+                $record = $child->attendances->first();
+                // Include children with no record OR explicitly marked absent
+                return !$record || $record->status === 'absent';
+            })
+            ->values();
+
+        return view('admin.absent-children-pdf', compact('absentChildren', 'date'));
+    }
+
+    /**
      * Feature #7: Daily Reports - Monitor daily activity logs
      */
     public function reports(Request $request)
@@ -1058,6 +1081,7 @@ class AdminController extends Controller
         $validated = $request->validate([
             'child_id' => 'required|exists:children,id',
             'amount' => 'required|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0',
             'due_date' => 'required|date',
             'status' => 'required|in:paid,pending,overdue',
         ]);
@@ -1072,6 +1096,7 @@ class AdminController extends Controller
             'parent_id' => $child->parent_id, // Automatically link to the child's parent
             'child_id' => $child->id,
             'amount' => $validated['amount'],
+            'discount' => $validated['discount'] ?? 0,
             'due_date' => $validated['due_date'],
             'status' => $validated['status'],
         ]);
@@ -1089,6 +1114,10 @@ class AdminController extends Controller
     public function updateInvoice(Request $request, $id)
     {
         $invoice = \App\Models\Invoice::findOrFail($id);
+        
+        if ($invoice->status === 'paid') {
+            return redirect()->back()->with('error', 'Paid invoices cannot be edited.');
+        }
 
         $validated = $request->validate([
             'amount' => 'required|numeric|min:0',
@@ -1112,8 +1141,12 @@ class AdminController extends Controller
     public function downloadInvoice($id)
     {
         $invoice = \App\Models\Invoice::with(['parent', 'child'])->findOrFail($id);
+        
+        // Fetch System Settings
+        $settings = \App\Models\AdminSetting::pluck('value', 'key');
+        
         // specific view for printing/downloading
-        return view('admin.invoice-pdf', compact('invoice'));
+        return view('admin.invoice-pdf', compact('invoice', 'settings'));
     }
 
     /**

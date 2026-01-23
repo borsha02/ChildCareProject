@@ -97,12 +97,12 @@
 
                                         <!-- Reject Form -->
                                         @if($payment->status !== 'Rejected')
-                                        <form action="{{ route('admin.payments.reject', $payment->id) }}" method="POST" style="display:inline;">
+                                       <!-- <form action="{{ route('admin.payments.reject', $payment->id) }}" method="POST" style="display:inline;">
                                             @csrf
                                             <button type="submit" class="action-icon edit" title="Reject" onclick="return confirm('Reject this payment?')">
                                                 <i class="fas fa-times"></i>
                                             </button>
-                                        </form>
+                                        </form>--> 
                                         @else
                                         <span class="badge" style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px;">Rejected</span>
                                         @endif

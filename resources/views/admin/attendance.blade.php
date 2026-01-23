@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance - Childcare Management</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    @vite(['resources/css/admin/attendance.css'])
+    @vite(['resources/css/admin/attendance.css', 'resources/css/admin/attendance-list.css'])
 </head>
 
 <body>
@@ -38,17 +38,17 @@
             <div class="content-area">
                 <!-- Statistics Row -->
                 <div class="stats-row">
-                    <div class="stat-card">
+                    <div class="stat-card clickable" onclick="showChildrenModal('present')">
                         <div class="stat-label">Present Today</div>
                         <div class="stat-value">{{ $stats['present_today'] }}</div>
                         <div class="stat-percentage">Out of {{ $children->count() }} children</div>
                     </div>
-                    <div class="stat-card red">
+                    <div class="stat-card red clickable" onclick="showChildrenModal('absent')">
                         <div class="stat-label">Absent Today</div>
                         <div class="stat-value">{{ $stats['absent_today'] }}</div>
                         <div class="stat-percentage">{{ $children->count() > 0 ? round(($stats['absent_today'] / $children->count()) * 100) : 0 }}% absence rate</div>
                     </div>
-                    <div class="stat-card orange">
+                    <div class="stat-card orange clickable" onclick="showChildrenModal('late')">
                         <div class="stat-label">Late Arrivals</div>
                         <div class="stat-value">{{ $stats['late_today'] }}</div>
                         <div class="stat-percentage">{{ $children->count() > 0 ? round(($stats['late_today'] / $children->count()) * 100) : 0 }}% late rate</div>
@@ -60,103 +60,23 @@
                     </div>
                 </div>
 
-                <!-- Attendance Table -->
-                <div class="attendance-card">
-                    <div class="card-header">
-                        <h3>Today's Attendance</h3>
-                        <div class="filter-tabs">
-                            <select class="filter-select" id="packageFilter" onchange="filterAttendance()">
-                                <option value="all">All Packages</option>
-                                <option value="weekly">Weekly</option>
-                                <option value="monthly">Monthly</option>
-                            </select>
-                            <button class="tab-btn active" onclick="filterStatus('all')">All</button>
-                            <button class="tab-btn" onclick="filterStatus('present')">Present</button>
-                            <button class="tab-btn" onclick="filterStatus('absent')">Absent</button>
-                            <button class="tab-btn" onclick="filterStatus('late')">Late</button>
+
+                <!-- Children List Section -->
+                <div class="children-list-section" id="childrenListSection" style="display: none;">
+                    <div class="list-header">
+                        <h3 id="listTitle">Children Details</h3>
+                        <div class="header-buttons">
+                            <button class="download-pdf-btn" id="downloadPdfBtn" style="display: none;" onclick="downloadAbsentPDF()">
+                                <i class="fas fa-download"></i> Download PDF
+                            </button>
+                            <button class="close-list-btn" onclick="closeChildrenList()">
+                                <i class="fas fa-times"></i> Close
+                            </button>
                         </div>
                     </div>
-
-                    <div class="search-box">
-                        <input type="text" placeholder="Search by child name or class..." id="searchInput">
-                        <i class="fas fa-search"></i>
-                    </div>
-
-                    <table class="attendance-table">
-                        <thead>
-                            <tr>
-                                <th>Child Name</th>
-                                <th>Class</th>
-                                <th>Check-in Time</th>
-                                <th>Check-out Time</th>
-                                <th>Status</th>
-                                <th>Notes</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="attendanceTableBody">
-                            @forelse($children as $child)
-                                @php
-                                    $record = $child->attendances->first();
-                                    $status = $record ? $record->status : 'present'; // Default to present
-                                @endphp
-                            <tr data-status="{{ $status }}" data-package="{{ strtolower($child->package) }}">
-                                <td>
-                                    <div class="student-info">
-                                        <div class="student-avatar" style="background: {{ '#' . substr(md5($child->first_name . $child->last_name), 0, 6) }};">
-                                            {{ strtoupper(substr($child->first_name, 0, 1) . substr($child->last_name, 0, 1)) }}
-                                        </div>
-                                        <div class="student-details">
-                                            <h4>{{ $child->first_name }} {{ $child->last_name }}</h4>
-                                            <p>ID: CH{{ str_pad($child->id, 3, '0', STR_PAD_LEFT) }}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <!-- ... rest of row ... -->
-                                <td>{{ $child->class }}</td>
-                                <td>
-                                    <input type="time" class="time-input check-in" value="{{ $record && $record->check_in_time ? \Carbon\Carbon::parse($record->check_in_time)->format('H:i') : '' }}">
-                                </td>
-                                <td>
-                                    <input type="time" class="time-input check-out" value="{{ $record && $record->check_out_time ? \Carbon\Carbon::parse($record->check_out_time)->format('H:i') : '' }}">
-                                </td>
-                                <td>
-                                    <select class="status-select" onchange="updateRowStyle(this)">
-                                        <option value="present" {{ $status == 'present' ? 'selected' : '' }}>Present</option>
-                                        <option value="absent" {{ $status == 'absent' ? 'selected' : '' }}>Absent</option>
-                                        <option value="late" {{ $status == 'late' ? 'selected' : '' }}>Late</option>
-                                        <option value="excused" {{ $status == 'excused' ? 'selected' : '' }}>Excused</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    <input type="text" class="notes-input" value="{{ $record ? $record->notes : '' }}" placeholder="Add notes...">
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="btn-save-row" 
-                                                id="btn-{{ $child->id }}"
-                                                onclick="saveAttendance(this, {{ $child->id }})" 
-                                                title="Save Attendance">
-                                            Save
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            @empty
-                            <tr>
-                                <td colspan="7" style="text-align: center; padding: 20px;">No enrolled children found.</td>
-                            </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-
-                    <!-- Pagination -->
-                    <div class="pagination">
-                         @if(method_exists($children, 'links'))
-                            {{ $children->links() }}
-                         @endif
-                    </div>
+                    <div id="childrenListContent"></div>
                 </div>
+
             </div>
             <!-- Toast Container -->
             <div class="toast-container" id="toastContainer"></div>
@@ -164,231 +84,131 @@
     </div>
 
     <script>
-        // Filter attendance by status
-        let currentStatus = 'all';
+        // Children data from backend
+        @php
+            $childrenArray = $children->map(function($child) {
+                $record = $child->attendances->first();
+                return [
+                    'id' => $child->id,
+                    'first_name' => $child->first_name,
+                    'last_name' => $child->last_name,
+                    'class' => $child->class,
+                    'status' => $record ? $record->status : 'absent',
+                    'check_in_time' => $record && $record->check_in_time ? \Carbon\Carbon::parse($record->check_in_time)->format('h:i A') : 'N/A',
+                    'check_out_time' => $record && $record->check_out_time ? \Carbon\Carbon::parse($record->check_out_time)->format('h:i A') : 'N/A',
+                    'notes' => $record ? $record->notes : '',
+                    'parent_name' => $child->parent ? $child->parent->name : 'N/A',
+                    'parent_phone' => $child->parent ? $child->parent->phone : 'N/A'
+                ];
+            })->values();
+        @endphp
+        const childrenData = @json($childrenArray);
 
-        // Update status filter
-        function filterStatus(status) {
-            currentStatus = status;
+        function showChildrenModal(status) {
+            const listSection = document.getElementById('childrenListSection');
+            const listTitle = document.getElementById('listTitle');
+            const childrenListContent = document.getElementById('childrenListContent');
             
-            // Update Tab Active State
-            const tabs = document.querySelectorAll('.tab-btn');
-            tabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
-
-            filterAttendance();
-        }
-
-        // Combined Filter Logic
-        function filterAttendance() {
-            const packageFilter = document.getElementById('packageFilter').value.toLowerCase();
-            const rows = document.querySelectorAll('#attendanceTableBody tr');
-
-            rows.forEach(row => {
-                const rowStatus = row.dataset.status;
-                const rowPackage = row.dataset.package;
-
-                const statusMatch = (currentStatus === 'all') || (rowStatus === currentStatus);
-                const packageMatch = (packageFilter === 'all') || (rowPackage === packageFilter);
-
-                if (statusMatch && packageMatch) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
-                }
+            // Filter children by status (case-insensitive)
+            const filteredChildren = childrenData.filter(child => {
+                return child.status && child.status.toLowerCase() === status.toLowerCase();
             });
-        }
-
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const rows = document.querySelectorAll('#attendanceTableBody tr');
-
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        });
-
-        function updateRowStyle(select) {
-            const row = select.closest('tr');
-            const status = select.value;
-            row.dataset.status = status;
-        }
-
-        function saveAttendance(btn, childId) {
-            const row = btn.closest('tr');
-            const status = row.querySelector('.status-select').value;
-            const checkIn = row.querySelector('.check-in').value;
-            const checkOut = row.querySelector('.check-out').value;
-            const notes = row.querySelector('.notes-input').value; // Get notes
-            const date = document.getElementById('attendance_date').value;
-            const childName = row.querySelector('.student-details h4').innerText;
-
-            // --- Validation Logic (Matches Caregiver View) ---
-            let errorMessages = [];
-            let hasError = false;
             
-            // 1. Check-in time required for Present/Late status
-            if ((status === 'present' || status === 'late') && !checkIn) {
-                hasError = true;
-                errorMessages.push(`Check-in time is required when status is ${status.charAt(0).toUpperCase() + status.slice(1)}`);
-            }
-
-            // 2. Validate time range for check-in
-            if (checkIn && (checkIn < '08:00' || checkIn > '18:00')) {
-                hasError = true;
-                errorMessages.push(`Check-in time must be between 8:00 AM and 6:00 PM`);
-            }
-
-            // 3. Validate time range for check-out
-            if (checkOut && (checkOut < '08:00' || checkOut > '18:30')) {
-                hasError = true;
-                errorMessages.push(`Check-out time must be between 8:00 AM and 6:30 PM`);
-            }
-
-            // 4. Validate check-out requires check-in
-            if (checkOut && !checkIn) {
-                hasError = true;
-                errorMessages.push(`Check-in time is required before setting check-out time`);
-            }
-
-            // 5. Validate check-out is after check-in
-            if (checkOut && checkIn && checkOut <= checkIn) {
-                hasError = true;
-                errorMessages.push(`Check-out time must be after check-in time`);
-            }
-
-            if (hasError) {
-                showToast(errorMessages.join('\n'), 'error');
-                resetBtn();
-                return;
-            }
-
-            // Show saving state
-            const originalText = 'Save';
-            const originalBg = '#3b82f6'; // Blue
+            // Update title
+            const statusTitles = {
+                'present': 'Present Children',
+                'absent': 'Absent Children',
+                'late': 'Late Arrivals'
+            };
+            listTitle.textContent = statusTitles[status] || 'Children Details';
             
-            btn.innerHTML = 'Saving...';
-            btn.disabled = true;
-            btn.style.opacity = '0.7';
-
-            fetch('{{ route("admin.attendance.update") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    child_id: childId,
-                    date: date,
-                    status: status,
-                    check_in_time: checkIn,
-                    check_out_time: checkOut,
-                    notes: notes 
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Update row data attribute
-                    row.dataset.status = status;
-                    
-                    // Success State
-                    btn.innerHTML = 'Saved!';
-                    btn.style.backgroundColor = '#10b981'; // Green
-                    btn.disabled = false;
-                    btn.style.opacity = '1';
-                    
-                    showToast('Attendance saved successfully!', 'success');
+            // Generate HTML for children list
+            if (filteredChildren.length === 0) {
+                childrenListContent.innerHTML = '<p class="no-data">No children found with this status.</p>';
+            } else {
+                // Different table headers based on status
+                let tableHeaders = '';
+                if (status === 'absent') {
+                    tableHeaders = '<th>Name</th><th>Class</th><th>Parent Name</th><th>Parent Phone</th>';
                 } else {
-                    showToast(data.message || 'Error saving attendance', 'error');
-                    resetBtn();
+                    tableHeaders = '<th>Name</th><th>Class</th><th>Check-in</th><th>Check-out</th>';
                 }
-            })
-            .catch(error => {
-                console.error('Error:', error);
                 
-                // Try to parse validation error response if possible
-                if (error.status === 422 && error.data) {
-                    let msg = '';
-                    if (error.data.errors) {
-                        for (let key in error.data.errors) {
-                            msg += error.data.errors[key][0] + '\n';
-                        }
+                let html = `<table class="children-table"><thead><tr>${tableHeaders}</tr></thead><tbody>`;
+                
+                filteredChildren.forEach(child => {
+                    if (status === 'absent') {
+                        // Absent children - show parent info
+                        html += `
+                            <tr>
+                                <td>
+                                    <div class="table-student-info">
+                                        <div class="table-student-avatar" style="background: #${Math.floor(Math.random()*16777215).toString(16)};">
+                                            ${child.first_name.charAt(0)}${child.last_name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <div class="table-student-name">${child.first_name} ${child.last_name}</div>
+                                            <div class="table-student-id">ID: CH${String(child.id).padStart(3, '0')}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>${child.class}</td>
+                                <td><strong>${child.parent_name}</strong></td>
+                                <td><a href="tel:${child.parent_phone}" class="phone-link">${child.parent_phone}</a></td>
+                            </tr>
+                        `;
                     } else {
-                        msg = error.data.message || 'Validation error';
+                        // Present/Late children - show check-in/out times
+                        html += `
+                            <tr>
+                                <td>
+                                    <div class="table-student-info">
+                                        <div class="table-student-avatar" style="background: #${Math.floor(Math.random()*16777215).toString(16)};">
+                                            ${child.first_name.charAt(0)}${child.last_name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <div class="table-student-name">${child.first_name} ${child.last_name}</div>
+                                            <div class="table-student-id">ID: CH${String(child.id).padStart(3, '0')}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>${child.class}</td>
+                                <td>${child.check_in_time}</td>
+                                <td>${child.check_out_time}</td>
+                            </tr>
+                        `;
                     }
-                    showToast(msg, 'error');
-                } else {
-                    showToast('An error occurred while saving.', 'error');
-                }
-                resetBtn();
-            });
-
-            function resetBtn() {
-                btn.innerHTML = 'Save';
-                btn.style.backgroundColor = '#ef4444'; // Red error indication
-                btn.disabled = false;
-                btn.style.opacity = '1';
-
-                setTimeout(() => {
-                    // Only revert if the user hasn't clicked again (we could track this, but simple revert is usually fine)
-                    // If the text is still 'Save' and bg is Red, revert it.
-                    if (btn.innerHTML === 'Save' && btn.style.backgroundColor === 'rgb(239, 68, 68)') { // check for red
-                         btn.style.backgroundColor = ''; // Revert to CSS default
-                    }
-                     // Or just force revert to be safe
-                     btn.style.backgroundColor = ''; 
-                }, 2000);
+                });
+                
+                html += '</tbody></table>';
+                childrenListContent.innerHTML = html;
             }
-        }
-
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type} show`;
             
-            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            // Show/hide download button based on status
+            const downloadBtn = document.getElementById('downloadPdfBtn');
+            if (status === 'absent') {
+                downloadBtn.style.display = 'inline-flex';
+            } else {
+                downloadBtn.style.display = 'none';
+            }
             
-            toast.innerHTML = `
-                <i class="fas ${icon} toast-icon"></i>
-                <span class="toast-message">${message.replace(/\n/g, '<br>')}</span>
-            `;
-
-            container.appendChild(toast);
-
-            // Remove after 3 seconds
+            // Show list section with smooth scroll
+            listSection.style.display = 'block';
             setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    if (container.contains(toast)) {
-                        container.removeChild(toast);
-                    }
-                }, 300);
-            }, 3000);
+                listSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
         }
 
-        // Reset button state when any input changes in a row
-        document.querySelectorAll('.attendance-table tbody tr').forEach(row => {
-            row.querySelectorAll('input, select').forEach(input => {
-                const resetRowBtn = () => {
-                    const btn = row.querySelector('.btn-save-row');
-                    if (btn) {
-                        btn.innerText = 'Save';
-                        btn.style.backgroundColor = ''; // Revert to original CSS color
-                        btn.disabled = false;
-                        btn.style.opacity = '1';
-                    }
-                };
+        function downloadAbsentPDF() {
+            const date = document.getElementById('attendance_date').value;
+            window.location.href = '{{ route("admin.attendance.absent-pdf") }}?date=' + date;
+        }
 
-                input.addEventListener('change', resetRowBtn);
-                if (input.tagName === 'INPUT') {
-                    input.addEventListener('input', resetRowBtn);
-                }
-            });
-        });
+        function closeChildrenList() {
+            const listSection = document.getElementById('childrenListSection');
+            listSection.style.display = 'none';
+        }
+
 
         // Mobile menu toggle
         const mobileToggle = document.querySelector('.mobile-toggle');

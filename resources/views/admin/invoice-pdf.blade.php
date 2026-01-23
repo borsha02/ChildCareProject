@@ -25,12 +25,16 @@
 <body onload="window.print()">
     <div class="invoice-header">
         <div class="logo">
-            <h1>Childcare Center</h1>
+            <h1>{{ $settings['system_name'] ?? 'Childcare Center' }}</h1>
         </div>
         <div class="company-details">
-            <p>123 Childcare Lane</p>
-            <p>City, State, Zip</p>
-            <p>Phone: (555) 123-4567</p>
+            <p>{{ $settings['address'] ?? 'Address Not Configured' }}</p>
+            @if(!empty($settings['contact_email']))
+            <p>{{ $settings['contact_email'] }}</p>
+            @endif
+            @if(!empty($settings['contact_phone']))
+            <p>{{ $settings['contact_phone'] }}</p>
+            @endif
         </div>
     </div>
 
@@ -56,10 +60,21 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
-                <td>Tuition/Care Services for {{ $invoice->child->first_name ?? 'Child' }}</td>
-                <td>${{ number_format($invoice->amount, 2) }}</td>
-            </tr>
+            @if($invoice->discount > 0)
+                <tr>
+                    <td>Tuition/Care Services for {{ $invoice->child->first_name ?? 'Child' }}</td>
+                    <td>${{ number_format($invoice->amount + $invoice->discount, 2) }}</td>
+                </tr>
+                <tr>
+                    <td style="color: #666;"><i>Discount Applied</i></td>
+                    <td style="color: #666;">- ${{ number_format($invoice->discount, 2) }}</td>
+                </tr>
+            @else
+                <tr>
+                    <td>Tuition/Care Services for {{ $invoice->child->first_name ?? 'Child' }}</td>
+                    <td>${{ number_format($invoice->amount, 2) }}</td>
+                </tr>
+            @endif
         </tbody>
     </table>
 

@@ -14,6 +14,7 @@ class Invoice extends Model
         'parent_id',
         'child_id',
         'amount',
+        'discount',
         'due_date',
         'status',
     ];

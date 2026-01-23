@@ -260,7 +260,7 @@
 
     <div class="footer">
         <p>Generated on {{ now()->format('F d, Y \a\t h:i A') }}</p>
-        <p>Childcare Management System</p>
+        <p>{{ $settings['system_name'] ?? 'Childcare Management System' }}</p>
     </div>
 </body>
 </html>

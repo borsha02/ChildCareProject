@@ -2,7 +2,7 @@
     <div class="sidebar-header">
         <div class="logo">
             <i class="fas fa-baby"></i>
-            <h2>Childcare</h2>
+            <h2>Little Stars Childcare</h2>
         </div>
         <div class="user-info">
             <div class="user-avatar">{{ substr(Auth::user()->name ?? 'User', 0, 2) }}</div>

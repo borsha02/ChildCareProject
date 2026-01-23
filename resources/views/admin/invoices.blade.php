@@ -50,11 +50,11 @@
                         <div class="stat-value">{{ $stats['pending_invoices'] }}</div>
                         <div class="stat-description">{{ number_format($stats['outstanding_amount']) }} outstanding</div>
                     </div>
-                    <div class="stat-card red">
+                    <!-- <div class="stat-card red">
                         <div class="stat-label">Overdue</div>
                         <div class="stat-value">{{ $stats['overdue_invoices'] }}</div>
                         <div class="stat-description">{{ number_format($stats['overdue_amount']) }} overdue</div>
-                    </div>
+                    </div> -->
                 </div>
 
                 <!-- Invoices Table -->
@@ -65,7 +65,7 @@
                             <button class="tab-btn active" onclick="filterByStatus('all')">All</button>
                             <button class="tab-btn" onclick="filterByStatus('paid')">Paid</button>
                             <button class="tab-btn" onclick="filterByStatus('pending')">Pending</button>
-                            <button class="tab-btn" onclick="filterByStatus('overdue')">Overdue</button>
+                           <!-- <button class="tab-btn" onclick="filterByStatus('overdue')">Overdue</button> -->
                         </div>
                     </div>
 
@@ -99,9 +99,11 @@
                                         <button class="action-icon view" title="View" onclick='viewInvoice(@json($invoice))'>
                                             <i class="fas fa-eye"></i>
                                         </button>
+                                        @if($invoice->status !== 'paid')
                                         <button class="action-icon edit" title="Edit" onclick='editInvoice(@json($invoice))'>
                                             <i class="fas fa-edit"></i>
                                         </button>
+                                        @endif
                                         <a href="{{ route('admin.invoices.download', $invoice->id) }}" class="action-icon download" title="Download" target="_blank" style="text-decoration: none;">
                                             <i class="fas fa-download"></i>
                                         </a>
@@ -145,6 +147,7 @@
                 <div class="form-group">
                     <label for="amount">Amount</label>
                     <input type="number" step="0.01" name="amount" id="amount" required placeholder="0.00">
+                    <input type="hidden" name="discount" id="discount" value="0">
                 </div>
                 <div class="form-group">
                     <label for="due_date">Due Date</label>
@@ -183,18 +186,22 @@
             // Amount logic - Dynamic from Settings with Sibling Discount
             if (packageType === 'weekly') {
                 amountInput.value = feeSettings.weekly;
+                document.getElementById('discount').value = 0;
             } else if (packageType === 'monthly') {
                 let amount = parseFloat(feeSettings.monthly);
+                let discountAmount = 0;
                 
                 // Apply Sibling Discount only for Monthly package
                 if (isSibling && feeSettings.sibling_discount > 0) {
-                    const discount = (amount * feeSettings.sibling_discount) / 100;
-                    amount = amount - discount;
+                    discountAmount = (amount * feeSettings.sibling_discount) / 100;
+                    amount = amount - discountAmount;
                 }
                 
                 amountInput.value = amount.toFixed(2);
+                document.getElementById('discount').value = discountAmount.toFixed(2);
             } else {
                 amountInput.value = '';
+                document.getElementById('discount').value = 0;
             }
 
             // Enrollment Date logic

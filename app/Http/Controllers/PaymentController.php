@@ -145,7 +145,10 @@ class PaymentController extends Controller
             abort(403);
         }
 
-        $pdf = Pdf::loadView('parent.receipt-pdf', compact('payment'));
+        // Fetch System Settings
+        $settings = \App\Models\AdminSetting::pluck('value', 'key');
+
+        $pdf = Pdf::loadView('parent.receipt-pdf', compact('payment', 'settings'));
         return $pdf->stream('receipt-' . $transactionId . '.pdf');
     }
 }

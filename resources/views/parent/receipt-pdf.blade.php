@@ -20,9 +20,9 @@
 <body>
     <div class="header">
         <div class="logo">
-            <h1>Little Stars ChildCare Center</h1>
+            <h1>{{ $settings['system_name'] ?? 'ChildCare Center' }}</h1>
         </div>
-        <p>123 Childcare Lane, City, State, Zip</p>
+        <p>{{ $settings['address'] ?? 'Address Not Configured' }}</p>
     </div>
 
     <div class="header">

@@ -416,6 +416,9 @@ class ParentController extends Controller
         // Get the latest invoice for the "Current Invoice" section
         $latestInvoice = $invoices->first();
 
+        // Fetch System Settings
+        $settings = \App\Models\AdminSetting::pluck('value', 'key');
+
         return view('parent.invoices', compact(
             'unreadCount',
             'invoices',
@@ -423,7 +426,8 @@ class ParentController extends Controller
             'paidThisYear',
             'totalInvoices',
             'nextPaymentDue',
-            'latestInvoice'
+            'latestInvoice',
+            'settings'
         ));
     }
 
@@ -433,7 +437,10 @@ class ParentController extends Controller
             ->with(['parent', 'child'])
             ->findOrFail($id);
             
-        return view('admin.invoice-pdf', compact('invoice'));
+        // Fetch System Settings
+        $settings = \App\Models\AdminSetting::pluck('value', 'key');
+
+        return view('admin.invoice-pdf', compact('invoice', 'settings'));
     }
 
     public function health()
@@ -959,9 +966,12 @@ class ParentController extends Controller
         
         // Prepare data for PDF
         $caregiver = $report->caregiver;
+
+        // Fetch System Settings
+        $settings = \App\Models\AdminSetting::pluck('value', 'key');
         
         // Load PDF view
-        $pdf = Pdf::loadView('parent.pdf.daily-report', compact('report', 'child', 'caregiver'));
+        $pdf = Pdf::loadView('parent.pdf.daily-report', compact('report', 'child', 'caregiver', 'settings'));
         
         // Generate filename
         $filename = 'daily-report-' . $child->first_name . '-' . \Carbon\Carbon::parse($report->report_date)->format('Y-m-d') . '.pdf';
