@@ -112,6 +112,8 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     Route::get('/events/{event}/edit', [App\Http\Controllers\AdminEventController::class, 'edit'])->name('admin.events.edit');
     Route::put('/events/{event}', [App\Http\Controllers\AdminEventController::class, 'update'])->name('admin.events.update');
     Route::delete('/events/{event}', [App\Http\Controllers\AdminEventController::class, 'destroy'])->name('admin.events.delete');
+    Route::get('/events/{id}/registrations', [App\Http\Controllers\AdminEventController::class, 'getRegistrations'])->name('admin.events.registrations');
+    Route::get('/events/{id}/export-pdf', [App\Http\Controllers\AdminEventController::class, 'exportEventRegistrationsPDF'])->name('admin.events.registrations.pdf');
 });
 
 

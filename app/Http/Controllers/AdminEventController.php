@@ -10,8 +10,31 @@ class AdminEventController extends Controller
 {
     public function index()
     {
-        $events = Event::orderBy('start_time', 'desc')->get();
+        $events = Event::withCount('registrations')->orderBy('start_time', 'desc')->get();
         return view('admin.events.index', compact('events'));
+    }
+
+    public function getRegistrations($id)
+    {
+        $event = Event::with(['registrations.user', 'registrations.child'])->findOrFail($id);
+        
+        $registrations = $event->registrations->map(function($reg) {
+            return [
+                'parent_name' => $reg->user->name,
+                'child_name' => $reg->child ? $reg->child->first_name . ' ' . $reg->child->last_name : 'No Child Assigned',
+                'child_id' => $reg->child ? 'CH' . str_pad($reg->child->id, 3, '0', STR_PAD_LEFT) : 'N/A',
+                'registered_at' => $reg->created_at->format('M d, Y h:i A'),
+                'status' => $reg->status ?? 'Registered'
+            ];
+        });
+
+        return response()->json([
+            'event_title' => $event->title,
+            'registrations' => $registrations,
+            'total_parents' => $event->registrations->unique('user_id')->count(),
+            'total_children' => $event->registrations->whereNotNull('child_id')->count(),
+            'total_registrations' => $event->registrations->count()
+        ]);
     }
 
     public function create()
@@ -98,5 +121,15 @@ class AdminEventController extends Controller
 
         return response()->json(['success' => true]);
     }
-    
-}   
+
+    public function exportEventRegistrationsPDF($id)
+    {
+        $event = Event::with(['registrations.user', 'registrations.child'])->findOrFail($id);
+        
+        $total_parents = $event->registrations->unique('user_id')->count();
+        $total_children = $event->registrations->whereNotNull('child_id')->count();
+        $total_registrations = $event->registrations->count();
+
+        return view('admin.events.registrations-pdf', compact('event', 'total_parents', 'total_children', 'total_registrations'));
+    }
+}
