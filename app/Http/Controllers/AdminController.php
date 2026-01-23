@@ -98,7 +98,7 @@ class AdminController extends Controller
             ->sortByDesc('time')
             ->take(5);
 
-        // Upcoming events (placeholder for now)
+        // Upcoming events (placeholder - will use multi_replace for now)
         $upcomingEvents = [];
 
         return view('admin.dashboard', compact('stats', 'recentActivities', 'upcomingEvents'));
@@ -256,6 +256,14 @@ class AdminController extends Controller
         
         $caregiver = User::findOrFail($validated['caregiver_id']);
 
+        // Check for leave conflict
+        $startDate = $validated['start_date'];
+        $endDate = $validated['end_date'] ?? null;
+        
+        if (!$this->checkCaregiverAvailability($caregiver->id, $startDate, $endDate)) {
+            return redirect()->back()->with('error', 'Caregiver has an approved leave request during this period and cannot be assigned.')->withFragment('enrolled');
+        }
+
         // Check if caregiver is already assigned to a different class
         // We look at all children this caregiver is assigned to
         // If they have distinct classes that are different from the current child's class, we block it.
@@ -315,6 +323,11 @@ class AdminController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
         ]);
+
+        // Check for leave conflict
+        if (!$this->checkCaregiverAvailability($caregiver_id, $request->start_date, $request->end_date)) {
+             return redirect()->back()->with('error', 'Caregiver has an approved leave request during this period and cannot be updated.')->withFragment('enrolled');
+        }
 
         // Check if the caregiver is actually assigned
         if (!$child->caregivers->contains($caregiver_id)) {
@@ -411,10 +424,14 @@ class AdminController extends Controller
         ]);
 
         if ($request->filled('caregiver_id')) {
-            $child->caregivers()->attach($request->caregiver_id, [
-                'start_date' => $request->start_date ?? now(),
-                'end_date' => $request->end_date ?? null,
-            ]);
+             if ($this->checkCaregiverAvailability($request->caregiver_id, $request->start_date ?? now()->toDateString(), $request->end_date)) {
+                $child->caregivers()->attach($request->caregiver_id, [
+                    'start_date' => $request->start_date ?? now(),
+                    'end_date' => $request->end_date ?? null,
+                ]);
+             } else {
+                 return redirect()->route('admin.children')->with('warning', 'Child created, but caregiver could not be assigned due to approved leave during the selected period.')->withFragment('enrolled');
+             }
         }
 
         return redirect()->route('admin.children')->with('success', 'Child record created successfully!')->withFragment('enrolled');
@@ -457,6 +474,15 @@ class AdminController extends Controller
         if ($request->filled('caregiver_id')) {
              // Check if this caregiver is already assigned
              $existingPivot = $child->caregivers()->where('users.id', $request->caregiver_id)->first();
+             
+             // Check availability
+             if (!$this->checkCaregiverAvailability($request->caregiver_id, $request->start_date ?? ($existingPivot ? $existingPivot->pivot->start_date : now()), $request->end_date)) {
+                  // If unavailable, we should probably stop and warn.
+                  // Since updating child is atomic transaction usually, but here partial.
+                  // The child details are ALREADY updated above.
+                  // So we just return warning.
+                  return redirect()->route('admin.children')->with('warning', 'Child details updated, but caregiver assignment failed/skipped due to approved leave conflict.')->withFragment('enrolled');
+             }
              
              if ($existingPivot) {
                  // Update dates for existing assignment
@@ -1697,5 +1723,24 @@ class AdminController extends Controller
         $pendingPayments = []; 
 
         return view('admin.pending', compact('pendingChildren', 'pendingApplications', 'pendingPayments'));
+    }
+
+    private function checkCaregiverAvailability($caregiverId, $startDate, $endDate)
+    {
+        // Check for any approved leave that overlaps with the assignment period
+        return !LeaveRequest::where('user_id', $caregiverId)
+            ->where('status', 'approved')
+            ->where(function($query) use ($startDate, $endDate) {
+                if ($endDate) {
+                    // Overlap: Leave Start <= Assignment End AND Leave End >= Assignment Start
+                    $query->where('start_date', '<=', $endDate)
+                          ->where('end_date', '>=', $startDate);
+                } else {
+                    // Indefinite assignment: Leave End >= Assignment Start
+                    // Any leave ending on or after the start date is a potential conflict for the future
+                    $query->where('end_date', '>=', $startDate);
+                }
+            })
+            ->exists();
     }
 }

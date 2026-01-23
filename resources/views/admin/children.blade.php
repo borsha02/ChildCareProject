@@ -391,11 +391,11 @@
                     </div>
                     <div class="form-group" id="caregiverStartGroup" style="display: none;">
                         <label for="assignment_start">Assignment Start Date <span style="color: red">*</span></label>
-                        <input type="date" id="assignment_start" name="start_date">
+                        <input type="date" id="assignment_start" name="start_date" onchange="validateOperatingDays(this)">
                     </div>
                     <div class="form-group" id="caregiverEndGroup" style="display: none;">
                         <label for="assignment_end">Assignment End Date (Optional)</label>
-                        <input type="date" id="assignment_end" name="end_date">
+                        <input type="date" id="assignment_end" name="end_date" onchange="validateOperatingDays(this)">
                     </div>
                     <div class="form-group full-width">
                         <label for="allergies">Allergies</label>
@@ -461,12 +461,12 @@
 
                     <div class="form-group full-width" style="margin-top: 15px;">
                         <label for="assignment_start_date">Start Date</label>
-                        <input type="date" id="assignment_start_date" name="start_date" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <input type="date" id="assignment_start_date" name="start_date" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" onchange="validateOperatingDays(this)">
                     </div>
                     
                     <div class="form-group full-width" style="margin-top: 15px;">
                         <label for="assignment_end_date">End Date (Optional)</label>
-                        <input type="date" id="assignment_end_date" name="end_date" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <input type="date" id="assignment_end_date" name="end_date" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;" onchange="validateOperatingDays(this)">
                         <small style="color: #666;">Leave blank for indefinite assignment</small>
                     </div>
 
@@ -628,7 +628,26 @@
             
             const startInput = document.getElementById('assignment_start');
             if(select.value && !startInput.value) {
-                startInput.value = new Date().toISOString().split('T')[0];
+                const today = new Date();
+                // Ensure today is not Fri/Sat before setting
+                if (today.getDay() === 5 || today.getDay() === 6) {
+                    // Start next Sunday if today is Fri/Sat
+                    const daysToAdd = (7 - today.getDay()) % 7; 
+                    today.setDate(today.getDate() + daysToAdd);
+                }
+                startInput.value = today.toISOString().split('T')[0];
+            }
+        }
+
+        function validateOperatingDays(input) {
+            if (!input.value) return;
+            
+            const date = new Date(input.value);
+            const day = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 5 = Friday, 6 = Saturday
+            
+            if (day === 5 || day === 6) {
+                alert('Childcare is closed on Fridays and Saturdays. Please select a valid working day (Sunday - Thursday).');
+                input.value = ''; // Clear the invalid selection
             }
         }
 
@@ -832,9 +851,16 @@
             document.getElementById('updateModalActions').style.display = 'none';
             
             // Set default dates
-            const today = new Date().toISOString().split('T')[0];
+            const today = new Date();
+            // Adjust if today is Fri/Sat
+            if (today.getDay() === 5 || today.getDay() === 6) {
+                const daysToAdd = (7 - today.getDay()) % 7; 
+                today.setDate(today.getDate() + daysToAdd);
+            }
+            const todayStr = today.toISOString().split('T')[0];
+            
             const startDateInput = document.getElementById('assignment_start_date');
-            if(startDateInput) startDateInput.value = today;
+            if(startDateInput) startDateInput.value = todayStr;
             const endDateInput = document.getElementById('assignment_end_date');
             if(endDateInput) endDateInput.value = '';
 
