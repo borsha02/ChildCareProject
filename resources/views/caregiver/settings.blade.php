@@ -43,14 +43,14 @@
                     <i class="fas fa-lock"></i>
                     <span>Security</span>
                 </button>
-                <button class="settings-nav-item" data-tab="notifications">
+                <!-- <button class="settings-nav-item" data-tab="notifications">
                     <i class="fas fa-bell"></i>
                     <span>Notifications</span>
-                </button>
+                </button> 
                 <button class="settings-nav-item" data-tab="privacy">
                     <i class="fas fa-shield-alt"></i>
                     <span>Privacy</span>
-                </button>
+                </button> -->
             </div>
 
             <!-- Settings Content -->

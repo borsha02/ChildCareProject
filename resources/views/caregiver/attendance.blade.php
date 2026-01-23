@@ -264,8 +264,19 @@
 
         // Reset button state when any input changes in a row
         document.querySelectorAll('.attendance-table tbody tr').forEach(row => {
+            const statusSelect = row.querySelector('select[name*="status"]');
+            
+            // Initial check on load
+             if (statusSelect) {
+                handleStatusChange(statusSelect);
+            }
+
             row.querySelectorAll('input, select').forEach(input => {
-                input.addEventListener('change', () => {
+                input.addEventListener('change', (e) => {
+                    if(e.target.classList.contains('status-select')) {
+                        handleStatusChange(e.target);
+                    }
+
                     const childId = row.querySelector('.btn-save-row').id.replace('btn-', '');
                     const btn = document.getElementById('btn-' + childId);
                     if (btn.innerText === 'Saved!') {
@@ -287,6 +298,29 @@
                 }
             });
         });
+
+        function handleStatusChange(selectElement) {
+            const row = selectElement.closest('tr');
+            if (!row) return;
+
+            const checkInInput = row.querySelector('input[name*="check_in_time"]');
+            const checkOutInput = row.querySelector('input[name*="check_out_time"]');
+            const status = selectElement.value;
+
+            if (status === 'absent' || status === 'excused') {
+                checkInInput.value = '';
+                checkOutInput.value = '';
+                checkInInput.disabled = true;
+                checkOutInput.disabled = true;
+                checkInInput.style.backgroundColor = '#f3f4f6';
+                checkOutInput.style.backgroundColor = '#f3f4f6';
+            } else {
+                checkInInput.disabled = false;
+                checkOutInput.disabled = false;
+                checkInInput.style.backgroundColor = '';
+                checkOutInput.style.backgroundColor = '';
+            }
+        }
 
         function saveChild(childId) {
             const btn = document.getElementById('btn-' + childId);

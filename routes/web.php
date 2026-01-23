@@ -137,6 +137,7 @@ Route::middleware('auth')->prefix('caregiver')->group(function () {
     Route::delete('/notifications/{id}', [CaregiverController::class, 'deleteNotification'])->name('caregiver.notifications.delete');
     Route::get('/leave-requests', [CaregiverController::class, 'leaveRequests'])->name('caregiver.leave');
     Route::post('/leave-requests/store', [CaregiverController::class, 'storeLeaveRequest'])->name('caregiver.leave.store');
+    Route::delete('/leave-requests/{id}', [CaregiverController::class, 'destroyLeaveRequest'])->name('caregiver.leave.delete');
     Route::get('/caregiver/settings', [App\Http\Controllers\CaregiverController::class, 'settings'])->name('caregiver.settings');
     Route::post('/caregiver/settings/update', [App\Http\Controllers\CaregiverController::class, 'updateSettings'])->name('caregiver.settings.update');
     Route::post('/caregiver/settings/password', [App\Http\Controllers\CaregiverController::class, 'updatePassword'])->name('caregiver.settings.password');

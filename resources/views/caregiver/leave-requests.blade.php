@@ -34,47 +34,8 @@
     </div>
 
     <div class="content-area">
-        <!-- Stats Grid -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon green">
-                    <i class="fas fa-check-circle"></i>
-                </div>
-                <div class="stat-details">
-                    <h3>15</h3>
-                    <p>Available Days</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon blue">
-                    <i class="fas fa-calendar-check"></i>
-                </div>
-                <div class="stat-details">
-                    <h3>5</h3>
-                    <p>Used Days</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon orange">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="stat-details">
-                    <h3>2</h3>
-                    <p>Pending Requests</p>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon purple">
-                    <i class="fas fa-calendar-alt"></i>
-                </div>
-                <div class="stat-details">
-                    <h3>3</h3>
-                    <p>Upcoming Leave</p>
-                </div>
-            </div>
-        </div>
-
         <!-- Leave Request Form -->
+
         <div class="card request-form-container">
             <div class="card-header">
                 <h3>Submit New Leave Request</h3>
@@ -86,20 +47,19 @@
                         <label class="form-label">Leave Type</label>
                         <select name="leave_type" required class="form-select">
                             <option value="">Select leave type</option>
-                            <option value="Vacation">Vacation</option>
                             <option value="Sick Leave">Sick Leave</option>
                             <option value="Personal">Personal</option>
                             <option value="Emergency">Emergency</option>
                         </select>
                     </div>
-                    <div>
+                   <!-- <div>
                         <label class="form-label">Duration</label>
                         <select name="duration_type" required class="form-select">
                             <option value="Full Day">Full Day</option>
                             <option value="Half Day (Morning)">Half Day (Morning)</option>
                             <option value="Half Day (Afternoon)">Half Day (Afternoon)</option>
                         </select>
-                    </div>
+                    </div> -->
                 </div>
                 <div class="form-row">
                     <div>
@@ -147,6 +107,7 @@
                             <th>Days</th>
                             <th>Reason</th>
                             <th>Status</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -162,6 +123,17 @@
                                         {{ ucfirst($request->status) }}
                                     </span>
                                 </td>
+                                <td>
+                                    @if($request->status !== 'Pending')
+                                        <form action="{{ route('caregiver.leave.delete', $request->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this leave history?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-delete-row" title="Delete History">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </td>
                             </tr>
                         @empty
                             <tr>
@@ -173,4 +145,78 @@
             </div>
         </div>
     </div>
+    </div>
+
+    @section('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const leaveTypeSelect = document.querySelector('select[name="leave_type"]');
+            const startDateInput = document.querySelector('input[name="start_date"]');
+            const endDateInput = document.querySelector('input[name="end_date"]');
+
+            function validateLeaveDuration() {
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(endDateInput.value);
+
+                if (startDateInput.value && endDateInput.value) {
+                    const diffTime = Math.abs(endDate - startDate);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); // Difference in days
+                    
+                    // Emergency: Max 1 day (0 difference if start==end)
+                    if (leaveTypeSelect.value === 'Emergency') {
+                         if (startDateInput.value !== endDateInput.value) {
+                            alert('Emergency leave cannot be more than 1 day.');
+                            endDateInput.value = startDateInput.value; 
+                        }
+                    }
+                    
+                    // Personal: Max 3 days (allow diffDays <= 2 implies 3 days span e.g. 1st, 2nd, 3rd)
+                    // Actually, if I pick Jan 1 to Jan 3. 
+                    // Jan 3 - Jan 1 = 2 days difference (1st + 2 days = 3rd). Total days = 3.
+                    // So diffDays should be <= 2.
+                    // If Jan 1 to Jan 4. Diff is 3. Total days = 4. > 3 days.
+                    
+                    if (leaveTypeSelect.value === 'Personal') {
+                        if (diffDays > 2) {
+                            alert('Personal leave cannot be more than 3 days.');
+                             // Reset to max 3 days from start
+                            const maxDate = new Date(startDate);
+                            maxDate.setDate(maxDate.getDate() + 2);
+                            endDateInput.value = maxDate.toISOString().split('T')[0];
+                        }
+                    }
+                }
+            }
+
+            leaveTypeSelect.addEventListener('change', validateLeaveDuration);
+            startDateInput.addEventListener('change', validateLeaveDuration);
+            endDateInput.addEventListener('change', validateLeaveDuration);
+
+            form.addEventListener('submit', function(event) {
+                const startDate = new Date(startDateInput.value);
+                const endDate = new Date(endDateInput.value);
+                
+                if (startDateInput.value && endDateInput.value) {
+                     const diffTime = Math.abs(endDate - startDate);
+                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (leaveTypeSelect.value === 'Emergency') {
+                         if (startDateInput.value !== endDateInput.value) {
+                            event.preventDefault();
+                            alert('Emergency leave cannot be more than 1 day.');
+                        }
+                    }
+                    
+                    if (leaveTypeSelect.value === 'Personal') {
+                        if (diffDays > 2) {
+                            event.preventDefault();
+                            alert('Personal leave cannot be more than 3 days.');
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+    @endsection
 @endsection

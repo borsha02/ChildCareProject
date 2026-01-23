@@ -672,19 +672,39 @@ class AdminController extends Controller
             'notes' => 'nullable|string|max:255',
         ]);
 
-        $attendance = \App\Models\Attendance::updateOrCreate(
-            [
+        // Fix: Use explicit whereDate and handle potential duplicates
+        $attendances = \App\Models\Attendance::where('child_id', $request->child_id)
+            ->whereDate('date', $request->date)
+            ->get();
+
+        if ($attendances->count() > 0) {
+            // Use the first record as the primary one to update
+            $attendance = $attendances->first();
+            
+            // Delete any duplicates if they exist (cleanup)
+            if ($attendances->count() > 1) {
+                $attendances->slice(1)->each(function($duplicate) {
+                    $duplicate->delete();
+                });
+            }
+
+            $attendance->status = $request->status;
+            $attendance->check_in_time = $request->check_in_time;
+            $attendance->check_out_time = $request->check_out_time;
+            $attendance->caregiver_id = auth()->id();
+            $attendance->notes = $request->notes;
+            $attendance->save();
+        } else {
+            \App\Models\Attendance::create([
                 'child_id' => $request->child_id,
                 'date' => $request->date,
-            ],
-            [
                 'status' => $request->status,
                 'check_in_time' => $request->check_in_time,
                 'check_out_time' => $request->check_out_time,
-                'caregiver_id' => auth()->id(), // Admin ID
+                'caregiver_id' => auth()->id(),
                 'notes' => $request->notes,
-            ]
-        );
+            ]);
+        }
 
         return response()->json(['success' => true, 'message' => 'Attendance updated successfully.']);
     }
@@ -736,7 +756,7 @@ class AdminController extends Controller
         // Fetch all enrolled children with their attendance for the specific date
         $children = \App\Models\Child::where('status', '!=', 'pending')
             ->with(['attendances' => function($query) use ($date) {
-                $query->whereDate('date', $date);
+                $query->whereDate('date', $date)->latest('updated_at'); // Ensure we get the latest update if dups exist
             }, 'parent'])
             ->orderBy('first_name')
             ->get();

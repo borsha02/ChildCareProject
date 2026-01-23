@@ -76,6 +76,7 @@ class CaregiverController extends Controller
         return view('caregiver.assigned-children', ['children' => $assignedChildren, 'presentCount' => $presentCount]);
     }
 
+    
     public function attendance(Request $request)
     {
         $date = $request->input('date', date('Y-m-d'));
@@ -571,16 +572,32 @@ class CaregiverController extends Controller
     {
         $request->validate([
             'leave_type' => 'required|string',
-            'duration_type' => 'required|string',
+            'duration_type' => 'nullable|string',
             'start_date' => 'required|date|after_or_equal:today',
-            'end_date' => 'required|date|after_or_equal:start_date',
+            'end_date' => [
+                'required',
+                'date',
+                'after_or_equal:start_date',
+                function ($attribute, $value, $fail) use ($request) {
+                    $start = \Carbon\Carbon::parse($request->start_date)->startOfDay();
+                    $end = \Carbon\Carbon::parse($value)->startOfDay();
+                    $days = $start->diffInDays($end) + 1;
+
+                    if ($request->leave_type === 'Emergency' && $days > 1) {
+                        $fail('Emergency leave cannot be more than 1 day.');
+                    }
+                    if ($request->leave_type === 'Personal' && $days > 3) {
+                         $fail('Personal leave cannot be more than 3 days.');
+                    }
+                },
+            ],
             'reason' => 'required|string',
         ]);
 
         \App\Models\LeaveRequest::create([
             'user_id' => auth()->id(),
             'leave_type' => $request->leave_type,
-            'duration_type' => $request->duration_type,
+            'duration_type' => $request->duration_type ?? 'Full Day',
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
             'reason' => $request->reason,
@@ -589,6 +606,19 @@ class CaregiverController extends Controller
 
         return redirect()->back()->with('success', 'Leave request submitted successfully.');
     }
+    public function destroyLeaveRequest($id)
+    {
+        $request = \App\Models\LeaveRequest::where('user_id', auth()->id())->findOrFail($id);
+
+        if ($request->status === 'Pending') {
+            return back()->with('error', 'Pending requests cannot be deleted.');
+        }
+
+        $request->delete();
+
+        return back()->with('success', 'Leave history deleted successfully.');
+    }
+
     public function settings()
     {
         return view('caregiver.settings');
