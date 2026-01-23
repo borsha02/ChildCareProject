@@ -26,15 +26,20 @@
                 </div>
                 <div class="top-bar-actions">
                     <div class="search-box">
-                        <input type="text" placeholder="Search events...">
+                        <input type="text" id="eventSearch" placeholder="Search events...">
                         <i class="fas fa-search"></i>
                     </div>
-                    <button class="icon-btn">
+                    <button class="icon-btn" onclick="window.location.href='{{ route('admin.pending') }}'" title="Notifications">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
+                        @if($totalPendingCount > 0)
+                            <span class="notification-dot"></span>
+                        @endif
                     </button>
-                    <button class="icon-btn">
+                    <button class="icon-btn" onclick="window.location.href='{{ route('admin.communication') }}'" title="Messages">
                         <i class="fas fa-envelope"></i>
+                        @if($unreadMessagesCount > 0)
+                            <span class="notification-dot"></span>
+                        @endif
                     </button>
                 </div>
             </div>
@@ -255,6 +260,52 @@
 
         function closeRegistrationList() {
             document.getElementById('registrationListSection').style.display = 'none';
+        }
+
+        // Event Search Logic
+        const eventSearch = document.getElementById('eventSearch');
+        const eventTableRows = document.querySelectorAll('.card .table tbody tr');
+
+        if (eventSearch) {
+            eventSearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase().trim();
+                
+                eventTableRows.forEach(row => {
+                    // Check if it's the "No events found" row
+                    if (row.cells.length === 1 && row.textContent.includes('No events found')) {
+                        return;
+                    }
+
+                    const title = row.cells[1]?.textContent.toLowerCase() || '';
+                    const category = row.cells[2]?.textContent.toLowerCase() || '';
+                    const audience = row.cells[3]?.textContent.toLowerCase() || '';
+
+                    if (title.includes(searchTerm) || category.includes(searchTerm) || audience.includes(searchTerm)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+
+                // Handle "No results" visual feedback if needed
+                const visibleRows = Array.from(eventTableRows).filter(row => row.style.display !== 'none' && row.cells.length > 1);
+                const noResultsRow = document.getElementById('noResultsRow');
+
+                if (visibleRows.length === 0 && searchTerm !== '') {
+                    if (!noResultsRow) {
+                        const tbody = document.querySelector('.card .table tbody');
+                        const newRow = document.createElement('tr');
+                        newRow.id = 'noResultsRow';
+                        newRow.innerHTML = `<td colspan="6" style="text-align: center; color: #6b7280; padding: 2rem;">No matching events found for "${searchTerm}"</td>`;
+                        tbody.appendChild(newRow);
+                    } else {
+                        noResultsRow.style.display = '';
+                        noResultsRow.querySelector('td').textContent = `No matching events found for "${searchTerm}"`;
+                    }
+                } else if (noResultsRow) {
+                    noResultsRow.style.display = 'none';
+                }
+            });
         }
     </script>
 </body>

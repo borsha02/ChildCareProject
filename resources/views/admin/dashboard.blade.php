@@ -22,16 +22,21 @@
                 </button>
                 <h1>Dashboard Overview</h1>
                 <div class="top-bar-actions">
-                    <div class="search-box">
+                   <!-- <div class="search-box">
                         <input type="text" placeholder="Search...">
                         <i class="fas fa-search"></i>
-                    </div>
-                    <button class="icon-btn">
+                    </div> -->
+                    <button class="icon-btn" onclick="window.location.href='{{ route('admin.pending') }}'" title="Notifications">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
+                        @if($totalPendingCount > 0)
+                            <span class="notification-dot"></span>
+                        @endif
                     </button>
-                    <button class="icon-btn">
+                    <button class="icon-btn" onclick="window.location.href='{{ route('admin.communication') }}'" title="Messages">
                         <i class="fas fa-envelope"></i>
+                        @if($unreadMessagesCount > 0)
+                            <span class="notification-dot"></span>
+                        @endif
                     </button>
                 </div>
             </div>

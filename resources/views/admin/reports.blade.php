@@ -100,6 +100,7 @@
             <div class="content-area">
                 <!-- Filter Bar -->
                 <div class="filter-bar">
+                    <input type="text" id="searchInput" class="filter-input" placeholder="Search by child name..." onkeyup="filterReports()">
                     <select class="filter-select" id="childFilter" onchange="filterReports()">
                         <option value="">All Children</option>
                         @foreach($children as $child)
@@ -124,11 +125,12 @@
                     @forelse($dailyReports as $report)
                         @php
                             $childPackage = $report->child->package ?? '';
+                            $childName = strtolower($report->child->first_name . ' ' . $report->child->last_name);
                         @endphp
 
                         {{-- Meals Card --}}
                         @if($report->meals)
-                            <div class="report-card meal" data-type="meal" data-child-id="{{ $report->child_id }}" data-package="{{ strtolower($childPackage) }}">
+                            <div class="report-card meal" data-type="meal" data-child-id="{{ $report->child_id }}" data-package="{{ strtolower($childPackage) }}" data-child-name="{{ $childName }}">
                                 <div class="report-header">
                                     <div class="report-title">
                                         <h3>Meals - {{ $report->child->first_name }}</h3>
@@ -155,7 +157,7 @@
 
                         {{-- Nap Card --}}
                         @if($report->nap_duration)
-                            <div class="report-card nap" data-type="nap" data-child-id="{{ $report->child_id }}" data-package="{{ strtolower($childPackage) }}">
+                            <div class="report-card nap" data-type="nap" data-child-id="{{ $report->child_id }}" data-package="{{ strtolower($childPackage) }}" data-child-name="{{ $childName }}">
                                 <div class="report-header">
                                     <div class="report-title">
                                         <h3>Nap - {{ $report->child->first_name }}</h3>
@@ -182,7 +184,7 @@
 
                          {{-- Activity Card --}}
                          @if($report->activities)
-                            <div class="report-card activity" data-type="activity" data-child-id="{{ $report->child_id }}" data-package="{{ strtolower($childPackage) }}">
+                            <div class="report-card activity" data-type="activity" data-child-id="{{ $report->child_id }}" data-package="{{ strtolower($childPackage) }}" data-child-name="{{ $childName }}">
                                 <div class="report-header">
                                     <div class="report-title">
                                         <h3>Activity - {{ $report->child->first_name }}</h3>
@@ -297,6 +299,7 @@
             const childId = document.getElementById('childFilter').value;
             const type = document.getElementById('typeFilter').value;
             const package = document.getElementById('packageFilter').value.toLowerCase(); // weekly or monthly
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
 
             const cards = document.querySelectorAll('.report-card');
             
@@ -304,12 +307,14 @@
                 const cardChildId = card.dataset.childId;
                 const cardType = card.dataset.type;
                 const cardPackage = card.dataset.package;
+                const cardChildName = card.dataset.childName;
 
                 let show = true;
 
                 if (childId && cardChildId !== childId) show = false;
                 if (type && cardType !== type) show = false;
                 if (package && cardPackage !== package) show = false;
+                if (searchText && !cardChildName.includes(searchText)) show = false;
 
                 card.style.display = show ? '' : 'none';
             });
@@ -479,6 +484,13 @@
                      window.location.search = `?date=${clientDate}`;
                  }
              }
+
+             // Set max date to today (client-side)
+             const today = new Date();
+             const year = today.getFullYear();
+             const month = String(today.getMonth() + 1).padStart(2, '0');
+             const day = String(today.getDate()).padStart(2, '0');
+             dateInput.max = `${year}-${month}-${day}`;
          });
     </script>
 </body>

@@ -32,11 +32,15 @@ class AppServiceProvider extends ServiceProvider
             $pendingJobAppsCount = \App\Models\JobApplication::where('status', 'pending')->count();
             $pendingPaymentsCount = \App\Models\Payment::whereNotIn('status', ['Approved', 'Rejected'])->count();
             $pendingRegistrationsCount = \App\Models\Child::where('status', 'pending')->count();
+            $unreadMessagesCount = \App\Models\Message::where('receiver_id', auth()->id())->where('is_read', false)->count();
+            $totalPendingCount = $pendingJobAppsCount + $pendingPaymentsCount + $pendingRegistrationsCount;
             
             $view->with([
                 'pendingJobAppsCount' => $pendingJobAppsCount,
                 'pendingPaymentsCount' => $pendingPaymentsCount,
                 'pendingRegistrationsCount' => $pendingRegistrationsCount,
+                'unreadMessagesCount' => $unreadMessagesCount,
+                'totalPendingCount' => $totalPendingCount,
             ]);
         });
     }
