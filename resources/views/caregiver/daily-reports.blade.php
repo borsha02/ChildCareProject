@@ -266,15 +266,22 @@
     </div>
 
     <script>
-        // Set default date to client's local today
+        // Set default date to client's local today and restrict future dates
         document.addEventListener('DOMContentLoaded', function() {
             const dateInput = document.getElementById('report_date');
-            if (dateInput && !dateInput.value) {
+            if (dateInput) {
                 const today = new Date();
                 const year = today.getFullYear();
                 const month = String(today.getMonth() + 1).padStart(2, '0');
                 const day = String(today.getDate()).padStart(2, '0');
-                dateInput.value = `${year}-${month}-${day}`;
+                const formattedDate = `${year}-${month}-${day}`;
+                
+                // Restrict future dates
+                dateInput.max = formattedDate;
+
+                if (!dateInput.value) {
+                    dateInput.value = formattedDate;
+                }
             }
         });
 

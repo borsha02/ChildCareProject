@@ -432,5 +432,31 @@
                 }, 2000);
             }
         }
+
+        // Ensure correct date based on client timezone
+        document.addEventListener('DOMContentLoaded', () => {
+             const dateInput = document.querySelector('input[name="date"]');
+             if (!dateInput) return;
+ 
+             const urlParams = new URLSearchParams(window.location.search);
+             const hasDateParam = urlParams.has('date');
+ 
+             if (!hasDateParam) {
+                 const serverDate = dateInput.value;
+                 const clientDate = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+ 
+                 if (serverDate !== clientDate) {
+                     // Redirect to client date to load correct data
+                     window.location.search = `?date=${clientDate}`;
+                 }
+             }
+             
+             // Set max date to today (client-side)
+             const today = new Date();
+             const year = today.getFullYear();
+             const month = String(today.getMonth() + 1).padStart(2, '0');
+             const day = String(today.getDate()).padStart(2, '0');
+             dateInput.max = `${year}-${month}-${day}`;
+        });
     </script>
 @endsection

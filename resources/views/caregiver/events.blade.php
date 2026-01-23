@@ -19,7 +19,7 @@
         </div>
         <div class="top-bar-actions">
             <div class="search-box">
-                <input type="text" placeholder="Search events...">
+                <input type="text" id="eventSearchInput" placeholder="Search events...">
                 <i class="fas fa-search"></i>
             </div>
             <a href="{{ route('caregiver.notifications') }}"
@@ -160,6 +160,7 @@
             function filterEvents() {
                 const activeTab = document.querySelector('.filter-tab.active').dataset.filter;
                 const category = categoryFilter.value;
+                const searchText = document.getElementById('eventSearchInput').value.toLowerCase();
 
                 events.forEach(event => {
                     let show = true;
@@ -171,6 +172,13 @@
 
                     // Category filter
                     if (category !== 'all' && event.dataset.category !== category) show = false;
+
+                    // Search filter
+                    if (searchText) {
+                        const title = event.querySelector('h3').textContent.toLowerCase();
+                        const desc = event.querySelector('.event-description').textContent.toLowerCase();
+                        if (!title.includes(searchText) && !desc.includes(searchText)) show = false;
+                    }
 
                     event.style.display = show ? 'flex' : 'none';
                 });
@@ -196,6 +204,12 @@
                 mobileToggle.addEventListener('click', () => {
                     sidebar.classList.toggle('active');
                 });
+            }
+
+            // Search input listener
+            const searchInput = document.getElementById('eventSearchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keyup', filterEvents);
             }
             
             // Initial filter

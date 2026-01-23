@@ -18,10 +18,10 @@
             <h1>My Schedule</h1>
         </div>
         <div class="top-bar-actions">
-            <div class="search-box">
+           <!-- <div class="search-box">
                 <input type="text" placeholder="Search schedule...">
                 <i class="fas fa-search"></i>
-            </div>
+            </div> -->
             <a href="{{ route('caregiver.notifications') }}"
                 class="icon-btn {{ request()->routeIs('caregiver.notifications') ? 'active' : '' }}">
                 <i class="fas fa-bell"></i>

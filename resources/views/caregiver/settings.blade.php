@@ -87,15 +87,15 @@
                                         <label>Phone Number</label>
                                         <input type="tel" name="phone" value="{{ Auth::user()->phone }}" class="form-input">
                                     </div>
-                                    <div class="form-group">
+                                  <!-- <div class="form-group">
                                         <label>Date of Birth</label>
                                         <input type="date" name="dob" value="{{ Auth::user()->dob }}" class="form-input">
-                                    </div>
+                                    </div> -->
                                 </div>
-                                <div class="form-group">
+                               <!-- <div class="form-group">
                                     <label>Address</label>
                                     <input type="text" name="address" value="{{ Auth::user()->address }}" class="form-input">
-                                </div>
+                                </div> -->
                                 <div class="form-actions">
                                     <button type="button" class="btn-cancel">Cancel</button>
                                     <button type="submit" class="btn-save">Save Changes</button>
