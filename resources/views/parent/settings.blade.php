@@ -119,10 +119,10 @@
                     <h1>Settings</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <div class="search-box">
+                   <!-- <div class="search-box">
                         <input type="text" placeholder="Search settings...">
                         <i class="fas fa-search"></i>
-                    </div>
+                    </div> -->
                     <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
                         <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
@@ -145,7 +145,7 @@
                             <i class="fas fa-lock"></i>
                             <span>Security</span>
                         </button>
-                        <button class="settings-nav-item" data-tab="notifications">
+                       <!-- <button class="settings-nav-item" data-tab="notifications">
                             <i class="fas fa-bell"></i>
                             <span>Notifications</span>
                         </button>
@@ -156,7 +156,7 @@
                         <button class="settings-nav-item" data-tab="preferences">
                             <i class="fas fa-sliders-h"></i>
                             <span>Preferences</span>
-                        </button>
+                        </button> -->
                     </div>
 
                     <!-- Settings Content -->
@@ -190,15 +190,15 @@
                                                 <label>Phone Number</label>
                                                 <input type="tel" name="phone" value="{{ Auth::user()->phone }}" class="form-input">
                                             </div>
-                                            <div class="form-group">
+                                           <!-- <div class="form-group">
                                                 <label>Date of Birth</label>
                                                 <input type="date" name="dob" value="{{ Auth::user()->dob }}" class="form-input">
-                                            </div>
+                                            </div> -->
                                         </div>
-                                        <div class="form-group">
+                                       <!-- <div class="form-group">
                                             <label>Address</label>
                                             <input type="text" name="address" value="{{ Auth::user()->address }}" class="form-input">
-                                        </div>
+                                        </div> -->
                                         <div class="form-actions">
                                             <button type="button" class="btn-cancel">Cancel</button>
                                             <button type="submit" class="btn-save">Save Changes</button>

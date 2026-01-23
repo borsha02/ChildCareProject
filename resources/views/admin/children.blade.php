@@ -382,12 +382,20 @@
                     </div>
                     <div class="form-group">
                         <label for="caregiver_id">Assign Caregiver</label>
-                        <select id="caregiver_id" name="caregiver_id">
+                        <select id="caregiver_id" name="caregiver_id" onchange="toggleCaregiverDates(this)">
                             <option value="">Select caregiver (optional)</option>
                             @foreach($caregivers as $caregiver)
                                 <option value="{{ $caregiver->id }}">{{ $caregiver->name }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <div class="form-group" id="caregiverStartGroup" style="display: none;">
+                        <label for="assignment_start">Assignment Start Date <span style="color: red">*</span></label>
+                        <input type="date" id="assignment_start" name="start_date">
+                    </div>
+                    <div class="form-group" id="caregiverEndGroup" style="display: none;">
+                        <label for="assignment_end">Assignment End Date (Optional)</label>
+                        <input type="date" id="assignment_end" name="end_date">
                     </div>
                     <div class="form-group full-width">
                         <label for="allergies">Allergies</label>
@@ -448,17 +456,36 @@
                                 <option value="{{ $caregiver->id }}">{{ $caregiver->name }}</option>
                             @endforeach
                         </select>
+                        <input type="hidden" name="_method" id="_method_input" value="POST">
+                    </div>
+
+                    <div class="form-group full-width" style="margin-top: 15px;">
+                        <label for="assignment_start_date">Start Date</label>
+                        <input type="date" id="assignment_start_date" name="start_date" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+                    
+                    <div class="form-group full-width" style="margin-top: 15px;">
+                        <label for="assignment_end_date">End Date (Optional)</label>
+                        <input type="date" id="assignment_end_date" name="end_date" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <small style="color: #666;">Leave blank for indefinite assignment</small>
                     </div>
 
                     <div id="currentCaregiversList" style="margin-top: 20px;">
                          <!-- List of currently assigned caregivers -->
                     </div>
                 </div>
-                <div class="form-actions">
+                <div class="form-actions" id="assignModalActions">
                     <button type="button" class="btn btn-secondary" onclick="closeAssignModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary" id="assignSubmitBtn">
                         <i class="fas fa-check"></i>
                         Assign
+                    </button>
+                </div>
+                <div class="form-actions" id="updateModalActions" style="display: none;">
+                     <button type="button" class="btn btn-secondary" onclick="cancelEditAssignment()">Cancel Edit</button>
+                     <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Update Assignment
                     </button>
                 </div>
             </form>
@@ -577,9 +604,34 @@
             
             // Caregiver select
              if (document.getElementById('caregiver_id')) {
-                document.getElementById('caregiver_id').value = (child.caregivers && child.caregivers.length > 0) ? child.caregivers[0].id : '';
+                const caregiverId = (child.caregivers && child.caregivers.length > 0) ? child.caregivers[0].id : '';
+                document.getElementById('caregiver_id').value = caregiverId;
+                
+                // Trigger date visibility
+                toggleCaregiverDates(document.getElementById('caregiver_id'));
+
+                if(caregiverId && child.caregivers[0].pivot) {
+                     if(child.caregivers[0].pivot.start_date) {
+                         document.getElementById('assignment_start').value = child.caregivers[0].pivot.start_date.split('T')[0];
+                     }
+                     if(child.caregivers[0].pivot.end_date) {
+                         document.getElementById('assignment_end').value = child.caregivers[0].pivot.end_date.split('T')[0];
+                     }
+                }
             } 
         }
+
+        function toggleCaregiverDates(select) {
+            const display = select.value ? 'block' : 'none';
+            document.getElementById('caregiverStartGroup').style.display = display;
+            document.getElementById('caregiverEndGroup').style.display = display;
+            
+            const startInput = document.getElementById('assignment_start');
+            if(select.value && !startInput.value) {
+                startInput.value = new Date().toISOString().split('T')[0];
+            }
+        }
+
 
         // Search functionality
         document.getElementById('searchInput').addEventListener('input', function(e) {
@@ -718,7 +770,19 @@
                     </div>
                     <div class="detail-group">
                          <label style="font-weight: bold; display: block; margin-bottom: 5px;">Assigned Caregivers</label>
-                         <p>${(child.caregivers && child.caregivers.length > 0) ? child.caregivers.map(c => `${c.name} (${c.shift ? c.shift.charAt(0).toUpperCase() + c.shift.slice(1) : 'N/A'})`).join(', ') : 'None'}</p>
+                         <p>${(child.caregivers && child.caregivers.length > 0) ? child.caregivers.map(c => {
+                             let assigned = `${c.name} (${c.shift ? c.shift.charAt(0).toUpperCase() + c.shift.slice(1) : 'N/A'})`;
+                             if (c.pivot && c.pivot.start_date) {
+                                 assigned += ` [${new Date(c.pivot.start_date).toLocaleDateString()}`;
+                                 if (c.pivot.end_date) {
+                                     assigned += ` - ${new Date(c.pivot.end_date).toLocaleDateString()}`;
+                                 } else {
+                                     assigned += ` - Indefinite`;
+                                 }
+                                 assigned += `]`;
+                             }
+                             return assigned;
+                         }).join(', ') : 'None'}</p>
                     </div>
                     <div class="detail-group">
                         <label style="font-weight: bold; display: block; margin-bottom: 5px;">Parent Phone</label>
@@ -751,13 +815,28 @@
         
          // Assign Caregiver Modal Functions
         function assignCaregiver(child) {
+            currentAssignChildId = child.id;
             const modal = document.getElementById('assignCaregiverModal');
             document.getElementById('assignChildName').textContent = child.first_name + ' ' + child.last_name;
             const form = document.getElementById('assignCaregiverForm');
             form.action = `/admin/children/${child.id}/assign-caregiver`;
+            document.getElementById('_method_input').value = 'POST';
 
-            // Reset select
-            document.getElementById('caregiverSelect').value = '';
+            // Reset select and ensure enabled
+            const caregiverSelect = document.getElementById('caregiverSelect');
+            caregiverSelect.value = '';
+            caregiverSelect.disabled = false;
+            
+            // Toggle buttons to default
+            document.getElementById('assignModalActions').style.display = 'flex';
+            document.getElementById('updateModalActions').style.display = 'none';
+            
+            // Set default dates
+            const today = new Date().toISOString().split('T')[0];
+            const startDateInput = document.getElementById('assignment_start_date');
+            if(startDateInput) startDateInput.value = today;
+            const endDateInput = document.getElementById('assignment_end_date');
+            if(endDateInput) endDateInput.value = '';
 
             // Show current assignments
             const listContainer = document.getElementById('currentCaregiversList');
@@ -765,12 +844,28 @@
                 let html = '<label style="font-weight: bold; display: block; margin-bottom: 8px;">Currently Assigned:</label>';
                 html += '<ul style="list-style: none; padding: 0;">';
                 child.caregivers.forEach(cg => {
+                    let dateInfo = '';
+                    if (cg.pivot && cg.pivot.start_date) {
+                         dateInfo = `<div style="font-size: 0.85em; color: #666; margin-top: 2px;">
+                            ${new Date(cg.pivot.start_date).toLocaleDateString()} - 
+                            ${cg.pivot.end_date ? new Date(cg.pivot.end_date).toLocaleDateString() : 'Indefinite'}
+                         </div>`;
+                    }
+
                     html += `
-                        <li style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: #f3f4f6; margin-bottom: 5px; border-radius: 4px;">
-                            <span>${cg.name} <strong>(${cg.shift ? cg.shift.charAt(0).toUpperCase() + cg.shift.slice(1) : 'N/A'})</strong></span>
-                            <button type="button" onclick="removeCaregiver(${child.id}, ${cg.id})" style="background: none; border: none; color: #ef4444; cursor: pointer;">
-                                <i class="fas fa-times"></i>
-                            </button>
+                        <li style="display: flex; justify-content: space-between; align-items: start; padding: 8px; background: #f3f4f6; margin-bottom: 5px; border-radius: 4px;">
+                            <div>
+                                <span>${cg.name} <strong>(${cg.shift ? cg.shift.charAt(0).toUpperCase() + cg.shift.slice(1) : 'N/A'})</strong></span>
+                                ${dateInfo}
+                            </div>
+                            <div style="display: flex; gap: 5px;">
+                                <button type="button" onclick="editAssignment(${child.id}, ${cg.id}, '${cg.pivot.start_date || ''}', '${cg.pivot.end_date || ''}', '${cg.name}')" style="background: none; border: none; color: #2563eb; cursor: pointer; margin-top: 2px;" title="Edit Dates">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" onclick="removeCaregiver(${child.id}, ${cg.id})" style="background: none; border: none; color: #ef4444; cursor: pointer; margin-top: 2px;" title="Remove Assignment">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </li>
                     `;
                 });
@@ -783,8 +878,59 @@
             modal.classList.add('active');
         }
 
+        // Store current child ID for edit functionality
+        let currentAssignChildId = null;
+
+        function editAssignment(childId, caregiverId, startDate, endDate, caregiverName) {
+            currentAssignChildId = childId;
+            const form = document.getElementById('assignCaregiverForm');
+            
+            // Set action to update
+            form.action = `/admin/children/${childId}/assignments/${caregiverId}`;
+            document.getElementById('_method_input').value = 'PUT';
+
+            // Populate fields
+            const caregiverSelect = document.getElementById('caregiverSelect');
+            caregiverSelect.value = caregiverId;
+            caregiverSelect.disabled = true; // Lock caregiver selection
+
+            document.getElementById('assignment_start_date').value = startDate;
+            document.getElementById('assignment_end_date').value = endDate;
+
+            // Update visible input if it was disabled/hidden (in this case it's just disabled)
+            // But we need to make sure the value is submitted. 
+            // Disabled inputs are NOT submitted.
+            // So we need a hidden input for caregiver_id or just rely on the route parameter which validation might need.
+            // The route uses {caregiver_id}, but validation checks if caregiver exists? 
+            // The controller validation doesn't check 'caregiver_id' in body for update method, 
+            // it validates start_date and end_date. So disabling select is fine.
+            
+            // Toggle buttons
+            document.getElementById('assignModalActions').style.display = 'none';
+            document.getElementById('updateModalActions').style.display = 'flex';
+        }
+
+        function cancelEditAssignment() {
+             // Reset form to assign mode
+             const form = document.getElementById('assignCaregiverForm');
+             form.action = `/admin/children/${currentAssignChildId}/assign-caregiver`;
+             document.getElementById('_method_input').value = 'POST';
+             
+             document.getElementById('caregiverSelect').disabled = false;
+             document.getElementById('caregiverSelect').value = '';
+             
+             const today = new Date().toISOString().split('T')[0];
+             document.getElementById('assignment_start_date').value = today;
+             document.getElementById('assignment_end_date').value = '';
+
+             // Toggle buttons
+             document.getElementById('assignModalActions').style.display = 'flex';
+             document.getElementById('updateModalActions').style.display = 'none';
+        }
+
         function closeAssignModal() {
             document.getElementById('assignCaregiverModal').classList.remove('active');
+            cancelEditAssignment(); // Reset state on close
         }
         
         function removeCaregiver(childId, caregiverId) {

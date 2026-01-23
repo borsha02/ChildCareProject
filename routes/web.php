@@ -41,6 +41,7 @@ Route::middleware('auth')->prefix('admin')->group(function (){
     Route::post('/children/{id}/approve', [AdminController::class, 'approveChild'])->name('admin.children.approve');
     Route::post('/children/{id}/reject', [AdminController::class, 'rejectChild'])->name('admin.children.reject');
     Route::post('/children/{id}/assign-caregiver', [AdminController::class, 'assignCaregiver'])->name('admin.children.assign');
+    Route::put('/children/{id}/assignments/{caregiver_id}', [AdminController::class, 'updateCaregiverAssignment'])->name('admin.children.update-assignment');
     Route::delete('/children/{id}/remove-caregiver', [AdminController::class, 'removeCaregiver'])->name('admin.children.remove-caregiver');
     Route::post('/children/{id}/reactivate', [AdminController::class, 'reactivate'])->name('admin.children.reactivate');
 

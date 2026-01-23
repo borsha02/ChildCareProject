@@ -56,7 +56,9 @@ class Child extends Model
     }
     public function caregivers()
     {
-        return $this->belongsToMany(User::class, 'child_assignments', 'child_id', 'caregiver_id');
+        return $this->belongsToMany(User::class, 'child_assignments', 'child_id', 'caregiver_id')
+                    ->withPivot('start_date', 'end_date')
+                    ->withTimestamps();
     }
 
     public function attendances()

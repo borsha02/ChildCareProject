@@ -52,7 +52,9 @@ class User extends Authenticatable
     }
     public function assignedChildren()
     {
-        return $this->belongsToMany(Child::class, 'child_assignments', 'caregiver_id', 'child_id');
+        return $this->belongsToMany(Child::class, 'child_assignments', 'caregiver_id', 'child_id')
+                    ->withPivot('start_date', 'end_date')
+                    ->withTimestamps();
     }
 
     public function children()
