@@ -461,6 +461,11 @@ body {
     color: #92400e;
 }
 
+.status-badge.activation_requested {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
 .child-details {
     display: grid;
     grid-template-columns: 1fr 1fr;

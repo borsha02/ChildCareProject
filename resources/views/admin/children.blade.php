@@ -117,8 +117,18 @@
                                 </div>
                                 <div class="child-info">
                                     <h3>{{ $child->first_name }} {{ $child->last_name }}</h3>
-                                    <div class="child-id">Applied: {{ $child->created_at->diffForHumans() }}</div>
-                                    <span class="status-badge pending">Pending</span>
+                                    <div class="child-id">
+                                        @if($child->status == 'pending')
+                                            Applied: {{ $child->created_at->diffForHumans() }}
+                                        @else
+                                            Requested: {{ $child->updated_at->diffForHumans() }}
+                                        @endif
+                                    </div>
+                                    @if($child->status == 'pending')
+                                        <span class="status-badge pending">Pending</span>
+                                    @else
+                                        <span class="status-badge activation_requested">Activation Requested</span>
+                                    @endif
                                 </div>
                             </div>
                             <div class="child-details">
@@ -145,6 +155,7 @@
                                 </div>
                             </div>
                             <div class="child-actions">
+                                @if($child->status == 'pending')
                                 <form action="{{ route('admin.children.approve', $child->id) }}" method="POST" style="display:inline;">
                                     @csrf
                                     <button type="submit" class="action-btn approve">
@@ -157,6 +168,15 @@
                                         <i class="fas fa-times"></i> Reject
                                     </button>
                                 </form>
+                                @else
+                                <form action="{{ route('admin.children.reactivate', $child->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Reactivating will reset the enrollment date to today. Continue?');">
+                                    @csrf
+                                    <button type="submit" class="action-btn approve" title="Reactivate Child">
+                                        <i class="fas fa-redo"></i> Reactivate
+                                    </button>
+                                </form>
+                                <button class="action-btn delete" disabled style="opacity: 0.5; cursor: not-allowed;"><i class="fas fa-times"></i> Reject</button>
+                                @endif
                                 <button class="action-btn view" onclick="viewChild({{ json_encode($child) }})">
                                     <i class="fas fa-eye"></i> View
                                 </button>
@@ -188,6 +208,7 @@
                             <option value="">All Status</option>
                             <option value="active">Active</option>
                             <option value="inactive">Inactive</option>
+                            <option value="activation_requested">Activation Requested</option>
                         </select>
                         <select class="filter-select" id="packageFilter">
                             <option value="">All Packages</option>
@@ -209,7 +230,7 @@
                                         <span style="font-size: 0.8em; color: #666; font-weight: normal;">({{ ucfirst($child->package ?? 'Monthly') }})</span>
                                     </h3>
                                     <div class="child-id">ID: CH{{ str_pad($child->id, 3, '0', STR_PAD_LEFT) }}</div>
-                                    <span class="status-badge {{ $child->status }}">{{ ucfirst($child->status) }}</span>
+                                    <span class="status-badge {{ $child->status }}">{{ ucfirst(str_replace('_', ' ', $child->status)) }}</span>
                                 </div>
                             </div>
                             <div class="child-details">
@@ -254,11 +275,14 @@
                                 <button class="action-btn edit" onclick="editChild({{ json_encode($child) }}, '{{ route('admin.children.update', $child->id) }}')">
                                     <i class="fas fa-edit"></i> Edit
                                 </button>
+                                <form action="{{ route('admin.children.delete', $child->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this child record?');">
+                                    @csrf
+                                    @method('DELETE')
                                     <button type="submit" class="action-btn delete">
                                         <i class="fas fa-trash"></i> Delete
                                     </button>
                                 </form>
-                                @if($child->status === 'inactive')
+                                @if($child->status === 'inactive' || $child->status === 'activation_requested')
                                 <form action="{{ route('admin.children.reactivate', $child->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Reactivating will reset the enrollment date to today. Continue?');">
                                     @csrf
                                     <button type="submit" class="action-btn approve" title="Reactivate Child">
@@ -326,7 +350,6 @@
                             <option value="Toddler">Toddler</option>
                             <option value="Preschool">Preschool</option>
                             <option value="Pre-K">Pre-K</option>
-                            <option value="Young Learners">Young Learners</option>
                             <option value="Young Learners">Young Learners</option>
                         </select>
                     </div>

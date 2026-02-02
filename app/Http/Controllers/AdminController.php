@@ -213,6 +213,20 @@ class AdminController extends Controller
      */
     public function children(Request $request)
     {
+        // Lazy expiration check for weekly students
+        $expiredChildren = Child::where('status', 'active')
+            ->where('package', 'weekly')
+            ->whereNotNull('enrollment_date')
+            ->whereNotNull('duration')
+            ->get();
+
+        foreach ($expiredChildren as $child) {
+            $expirationDate = $child->enrollment_date->copy()->addWeeks($child->duration);
+            if ($expirationDate->isPast()) {
+                $child->update(['status' => 'inactive']);
+            }
+        }
+
         $search = $request->input('search');
         $classFilter = $request->input('class');
 
@@ -232,14 +246,12 @@ class AdminController extends Controller
             $query->where('class', $classFilter);
         }
 
-        // Separate pending and enrolled (active/inactive)
-        // Pending: status = 'pending'
-        // Enrolled: status != 'pending' (includes active, inactive, rejected? maybe filter rejected)
+        // Separate pending and enrolled
+        // Pending now includes 'pending' (new registrations) and 'activation_requested' (reactivations)
+        $pendingChildren = (clone $query)->whereIn('status', ['pending', 'activation_requested'])->latest()->get();
         
-        $pendingChildren = (clone $query)->where('status', 'pending')->latest()->get();
-        // For enrolled, we might show active and inactive. Rejected are usually hidden or in a separate view, 
-        // but for now let's just say != pending.
-        $enrolledChildren = (clone $query)->where('status', '!=', 'pending')->with('caregivers')->latest()->paginate(10);
+        // Enrolled excludes pending and activation_requested
+        $enrolledChildren = (clone $query)->whereNotIn('status', ['pending', 'activation_requested'])->with('caregivers')->latest()->paginate(10);
         $caregivers = User::where('role', 'caregiver')->where('status', 'active')->get();
 
         return view('admin.children', compact('pendingChildren', 'enrolledChildren', 'caregivers'));
@@ -264,20 +276,22 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Caregiver has an approved leave request during this period and cannot be assigned.')->withFragment('enrolled');
         }
 
-        // Check if caregiver is already assigned to a different class
-        // We look at all children this caregiver is assigned to
-        // If they have distinct classes that are different from the current child's class, we block it.
-        // NOTE: Usually a caregiver should only have ONE class.
-        // So we just check if they have ANY child with a class != $child->class
+        // Check if caregiver is already assigned to a different class WITH THE SAME SHIFT
+        // Allow cross-class assignments if shifts are different
+        // For example: morning shift in Toddler class + evening shift in Preschool class = OK
+        // But: morning shift in Toddler + morning shift in Preschool = NOT OK
         
-        $assignedClasses = $caregiver->assignedChildren()
-            ->where('class', '!=', $child->class)
-            ->pluck('class')
-            ->unique();
+        if ($caregiver->shift) {
+            $conflictingAssignments = $caregiver->assignedChildren()
+                ->where('class', '!=', $child->class)
+                ->get();
 
-        if ($assignedClasses->isNotEmpty()) {
-            $conflictClass = $assignedClasses->first();
-            return redirect()->back()->with('error', "Caregiver is already assigned to class '{$conflictClass}'. Please remove them from that class before assigning to '{$child->class}'.")->withFragment('enrolled');
+            if ($conflictingAssignments->isNotEmpty()) {
+                // Caregiver is already assigned to a different class
+                // Block the assignment since they have the same shift
+                $conflictClass = $conflictingAssignments->first()->class;
+                return redirect()->back()->with('error', "Caregiver with '{$caregiver->shift}' shift is already assigned to class '{$conflictClass}'. Cannot assign the same shift to multiple classes.")->withFragment('enrolled');
+            }
         }
 
         // Check max assignment limit (Max 2 children per caregiver)

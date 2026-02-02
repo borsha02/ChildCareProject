@@ -41,6 +41,16 @@
             </div>
         @endif
 
+        @if($errors->any())
+            <div class="alert-error" style="background-color: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                <ul style="margin-bottom: 0;">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <!-- Stats Grid -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -202,9 +212,9 @@
                 </div>
 
                 <div class="form-actions" style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="submit" name="submit_action" value="save_draft" class="btn-submit" style="background-color: #6b7280; color: white;">
+                  <!--  <button type="submit" name="submit_action" value="save_draft" class="btn-submit" style="background-color: #6b7280; color: white;">
                         Save Draft
-                    </button>
+                    </button>-->
                     <button type="submit" name="submit_action" value="complete" class="btn-submit">
                         Submit Report
                     </button>
@@ -233,7 +243,14 @@
                                 <button onclick="viewReport({{ $report->id }})" class="btn-view-report" title="View Full Report">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                <span class="status-badge">Submitted</span>
+                                <span class="status-badge {{ $report->status === 'completed' ? 'submitted' : 'draft' }}" 
+                                      style="background-color: {{ $report->status === 'completed' ? '#d1fae5' : '#f3f4f6' }}; 
+                                             color: {{ $report->status === 'completed' ? '#065f46' : '#374151' }}; 
+                                             padding: 2px 10px; 
+                                             border-radius: 12px; 
+                                             font-size: 0.75rem;">
+                                    {{ $report->status === 'completed' ? 'Submitted' : 'Draft' }}
+                                </span>
                             </div>
                         </div>
                         <p class="report-notes">{{ Str::limit($report->notes, 100) }}</p>
@@ -329,12 +346,6 @@
 
             if (medications.length === 0) {
                 container.innerHTML = '<div class="empty-state-small">No active medications for this date.</div>';
-                
-                const noneInput = document.createElement('input');
-                noneInput.type = 'hidden';
-                noneInput.name = 'medication_log'; 
-                noneInput.value = 'none';
-                container.appendChild(noneInput);
                 return;
             }
 

@@ -154,8 +154,19 @@
                     <div class="child-info">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             <h3>{{ $child->first_name }} {{ $child->last_name }}</h3>
-                            <span class="status-badge {{ $child->status ?? 'pending' }}" style="font-size: 0.7em; padding: 2px 8px; border-radius: 12px; background: {{ ($child->status == 'active') ? '#d1fae5' : (($child->status == 'rejected') ? '#fee2e2' : '#fef3c7') }}; color: {{ ($child->status == 'active') ? '#065f46' : (($child->status == 'rejected') ? '#991b1b' : '#92400e') }};">
-                                {{ ucfirst($child->status ?? 'Pending') }}
+                            @php
+                                $statusColors = [
+                                    'active' => ['bg' => '#d1fae5', 'text' => '#065f46'],
+                                    'pending' => ['bg' => '#fef3c7', 'text' => '#92400e'],
+                                    'rejected' => ['bg' => '#fee2e2', 'text' => '#991b1b'],
+                                    'inactive' => ['bg' => '#f3f4f6', 'text' => '#374151'],
+                                    'activation_requested' => ['bg' => '#dbeafe', 'text' => '#1e40af'],
+                                ];
+                                $status = $child->status ?? 'pending';
+                                $colors = $statusColors[$status] ?? $statusColors['pending'];
+                            @endphp
+                            <span class="status-badge {{ $status }}" style="font-size: 0.7em; padding: 2px 8px; border-radius: 12px; background: {{ $colors['bg'] }}; color: {{ $colors['text'] }};">
+                                {{ ucfirst(str_replace('_', ' ', $status)) }}
                             </span>
                         </div>
                         <p class="age">{{ \Carbon\Carbon::parse($child->dob)->age }} years old</p>
@@ -218,6 +229,15 @@
                     <button class="action-btn btn-delete" onclick="deleteChild({{ $child->id }})">
                         <i class="fas fa-trash"></i> Delete
                     </button>
+                    @if($child->status === 'inactive')
+                    <button class="action-btn btn-edit" onclick="openReactivationModal({{ $child->id }})" style="background: #3b82f6; color: white; border: none;">
+                        <i class="fas fa-redo"></i> Reactivate
+                    </button>
+                    @elseif($child->status === 'activation_requested')
+                    <button class="action-btn" disabled style="opacity: 0.6; cursor: not-allowed; background: #93c5fd; color: white; border: none;">
+                        <i class="fas fa-clock"></i> Requested
+                    </button>
+                    @endif
                 </div>
             </div>
             @empty
@@ -347,6 +367,39 @@
                     <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
                     <button type="submit" class="btn-submit">
                         <i class="fas fa-save"></i> Save Child
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reactivation Modal -->
+    <div class="modal" id="reactivationModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Request Reactivation</h2>
+                <button class="close-modal" onclick="closeReactivationModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="reactivationForm" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <p style="margin-bottom: 20px; color: #666;">Select duration for renewal:</p>
+                    <div class="form-group">
+                        <label for="reactivationDuration">Duration (Weeks) <span style="color: red">*</span></label>
+                        <select id="reactivationDuration" name="duration" required style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px;">
+                            <option value="">Select duration</option>
+                            <option value="1">1 Week</option>
+                            <option value="2">2 Weeks</option>
+                            <option value="3">3 Weeks</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeReactivationModal()">Cancel</button>
+                    <button type="submit" class="btn-submit" style="background: #3b82f6;">
+                        <i class="fas fa-paper-plane"></i> Send Request
                     </button>
                 </div>
             </form>
@@ -579,6 +632,20 @@
             }
         });
 
+        // Reactivation Modal Functions
+        function openReactivationModal(childId) {
+            const modal = document.getElementById('reactivationModal');
+            constform = document.getElementById('reactivationForm');
+            const form = document.getElementById('reactivationForm'); // fix typo if any
+            
+            form.action = `/parent/child-profile/${childId}/request-activation`;
+            modal.classList.add('active');
+        }
+
+        function closeReactivationModal() {
+            document.getElementById('reactivationModal').classList.remove('active');
+        }
+        
         // Toggle Duration based on Package
         function toggleDuration() {
             const packageSelect = document.getElementById('package');

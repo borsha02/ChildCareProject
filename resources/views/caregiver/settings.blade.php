@@ -251,19 +251,33 @@
             const navItems = document.querySelectorAll('.settings-nav-item');
             const tabs = document.querySelectorAll('.settings-tab');
 
+            function activateTab(tabId) {
+                // Update Active State
+                navItems.forEach(nav => nav.classList.remove('active'));
+                const activeNav = document.querySelector(`[data-tab="${tabId}"]`);
+                if (activeNav) activeNav.classList.add('active');
+
+                // Show Content
+                tabs.forEach(tab => tab.classList.remove('active'));
+                const activeTab = document.getElementById(tabId + '-tab');
+                if (activeTab) activeTab.classList.add('active');
+            }
+
             navItems.forEach(item => {
                 item.addEventListener('click', function() {
                     const tabId = this.dataset.tab;
-
-                    // Update Active State
-                    navItems.forEach(nav => nav.classList.remove('active'));
-                    this.classList.add('active');
-
-                    // Show Content
-                    tabs.forEach(tab => tab.classList.remove('active'));
-                    document.getElementById(tabId + '-tab').classList.add('active');
+                    activateTab(tabId);
+                    window.location.hash = tabId;
                 });
             });
+
+            // Initial Tab Selection from Hash
+            const currentHash = window.location.hash.substring(1);
+            if (currentHash && document.getElementById(currentHash + '-tab')) {
+                activateTab(currentHash);
+            } else if ("{{ $errors->has('current_password') || $errors->has('new_password') ? 'security' : '' }}") {
+                activateTab('security');
+            }
 
             // Cancel Button Logic
             document.querySelectorAll('.btn-cancel').forEach(btn => {

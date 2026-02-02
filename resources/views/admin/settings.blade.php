@@ -154,9 +154,9 @@
                                 <span class="setting-description">Physical address</span>
                             </div>
                             <div class="setting-group">
-                                <label for="max_capacity">Maximum Capacity</label>
+                              <!--  <label for="max_capacity">Maximum Capacity</label>
                                 <input type="number" id="max_capacity" name="max_capacity" value="{{ $settings['general']['max_capacity'] ?? '' }}">
-                                <span class="setting-description">Total children capacity</span>
+                                <span class="setting-description">Total children capacity</span> -->
                             </div>
                         </div>
                     </div>

@@ -140,6 +140,21 @@ class ParentController extends Controller
 
     public function childProfile()
     {
+        // Lazy expiration check
+        $expiredChildren = \App\Models\Child::where('parent_id', auth()->id())
+            ->where('status', 'active')
+            ->where('package', 'weekly')
+            ->whereNotNull('enrollment_date')
+            ->whereNotNull('duration')
+            ->get();
+
+        foreach ($expiredChildren as $child) {
+            $expirationDate = $child->enrollment_date->copy()->addWeeks($child->duration);
+            if ($expirationDate->isPast()) {
+                $child->update(['status' => 'inactive']);
+            }
+        }
+
         $children = \App\Models\Child::with('caregivers')->where('parent_id', auth()->id())->get();
         return view('parent.child-profile', compact('children'));
     }
@@ -202,6 +217,24 @@ class ParentController extends Controller
         return redirect()->route('parent.child-profile')->with('success', 'Child profile deleted successfully!');
     }
 
+    public function requestActivation(Request $request, $id)
+    {
+        $child = \App\Models\Child::where('parent_id', auth()->id())->findOrFail($id);
+        
+        $request->validate([
+            'duration' => 'required|integer|min:1|max:52', // Assuming max 52 weeks reasonable limit
+        ]);
+
+        if ($child->status === 'inactive') {
+            $child->status = 'activation_requested';
+            $child->duration = $request->duration;
+            $child->save();
+            return redirect()->back()->with('success', 'Activation request for ' . $request->duration . ' weeks sent successfully. Admin approval pending.');
+        }
+
+        return redirect()->back()->with('error', 'Child is not inactive or already requested.');
+    }
+
 
     public function reports(Request $request)
     {
@@ -220,8 +253,9 @@ class ParentController extends Controller
         $childId = $request->input('child_id');
         $date = $request->input('date', now('Asia/Dhaka')->toDateString());
 
-        // Base query
-        $reportsQuery = \App\Models\DailyReport::whereIn('child_id', $childIds);
+        // Base query - only show completed reports to parents
+        $reportsQuery = \App\Models\DailyReport::whereIn('child_id', $childIds)
+            ->where('status', 'completed');
 
         // Apply child filter
         if ($childId && in_array($childId, $childIds->toArray())) {
@@ -506,7 +540,7 @@ class ParentController extends Controller
             ->flatten()
             ->unique('id');
 
-        // 2. Get any other users we have messaged with (e.g. Admins)
+        // 2. Get any other users we have messaged with (Admins)
         $messagedUserIds = \App\Models\Message::where('sender_id', auth()->id())
             ->pluck('receiver_id')
             ->merge(\App\Models\Message::where('receiver_id', auth()->id())->pluck('sender_id'))

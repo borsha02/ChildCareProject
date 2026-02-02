@@ -28,6 +28,7 @@ class Child extends Model
 
     protected $casts = [
         'dob' => 'date',
+        'enrollment_date' => 'date',
     ];
 
     public function parent()

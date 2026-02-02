@@ -176,7 +176,8 @@ class CaregiverController extends Controller
         // Recent reports list (limited)
         $recentReports = \App\Models\DailyReport::where('caregiver_id', $user->id)
             ->with('child')
-            ->latest('report_date')
+            ->orderByDesc('report_date')
+            ->orderByDesc('id')
             ->take(10)
             ->get();
 
@@ -222,7 +223,8 @@ class CaregiverController extends Controller
         ]);
 
         // Determine status based on action
-        $status = $request->input('submit_action') === 'complete' ? 'completed' : 'draft';
+        $submitAction = $request->input('submit_action');
+        $status = ($submitAction === 'complete') ? 'completed' : 'draft';
 
         \App\Models\DailyReport::updateOrCreate(
             [
@@ -643,11 +645,11 @@ class CaregiverController extends Controller
     {
         $request->validate([
             'current_password' => 'required|current_password',
-            'password' => 'required|confirmed|min:8',
+            'new_password' => 'required|confirmed|min:8',
         ]);
 
         auth()->user()->update([
-            'password' => \Illuminate\Support\Facades\Hash::make($request->password),
+            'password' => \Illuminate\Support\Facades\Hash::make($request->new_password),
         ]);
 
         return back()->with('success', 'Password updated successfully.');
