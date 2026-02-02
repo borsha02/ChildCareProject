@@ -6,109 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance - Childcare Management</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    @vite(['resources/css/admin/attendance.css'])
+    @vite(['resources/css/admin/attendance.css', 'resources/css/admin/attendance-list.css'])
 </head>
 
 <body>
     <div class="dashboard-container">
         <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <i class="fas fa-shield-alt"></i>
-                    <h2>Admin Panel</h2>
-                </div>
-                <div class="user-info">
-                    <div class="user-avatar">AD</div>
-                    <div class="user-details">
-                        <h4>Administrator</h4>
-                        <p>System Admin</p>
-                    </div>
-                </div>
-            </div>
-
-            <nav class="nav-menu">
-                <div class="nav-section">
-                    <div class="nav-section-title">Main Menu</div>
-                    <a href="{{ route('admin.dashboard') }}" class="nav-item">
-                        <i class="fas fa-home"></i>
-                        <span>Dashboard</span>
-                    </a>
-                    <a href="{{ route('admin.analytics') }}" class="nav-item">
-                        <i class="fas fa-chart-line"></i>
-                        <span>Analytics</span>
-                    </a>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">User Management</div>
-                    <a href="{{ route('admin.users') }}" class="nav-item">
-                        <i class="fas fa-users"></i>
-                        <span>Manage Users</span>
-                    </a>
-                    <a href="{{ route('admin.children') }}" class="nav-item">
-                        <i class="fas fa-child"></i>
-                        <span>Child Records</span>
-                    </a>
-                    <a href="{{ route('admin.staff') }}" class="nav-item">
-                        <i class="fas fa-user-tie"></i>
-                        <span>Staff Management</span>
-                    </a>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">Operations</div>
-                    <a href="{{ route('admin.attendance') }}" class="nav-item active">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Attendance</span>
-                    </a>
-                    <a href="{{ route('admin.reports') }}" class="nav-item">
-                        <i class="fas fa-file-alt"></i>
-                        <span>Daily Reports</span>
-                    </a>
-                    <a href="{{ route('admin.invoices') }}" class="nav-item">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        <span>Billing & Invoices</span>
-                    </a>
-                    <a href="{{ route('admin.payments.pending') }}" class="nav-item">
-                        <i class="fas fa-credit-card"></i>
-                        <span>Payment Approvals</span>
-                    </a>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">Communication</div>
-                    <a href="{{ route('admin.announcements') }}" class="nav-item">
-                        <i class="fas fa-bullhorn"></i>
-                        <span>Announcements</span>
-                    </a>
-                    <a href="{{ route('admin.communication') }}" class="nav-item">
-                        <i class="fas fa-comments"></i>
-                        <span>Communication Logs</span>
-                    </a>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">System</div>
-                    <a href="{{ route('admin.settings') }}" class="nav-item">
-                        <i class="fas fa-cog"></i>
-                        <span>Settings</span>
-                    </a>
-                    <a href="{{ route('admin.backup') }}" class="nav-item">
-                        <i class="fas fa-database"></i>
-                        <span>Backup & Restore</span>
-                    </a>
-                    <a href="{{ route('logout') }}" class="nav-item"
-                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </a>
-                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                        @csrf
-                    </form>
-                </div>
-            </nav>
-        </aside>
+        @include('admin.partials.sidebar')
 
         <!-- Main Content -->
         <main class="main-content">
@@ -116,10 +20,15 @@
                 <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
                     <i class="fas fa-bars"></i>
                 </button>
-                <h1>Attendance Monitoring</h1>
+                <div style="display: flex; align-items: center;">
+                    <a href="{{ route('admin.dashboard') }}" class="back-dashboard-icon">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1>Attendance Monitoring</h1>
+                </div>
                 <div class="top-bar-actions">
-                    <input type="date" class="date-picker" value="{{ date('Y-m-d') }}">
-                    <button class="export-btn" onclick="exportAttendance()">
+                    <input type="date" id="attendance_date" class="date-picker" value="{{ $date }}" onchange="window.location.href='{{ route('admin.attendance') }}?date=' + this.value">
+                    <button class="export-btn" onclick="window.location.href='{{ route('admin.attendance.export') }}?date={{ $date }}'">
                         <i class="fas fa-download"></i>
                         Export Report
                     </button>
@@ -129,261 +38,177 @@
             <div class="content-area">
                 <!-- Statistics Row -->
                 <div class="stats-row">
-                    <div class="stat-card">
+                    <div class="stat-card clickable" onclick="showChildrenModal('present')">
                         <div class="stat-label">Present Today</div>
-                        <div class="stat-value">{{ $stats['present_today'] ?? 85 }}</div>
-                        <div class="stat-percentage">Out of 100 children</div>
+                        <div class="stat-value">{{ $stats['present_today'] }}</div>
+                        <div class="stat-percentage">Out of {{ $children->count() }} children</div>
                     </div>
-                    <div class="stat-card red">
+                    <div class="stat-card red clickable" onclick="showChildrenModal('absent')">
                         <div class="stat-label">Absent Today</div>
-                        <div class="stat-value">{{ $stats['absent_today'] ?? 12 }}</div>
-                        <div class="stat-percentage">12% absence rate</div>
+                        <div class="stat-value">{{ $stats['absent_today'] }}</div>
+                        <div class="stat-percentage">{{ $children->count() > 0 ? round(($stats['absent_today'] / $children->count()) * 100) : 0 }}% absence rate</div>
                     </div>
-                    <div class="stat-card orange">
+                    <div class="stat-card orange clickable" onclick="showChildrenModal('late')">
                         <div class="stat-label">Late Arrivals</div>
-                        <div class="stat-value">{{ $stats['late_today'] ?? 3 }}</div>
-                        <div class="stat-percentage">3% late rate</div>
+                        <div class="stat-value">{{ $stats['late_today'] }}</div>
+                        <div class="stat-percentage">{{ $children->count() > 0 ? round(($stats['late_today'] / $children->count()) * 100) : 0 }}% late rate</div>
                     </div>
                     <div class="stat-card green">
                         <div class="stat-label">Attendance Rate</div>
-                        <div class="stat-value">{{ $stats['attendance_rate'] ?? 85 }}%</div>
-                        <div class="stat-percentage">Above average</div>
+                        <div class="stat-value">{{ $stats['attendance_rate'] }}%</div>
+                        <div class="stat-percentage">Daily Average</div>
                     </div>
                 </div>
 
-                <!-- Attendance Table -->
-                <div class="attendance-card">
-                    <div class="card-header">
-                        <h3>Today's Attendance</h3>
-                        <div class="filter-tabs">
-                            <button class="tab-btn active" onclick="filterAttendance('all')">All</button>
-                            <button class="tab-btn" onclick="filterAttendance('present')">Present</button>
-                            <button class="tab-btn" onclick="filterAttendance('absent')">Absent</button>
-                            <button class="tab-btn" onclick="filterAttendance('late')">Late</button>
+
+                <!-- Children List Section -->
+                <div class="children-list-section" id="childrenListSection" style="display: none;">
+                    <div class="list-header">
+                        <h3 id="listTitle">Children Details</h3>
+                        <div class="header-buttons">
+                            <button class="download-pdf-btn" id="downloadPdfBtn" style="display: none;" onclick="downloadAbsentPDF()">
+                                <i class="fas fa-download"></i> Download PDF
+                            </button>
+                            <button class="close-list-btn" onclick="closeChildrenList()">
+                                <i class="fas fa-times"></i> Close
+                            </button>
                         </div>
                     </div>
-
-                    <div class="search-box">
-                        <input type="text" placeholder="Search by child name or class..." id="searchInput">
-                        <i class="fas fa-search"></i>
-                    </div>
-
-                    <table class="attendance-table">
-                        <thead>
-                            <tr>
-                                <th>Child Name</th>
-                                <th>Class</th>
-                                <th>Status</th>
-                                <th>Check-In Time</th>
-                                <th>Check-Out Time</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="attendanceTableBody">
-                            <!-- Sample Data -->
-                            <tr data-status="present">
-                                <td>
-                                    <div class="student-info">
-                                        <div class="student-avatar">EM</div>
-                                        <div class="student-details">
-                                            <h4>Emma Martinez</h4>
-                                            <p>ID: CH001</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Preschool A</td>
-                                <td><span class="status-badge present">Present</span></td>
-                                <td><span class="time-badge">8:15 AM</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-status="present">
-                                <td>
-                                    <div class="student-info">
-                                        <div class="student-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">LJ</div>
-                                        <div class="student-details">
-                                            <h4>Lucas Johnson</h4>
-                                            <p>ID: CH002</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Toddler B</td>
-                                <td><span class="status-badge present">Present</span></td>
-                                <td><span class="time-badge">7:45 AM</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-status="late">
-                                <td>
-                                    <div class="student-info">
-                                        <div class="student-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">SW</div>
-                                        <div class="student-details">
-                                            <h4>Sophia Williams</h4>
-                                            <p>ID: CH003</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Kindergarten</td>
-                                <td><span class="status-badge late">Late</span></td>
-                                <td><span class="time-badge">9:30 AM</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-status="absent">
-                                <td>
-                                    <div class="student-info">
-                                        <div class="student-avatar" style="background: linear-gradient(135deg, #ef4444, #dc2626);">OB</div>
-                                        <div class="student-details">
-                                            <h4>Oliver Brown</h4>
-                                            <p>ID: CH004</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Preschool B</td>
-                                <td><span class="status-badge absent">Absent</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-status="present">
-                                <td>
-                                    <div class="student-info">
-                                        <div class="student-avatar" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">AD</div>
-                                        <div class="student-details">
-                                            <h4>Ava Davis</h4>
-                                            <p>ID: CH005</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Toddler A</td>
-                                <td><span class="status-badge present">Present</span></td>
-                                <td><span class="time-badge">8:00 AM</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-status="present">
-                                <td>
-                                    <div class="student-info">
-                                        <div class="student-avatar" style="background: linear-gradient(135deg, #ec4899, #db2777);">NM</div>
-                                        <div class="student-details">
-                                            <h4>Noah Miller</h4>
-                                            <p>ID: CH006</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>Preschool A</td>
-                                <td><span class="status-badge present">Present</span></td>
-                                <td><span class="time-badge">8:20 AM</span></td>
-                                <td><span class="time-badge">-</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon view" title="View Details">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon edit" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-
-                    <!-- Pagination -->
-                    <div class="pagination">
-                        <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
-                        <button class="page-btn active">1</button>
-                        <button class="page-btn">2</button>
-                        <button class="page-btn">3</button>
-                        <button class="page-btn">4</button>
-                        <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
-                    </div>
+                    <div id="childrenListContent"></div>
                 </div>
+
             </div>
+            <!-- Toast Container -->
+            <div class="toast-container" id="toastContainer"></div>
         </main>
     </div>
 
     <script>
-        // Filter attendance by status
-        function filterAttendance(status) {
-            const rows = document.querySelectorAll('#attendanceTableBody tr');
-            const tabs = document.querySelectorAll('.tab-btn');
+        // Children data from backend
+        @php
+            $childrenArray = $children->map(function($child) {
+                $record = $child->attendances->first();
+                return [
+                    'id' => $child->id,
+                    'first_name' => $child->first_name,
+                    'last_name' => $child->last_name,
+                    'class' => $child->class,
+                    'status' => $record ? $record->status : 'absent',
+                    'check_in_time' => $record && $record->check_in_time ? \Carbon\Carbon::parse($record->check_in_time)->format('h:i A') : 'N/A',
+                    'check_out_time' => $record && $record->check_out_time ? \Carbon\Carbon::parse($record->check_out_time)->format('h:i A') : 'N/A',
+                    'notes' => $record ? $record->notes : '',
+                    'parent_name' => $child->parent ? $child->parent->name : 'N/A',
+                    'parent_phone' => $child->parent ? $child->parent->phone : 'N/A'
+                ];
+            })->values();
+        @endphp
+        const childrenData = @json($childrenArray);
 
-            // Update active tab
-            tabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
-
-            // Filter rows
-            rows.forEach(row => {
-                if (status === 'all') {
-                    row.style.display = '';
+        function showChildrenModal(status) {
+            const listSection = document.getElementById('childrenListSection');
+            const listTitle = document.getElementById('listTitle');
+            const childrenListContent = document.getElementById('childrenListContent');
+            
+            // Filter children by status (case-insensitive)
+            const filteredChildren = childrenData.filter(child => {
+                return child.status && child.status.toLowerCase() === status.toLowerCase();
+            });
+            
+            // Update title
+            const statusTitles = {
+                'present': 'Present Children',
+                'absent': 'Absent Children',
+                'late': 'Late Arrivals'
+            };
+            listTitle.textContent = statusTitles[status] || 'Children Details';
+            
+            // Generate HTML for children list
+            if (filteredChildren.length === 0) {
+                childrenListContent.innerHTML = '<p class="no-data">No children found with this status.</p>';
+            } else {
+                // Different table headers based on status
+                let tableHeaders = '';
+                if (status === 'absent') {
+                    tableHeaders = '<th>Name</th><th>Class</th><th>Parent Name</th><th>Parent Phone</th>';
                 } else {
-                    row.style.display = row.dataset.status === status ? '' : 'none';
+                    tableHeaders = '<th>Name</th><th>Class</th><th>Check-in</th><th>Check-out</th>';
                 }
-            });
+                
+                let html = `<table class="children-table"><thead><tr>${tableHeaders}</tr></thead><tbody>`;
+                
+                filteredChildren.forEach(child => {
+                    if (status === 'absent') {
+                        // Absent children - show parent info
+                        html += `
+                            <tr>
+                                <td>
+                                    <div class="table-student-info">
+                                        <div class="table-student-avatar" style="background: #${Math.floor(Math.random()*16777215).toString(16)};">
+                                            ${child.first_name.charAt(0)}${child.last_name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <div class="table-student-name">${child.first_name} ${child.last_name}</div>
+                                            <div class="table-student-id">ID: CH${String(child.id).padStart(3, '0')}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>${child.class}</td>
+                                <td><strong>${child.parent_name}</strong></td>
+                                <td><a href="tel:${child.parent_phone}" class="phone-link">${child.parent_phone}</a></td>
+                            </tr>
+                        `;
+                    } else {
+                        // Present/Late children - show check-in/out times
+                        html += `
+                            <tr>
+                                <td>
+                                    <div class="table-student-info">
+                                        <div class="table-student-avatar" style="background: #${Math.floor(Math.random()*16777215).toString(16)};">
+                                            ${child.first_name.charAt(0)}${child.last_name.charAt(0)}
+                                        </div>
+                                        <div>
+                                            <div class="table-student-name">${child.first_name} ${child.last_name}</div>
+                                            <div class="table-student-id">ID: CH${String(child.id).padStart(3, '0')}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>${child.class}</td>
+                                <td>${child.check_in_time}</td>
+                                <td>${child.check_out_time}</td>
+                            </tr>
+                        `;
+                    }
+                });
+                
+                html += '</tbody></table>';
+                childrenListContent.innerHTML = html;
+            }
+            
+            // Show/hide download button based on status
+            const downloadBtn = document.getElementById('downloadPdfBtn');
+            if (status === 'absent') {
+                downloadBtn.style.display = 'inline-flex';
+            } else {
+                downloadBtn.style.display = 'none';
+            }
+            
+            // Show list section with smooth scroll
+            listSection.style.display = 'block';
+            setTimeout(() => {
+                listSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
         }
 
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const rows = document.querySelectorAll('#attendanceTableBody tr');
-
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        });
-
-        // Export attendance
-        function exportAttendance() {
-            alert('Exporting attendance report...\nThis will download a CSV/Excel file with all attendance data.');
-            // In real implementation, this would trigger a download
+        function downloadAbsentPDF() {
+            const date = document.getElementById('attendance_date').value;
+            window.location.href = '{{ route("admin.attendance.absent-pdf") }}?date=' + date;
         }
+
+        function closeChildrenList() {
+            const listSection = document.getElementById('childrenListSection');
+            listSection.style.display = 'none';
+        }
+
 
         // Mobile menu toggle
         const mobileToggle = document.querySelector('.mobile-toggle');
@@ -402,6 +227,32 @@
                     sidebar.classList.remove('active');
                 }
             }
+        });
+
+        // Ensure correct date based on client timezone
+        document.addEventListener('DOMContentLoaded', () => {
+             const dateInput = document.getElementById('attendance_date');
+             if (!dateInput) return;
+ 
+             const urlParams = new URLSearchParams(window.location.search);
+             const hasDateParam = urlParams.has('date');
+ 
+             if (!hasDateParam) {
+                 const serverDate = dateInput.value;
+                 const clientDate = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+ 
+                 if (serverDate !== clientDate) {
+                     // Redirect to client date to load correct data
+                     window.location.search = `?date=${clientDate}`;
+                 }
+             }
+             
+             // Set max date to today (client-side)
+             const today = new Date();
+             const year = today.getFullYear();
+             const month = String(today.getMonth() + 1).padStart(2, '0');
+             const day = String(today.getDate()).padStart(2, '0');
+             dateInput.max = `${year}-${month}-${day}`;
         });
     </script>
 </body>

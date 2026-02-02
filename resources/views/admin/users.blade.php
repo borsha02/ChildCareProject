@@ -10,95 +10,7 @@
 <body>
     <div class="dashboard-container">
         <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <i class="fas fa-shield-alt"></i>
-                    <h2>Admin Panel</h2>
-                </div>
-                <div class="user-info">
-                    <div class="user-avatar">AD</div>
-                    <div class="user-details">
-                        <h4>Administrator</h4>
-                        <p>System Admin</p>
-                    </div>
-                </div>
-            </div>
-            <nav class="nav-menu">
-                <div class="nav-section">
-                    <div class="nav-section-title">Main Menu</div>
-                    <a href="{{ route('admin.dashboard') }}" class="nav-item">
-                        <i class="fas fa-home"></i>
-                        <span>Dashboard</span>
-                    </a>
-                    <a href="{{ route('admin.analytics') }}" class="nav-item">
-                        <i class="fas fa-chart-line"></i>
-                        <span>Analytics</span>
-                    </a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">User Management</div>
-                    <a href="{{ route('admin.users') }}" class="nav-item active">
-                        <i class="fas fa-users"></i>
-                        <span>Manage Users</span>
-                    </a>
-                    <a href="{{ route('admin.children') }}" class="nav-item">
-                        <i class="fas fa-child"></i>
-                        <span>Child Records</span>
-                    </a>
-                    <a href="{{ route('admin.staff') }}" class="nav-item">
-                        <i class="fas fa-user-tie"></i>
-                        <span>Staff Management</span>
-                    </a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">Operations</div>
-                    <a href="{{ route('admin.attendance') }}" class="nav-item">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Attendance</span>
-                    </a>
-                    <a href="{{ route('admin.reports') }}" class="nav-item">
-                        <i class="fas fa-file-alt"></i>
-                        <span>Daily Reports</span>
-                    </a>
-                    <a href="{{ route('admin.invoices') }}" class="nav-item">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        <span>Billing & Invoices</span>
-                    </a>
-                    <a href="{{ route('admin.payments.pending') }}" class="nav-item">
-                        <i class="fas fa-credit-card"></i>
-                        <span>Payment Approvals</span>
-                    </a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">Communication</div>
-                    <a href="{{ route('admin.announcements') }}" class="nav-item">
-                        <i class="fas fa-bullhorn"></i>
-                        <span>Announcements</span>
-                    </a>
-                    <a href="{{ route('admin.communication') }}" class="nav-item">
-                        <i class="fas fa-comments"></i>
-                        <span>Communication Logs</span>
-                    </a>
-                </div>
-                <div class="nav-section">
-                    <div class="nav-section-title">System</div>
-                    <a href="{{ route('admin.settings') }}" class="nav-item">
-                        <i class="fas fa-cog"></i>
-                        <span>Settings</span>
-                    </a>
-                    <a href="{{ route('admin.backup') }}" class="nav-item">
-                        <i class="fas fa-database"></i>
-                        <span>Backup & Restore</span>
-                    </a>
-                    <a href="{{ route('logout') }}" class="nav-item" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </a>
-                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">@csrf</form>
-                </div>
-            </nav>
-        </aside>
+        @include('admin.partials.sidebar')
 
         <!-- Main Content -->
         <main class="main-content">
@@ -106,7 +18,12 @@
                 <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
                     <i class="fas fa-bars"></i>
                 </button>
-                <h1>User Management</h1>
+                <div style="display: flex; align-items: center;">
+                    <a href="{{ route('admin.dashboard') }}" class="back-dashboard-icon">
+                        <i class="fas fa-arrow-left"></i>
+                    </a>
+                    <h1>User Management</h1>
+                </div>
                 <div class="top-bar-actions">
                     <button class="add-btn" onclick="openModal()">
                         <i class="fas fa-plus"></i>
@@ -119,12 +36,19 @@
                 <!-- Users Table -->
                 <div class="users-card">
                     <div class="card-header">
-                        <h3>All Users</h3>
+                        <h3 id="pageTitle">All Users</h3>
                         <div class="filter-tabs">
-                            <button class="tab-btn active" onclick="filterByRole('all')">All</button>
-                            <button class="tab-btn" onclick="filterByRole('admin')">Admins</button>
-                            <button class="tab-btn" onclick="filterByRole('parent')">Parents</button>
-                            <button class="tab-btn" onclick="filterByRole('caregiver')">Staff</button>
+                            <button class="tab-btn active" onclick="switchView('users', 'all')">All</button>
+                            <button class="tab-btn" onclick="switchView('users', 'admin')">Admins</button>
+                            <button class="tab-btn" onclick="switchView('users', 'parent')">Parents</button>
+                            <button class="tab-btn" onclick="switchView('users', 'caregiver')">Staff</button>
+                            <button class="tab-btn" onclick="switchView('children', 'all')">Children</button>
+                            
+                            <!-- Hidden Package Filters (Only for Children View) -->
+                            <span id="packageFilters" style="display: none; border-left: 1px solid #ddd; padding-left: 10px; margin-left: 5px;">
+                                <button class="tab-btn" onclick="filterChildren('monthly')">Monthly Package</button>
+                                <button class="tab-btn" onclick="filterChildren('weekly')">Weekly Package</button>
+                            </span>
                         </div>
                     </div>
 
@@ -133,197 +57,141 @@
                         <i class="fas fa-search"></i>
                     </div>
 
-                    <table class="users-table">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                                <th>Role</th>
-                                <th>Status</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="usersTableBody">
-                            <!-- Sample Users -->
-                            <tr data-role="admin" data-status="active">
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-small">JD</div>
-                                        <div class="user-details-small">
-                                            <h4>John Doe</h4>
-                                            <p>ID: U001</p>
+                    <div id="usersView">
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Role</th>
+                                    <th>Children</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                @forelse($users as $user)
+                                <tr data-role="{{ $user->role }}" data-status="{{ $user->status }}">
+                                    <td>
+                                        <div class="user-info-cell">
+                                            <div class="user-avatar-small" style="background: {{ '#' . substr(md5($user->name), 0, 6) }};">
+                                                {{ strtoupper(substr($user->name, 0, 2)) }}
+                                            </div>
+                                            <div class="user-details-small">
+                                                <h4>{{ $user->name }}</h4>
+                                                <p>ID: #{{ $user->id }}</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                </td>
-                                <td>john.doe@childcare.com</td>
-                                <td>+1 234-567-8901</td>
-                                <td><span class="role-badge admin">Admin</span></td>
-                                <td><span class="status-badge active">Active</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon edit" title="Edit" onclick="editUser(1)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon role" title="Assign Role">
-                                            <i class="fas fa-user-tag"></i>
-                                        </button>
-                                        <button class="action-icon delete" title="Delete" onclick="deleteUser(1)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-role="parent" data-status="active">
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-small" style="background: linear-gradient(135deg, #10b981, #059669);">SM</div>
-                                        <div class="user-details-small">
-                                            <h4>Sarah Martinez</h4>
-                                            <p>ID: U002</p>
+                                    </td>
+                                    <td>{{ $user->email }}</td>
+                                    <td>{{ $user->phone }}</td>
+                                    <td><span class="role-badge {{ $user->role }}">{{ ucfirst($user->role) }}</span></td>
+                                    <td>
+                                        @if($user->role === 'parent' && $user->children->count() > 0)
+                                            <div style="font-size: 0.85em; line-height: 1.4;">
+                                                @foreach($user->children as $child)
+                                                    <div>
+                                                        <strong>{{ $child->first_name }}</strong>
+                                                        <span style="color: #6b7280; font-size: 0.9em;">({{ ucfirst($child->package) }})</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span style="color: #9ca3af;">--</span>
+                                        @endif
+                                    </td>
+                                    <td><span class="status-badge {{ $user->status }}">{{ ucfirst($user->status) }}</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-icon edit" title="Edit" onclick="editUser({{ json_encode($user) }}, '{{ route('admin.users.update', $user->id) }}')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <form action="{{ route('admin.users.toggle', $user->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to {{ $user->status === 'active' ? 'deactivate' : 'activate' }} this user?');">
+                                                @csrf
+                                                <button type="submit" class="action-icon {{ $user->status === 'active' ? 'delete' : 'approve' }}" title="{{ $user->status === 'active' ? 'Deactivate' : 'Activate' }}">
+                                                    <i class="fas fa-{{ $user->status === 'active' ? 'ban' : 'check' }}"></i>
+                                                </button>
+                                            </form>
                                         </div>
-                                    </div>
-                                </td>
-                                <td>sarah.m@email.com</td>
-                                <td>+1 234-567-8902</td>
-                                <td><span class="role-badge parent">Parent</span></td>
-                                <td><span class="status-badge active">Active</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon edit" title="Edit" onclick="editUser(2)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon role" title="Assign Role">
-                                            <i class="fas fa-user-tag"></i>
-                                        </button>
-                                        <button class="action-icon delete" title="Delete" onclick="deleteUser(2)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-role="caregiver" data-status="active">
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-small" style="background: linear-gradient(135deg, #f59e0b, #d97706);">LJ</div>
-                                        <div class="user-details-small">
-                                            <h4>Lisa Johnson</h4>
-                                            <p>ID: U003</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>lisa.j@childcare.com</td>
-                                <td>+1 234-567-8903</td>
-                                <td><span class="role-badge caregiver">Caregiver</span></td>
-                                <td><span class="status-badge active">Active</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon edit" title="Edit" onclick="editUser(3)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon role" title="Assign Role">
-                                            <i class="fas fa-user-tag"></i>
-                                        </button>
-                                        <button class="action-icon delete" title="Delete" onclick="deleteUser(3)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-role="parent" data-status="active">
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-small" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">MJ</div>
-                                        <div class="user-details-small">
-                                            <h4>Michael Johnson</h4>
-                                            <p>ID: U004</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>michael.j@email.com</td>
-                                <td>+1 234-567-8904</td>
-                                <td><span class="role-badge parent">Parent</span></td>
-                                <td><span class="status-badge active">Active</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon edit" title="Edit" onclick="editUser(4)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon role" title="Assign Role">
-                                            <i class="fas fa-user-tag"></i>
-                                        </button>
-                                        <button class="action-icon delete" title="Delete" onclick="deleteUser(4)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-role="parent" data-status="inactive">
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-small" style="background: linear-gradient(135deg, #ef4444, #dc2626);">DB</div>
-                                        <div class="user-details-small">
-                                            <h4>David Brown</h4>
-                                            <p>ID: U005</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>david.b@email.com</td>
-                                <td>+1 234-567-8905</td>
-                                <td><span class="role-badge parent">Parent</span></td>
-                                <td><span class="status-badge inactive">Inactive</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon edit" title="Edit" onclick="editUser(5)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon role" title="Assign Role">
-                                            <i class="fas fa-user-tag"></i>
-                                        </button>
-                                        <button class="action-icon delete" title="Delete" onclick="deleteUser(5)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr data-role="caregiver" data-status="active">
-                                <td>
-                                    <div class="user-info-cell">
-                                        <div class="user-avatar-small" style="background: linear-gradient(135deg, #ec4899, #db2777);">ED</div>
-                                        <div class="user-details-small">
-                                            <h4>Emily Davis</h4>
-                                            <p>ID: U006</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>emily.d@childcare.com</td>
-                                <td>+1 234-567-8906</td>
-                                <td><span class="role-badge caregiver">Caregiver</span></td>
-                                <td><span class="status-badge active">Active</span></td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-icon edit" title="Edit" onclick="editUser(6)">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-icon role" title="Assign Role">
-                                            <i class="fas fa-user-tag"></i>
-                                        </button>
-                                        <button class="action-icon delete" title="Delete" onclick="deleteUser(6)">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 20px;">No users found.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                        <!-- Pagination -->
+                        <div class="pagination">
+                            {{ $users->links() }}
+                        </div>
+                    </div>
 
-                    <!-- Pagination -->
-                    <div class="pagination">
-                        <button class="page-btn"><i class="fas fa-chevron-left"></i></button>
-                        <button class="page-btn active">1</button>
-                        <button class="page-btn">2</button>
-                        <button class="page-btn">3</button>
-                        <button class="page-btn"><i class="fas fa-chevron-right"></i></button>
+                    <!-- Children View (Hidden by default) -->
+                    <div id="childrenView" style="display: none;">
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th>Child Name</th>
+                                    <th>Age</th>
+                                    <th>Class</th>
+                                    <th>Parent</th>
+                                    <th>Package</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="childrenTableBody">
+                                @forelse($enrolledChildren as $child)
+                                <tr data-package="{{ strtolower($child->package) }}" data-class="{{ $child->class }}">
+                                    <td>
+                                        <div class="user-info-cell">
+                                            <div class="user-avatar-small" style="background: {{ '#' . substr(md5($child->first_name . $child->last_name), 0, 6) }};">
+                                                {{ strtoupper(substr($child->first_name, 0, 1) . substr($child->last_name, 0, 1)) }}
+                                            </div>
+                                            <div class="user-details-small">
+                                                <h4>{{ $child->first_name }} {{ $child->last_name }}</h4>
+                                                <p>ID: CH{{ str_pad($child->id, 3, '0', STR_PAD_LEFT) }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ \Carbon\Carbon::parse($child->dob)->age }} yrs</td>
+                                    <td>{{ $child->class }}</td>
+                                    <td>
+                                        @if($child->parent)
+                                            {{ $child->parent->name }}
+                                            <div style="font-size: 0.8em; color: #666;">{{ $child->parent->phone }}</div>
+                                        @else
+                                            <span style="color: #999;">N/A</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span style="font-weight: 500;">{{ ucfirst($child->package) }}</span>
+                                        @if($child->package == 'weekly' && $child->duration)
+                                            <span style="font-size: 0.8em; color: #666;">({{ $child->duration }} wks)</span>
+                                        @endif
+                                    </td>
+                                    <td><span class="status-badge {{ $child->status }}">{{ ucfirst($child->status) }}</span></td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="action-icon view" title="View Details" onclick="viewChildDetails({{ json_encode($child) }})">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <a href="{{ route('admin.children') }}" class="action-icon edit" title="Go to Child Records" style="text-decoration: none;">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="7" style="text-align: center; padding: 20px;">No children found.</td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -381,53 +249,188 @@
         </div>
     </div>
 
+    <!-- Child Details Modal -->
+    <div class="modal-overlay" id="childDetailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Child Details</h2>
+                <button class="close-modal" onclick="closeChildModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="childDetailsBody">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
     <script>
         function openModal() {
             document.getElementById('userModal').classList.add('active');
+            document.getElementById('modalTitle').textContent = 'Add New User';
+            document.querySelector('#userModal form').action = "{{ route('admin.users.create') }}";
+            document.querySelector('#userModal form').reset();
+            
+            const methodInput = document.querySelector('input[name="_method"]');
+            if (methodInput) methodInput.remove();
         }
 
         function closeModal() {
             document.getElementById('userModal').classList.remove('active');
         }
 
-        function editUser(id) {
+        function editUser(user, updateUrl) {
             document.getElementById('userModal').classList.add('active');
             document.getElementById('modalTitle').textContent = 'Edit User';
-            console.log('Editing user:', id);
+            
+            const form = document.querySelector('#userModal form');
+            form.action = updateUrl;
+
+            let methodInput = document.querySelector('input[name="_method"]');
+            if (!methodInput) {
+                methodInput = document.createElement('input');
+                methodInput.type = 'hidden';
+                methodInput.name = '_method';
+                methodInput.value = 'PUT';
+                form.appendChild(methodInput);
+            }
+
+            document.getElementById('name').value = user.name;
+            document.getElementById('email').value = user.email;
+            document.getElementById('phone').value = user.phone;
+            document.getElementById('role').value = user.role;
+            
+            document.getElementById('password').required = false;
+            document.getElementById('password_confirmation').required = false;
         }
 
-        function deleteUser(id) {
-            if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-                console.log('Deleting user:', id);
-                alert('User deleted successfully!');
+        function switchView(viewName, filter) {
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            if (event.target.tagName === 'BUTTON') {
+                event.target.classList.add('active');
+            }
+
+            const usersView = document.getElementById('usersView');
+            const childrenView = document.getElementById('childrenView');
+            const packageFilters = document.getElementById('packageFilters');
+            const pageTitle = document.getElementById('pageTitle');
+            const searchInput = document.getElementById('searchInput');
+
+            searchInput.value = '';
+
+            if (viewName === 'children') {
+                usersView.style.display = 'none';
+                childrenView.style.display = 'block';
+                packageFilters.style.display = 'inline-block';
+                pageTitle.textContent = 'All Children';
+                filterChildren('all');
+            } else {
+                usersView.style.display = 'block';
+                childrenView.style.display = 'none';
+                packageFilters.style.display = 'none';
+                pageTitle.textContent = 'All Users';
+                filterUsers(filter);
             }
         }
 
-        function filterByRole(role) {
+        function filterUsers(role) {
             const rows = document.querySelectorAll('#usersTableBody tr');
-            const tabs = document.querySelectorAll('.tab-btn');
-
-            tabs.forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
-
             rows.forEach(row => {
-                row.style.display = (role === 'all' || row.dataset.role === role) ? '' : 'none';
+                const show = role === 'all' || row.dataset.role === role;
+                row.style.display = show ? '' : 'none';
             });
         }
 
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            const searchTerm = e.target.value.toLowerCase();
-            const rows = document.querySelectorAll('#usersTableBody tr');
+        function filterChildren(packageType) {
+            if (event.target.tagName === 'BUTTON') {
+                const packageButtons = document.querySelectorAll('#packageFilters .tab-btn');
+                packageButtons.forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+            }
 
+            const rows = document.querySelectorAll('#childrenTableBody tr');
+            rows.forEach(row => {
+                if (packageType === 'all') {
+                    row.style.display = '';
+                } else {
+                    const rowPackage = row.dataset.package;
+                    row.style.display = rowPackage === packageType ? '' : 'none';
+                }
+            });
+        }
+
+        // Child Details Modal
+        function viewChildDetails(child) {
+            const modal = document.getElementById('childDetailsModal');
+            const body = document.getElementById('childDetailsBody');
+            
+             body.innerHTML = `
+                <div class="view-details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div>
+                        <strong>Name:</strong> <p>${child.first_name} ${child.last_name}</p>
+                    </div>
+                    <div>
+                         <strong>DOB:</strong> <p>${child.dob.split('T')[0]}</p>
+                    </div>
+                    <div>
+                        <strong>Class:</strong> <p>${child.class}</p>
+                    </div>
+                     <div>
+                        <strong>Package:</strong> <p>${ucFirst(child.package)} ${child.package==='weekly' && child.duration ? '('+child.duration+' wks)' : ''}</p>
+                    </div>
+                    <div>
+                        <strong>Parent Name:</strong> <p>${child.parent ? child.parent.name : 'N/A'}</p>
+                    </div>
+                     <div>
+                        <strong>Parent Phone:</strong> <p>${child.parent ? child.parent.phone : 'N/A'}</p>
+                    </div>
+                     <div style="grid-column: 1 / -1;">
+                        <strong>Medical Notes:</strong> 
+                        <p style="background: #f9f9f9; padding: 10px; border-radius: 4px;">${child.medical_notes || 'None'}</p>
+                    </div>
+                     <div style="grid-column: 1 / -1;">
+                        <strong>Allergies:</strong> 
+                        <p style="background: #f9f9f9; padding: 10px; border-radius: 4px;">${child.allergies || 'None'}</p>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.add('active');
+        }
+        
+        function closeChildModal() {
+            document.getElementById('childDetailsModal').classList.remove('active');
+        }
+        
+        function ucFirst(string) {
+            if (!string) return '';
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            const activeView = document.getElementById('childrenView').style.display === 'block' ? 'children' : 'users';
+            
+            const tbodyId = activeView === 'children' ? 'childrenTableBody' : 'usersTableBody';
+            const rows = document.querySelectorAll(`#${tbodyId} tr`);
+            
             rows.forEach(row => {
                 const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
+                row.style.display = text.includes(term) ? '' : 'none';
             });
         });
 
-        document.getElementById('userModal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
+        window.onclick = function(event) {
+            const userModal = document.getElementById('userModal');
+            const childModal = document.getElementById('childDetailsModal');
+            if (event.target == userModal) {
+                closeModal();
+            }
+            if (event.target == childModal) {
+                closeChildModal();
+            }
+        }
 
         document.addEventListener('click', (e) => {
             const sidebar = document.getElementById('sidebar');

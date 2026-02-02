@@ -14,12 +14,11 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <i class="fas fa-baby"></i>
-                    <h2>Childcare</h2>
+                    <h2>Little Stars Childcare</h2>
                 </div>
                 <div class="user-info">
-                    <div class="user-avatar">JD</div>
                     <div class="user-details">
-                        <h4>John Doe</h4>
+                        <h4>{{ Auth::user()->name }}</h4>
                         <p>Parent Account</p>
                     </div>
                 </div>
@@ -51,12 +50,17 @@
                     <a href="{{ route('parent.messages') }}" class="nav-item">
                         <i class="fas fa-comments"></i>
                         <span>Messages</span>
-                        <span class="badge">3</span>
+                        @php
+                            $unreadMessages = \App\Models\Message::where('receiver_id', Auth::id())->where('is_read', false)->count();
+                        @endphp
+                        @if($unreadMessages > 0)
+                            <span class="badge">{{ $unreadMessages }}</span>
+                        @endif
                     </a>
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
@@ -115,13 +119,13 @@
                     <h1>Settings</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <div class="search-box">
+                   <!-- <div class="search-box">
                         <input type="text" placeholder="Search settings...">
                         <i class="fas fa-search"></i>
-                    </div>
+                    </div> -->
                     <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
                     </a>
                     <a href="{{ route('parent.messages') }}" class="icon-btn">
                         <i class="fas fa-envelope"></i>
@@ -141,7 +145,7 @@
                             <i class="fas fa-lock"></i>
                             <span>Security</span>
                         </button>
-                        <button class="settings-nav-item" data-tab="notifications">
+                       <!-- <button class="settings-nav-item" data-tab="notifications">
                             <i class="fas fa-bell"></i>
                             <span>Notifications</span>
                         </button>
@@ -152,7 +156,7 @@
                         <button class="settings-nav-item" data-tab="preferences">
                             <i class="fas fa-sliders-h"></i>
                             <span>Preferences</span>
-                        </button>
+                        </button> -->
                     </div>
 
                     <!-- Settings Content -->
@@ -165,42 +169,36 @@
                                 </div>
                                 <div class="profile-section">
                                     <div class="profile-avatar-section">
-                                        <div class="profile-avatar-large">JD</div>
                                         <div class="profile-header-info">
-                                            <h3>John Doe</h3>
+                                            <h3>{{ Auth::user()->name }}</h3>
                                             <p>Parent Account</p>
-                                            <p>john.doe@example.com</p>
+                                            <p>{{ Auth::user()->email }}</p>
                                         </div>
                                     </div>
-                                    <form class="settings-form">
-                                        <div class="form-row">
-                                            <div class="form-group">
-                                                <label>First Name</label>
-                                                <input type="text" value="John" class="form-input">
-                                            </div>
-                                            <div class="form-group">
-                                                <label>Last Name</label>
-                                                <input type="text" value="Doe" class="form-input">
-                                            </div>
+                                    <form class="settings-form" action="{{ route('parent.settings.update') }}" method="POST">
+                                        @csrf
+                                        <div class="form-group">
+                                            <label>Full Name</label>
+                                            <input type="text" name="name" value="{{ Auth::user()->name }}" class="form-input" required>
                                         </div>
                                         <div class="form-group">
                                             <label>Email Address</label>
-                                            <input type="email" value="john.doe@example.com" class="form-input">
+                                            <input type="email" value="{{ Auth::user()->email }}" class="form-input" disabled style="background-color: #f3f4f6; cursor: not-allowed;">
                                         </div>
                                         <div class="form-row">
                                             <div class="form-group">
                                                 <label>Phone Number</label>
-                                                <input type="tel" value="+1 (555) 123-4567" class="form-input">
+                                                <input type="tel" name="phone" value="{{ Auth::user()->phone }}" class="form-input">
                                             </div>
-                                            <div class="form-group">
+                                           <!-- <div class="form-group">
                                                 <label>Date of Birth</label>
-                                                <input type="date" value="1985-06-15" class="form-input">
-                                            </div>
+                                                <input type="date" name="dob" value="{{ Auth::user()->dob }}" class="form-input">
+                                            </div> -->
                                         </div>
-                                        <div class="form-group">
+                                       <!-- <div class="form-group">
                                             <label>Address</label>
-                                            <input type="text" value="123 Main Street, New York, NY 10001" class="form-input">
-                                        </div>
+                                            <input type="text" name="address" value="{{ Auth::user()->address }}" class="form-input">
+                                        </div> -->
                                         <div class="form-actions">
                                             <button type="button" class="btn-cancel">Cancel</button>
                                             <button type="submit" class="btn-save">Save Changes</button>
@@ -216,18 +214,25 @@
                                 <div class="card-header">
                                     <h2><i class="fas fa-key"></i> Change Password</h2>
                                 </div>
-                                <form class="settings-form">
+                                <form class="settings-form" action="{{ route('parent.settings.password') }}" method="POST">
+                                    @csrf
                                     <div class="form-group">
                                         <label>Current Password</label>
-                                        <input type="password" class="form-input" placeholder="Enter current password">
+                                        <input type="password" name="current_password" class="form-input @error('current_password') is-invalid @enderror" placeholder="Enter current password" required>
+                                        @error('current_password')
+                                            <span class="text-danger" style="color: red; font-size: 0.875em;">{{ $message }}</span>
+                                        @enderror
                                     </div>
                                     <div class="form-group">
                                         <label>New Password</label>
-                                        <input type="password" class="form-input" placeholder="Enter new password">
+                                        <input type="password" name="new_password" class="form-input @error('new_password') is-invalid @enderror" placeholder="Enter new password" required>
+                                        @error('new_password')
+                                            <span class="text-danger" style="color: red; font-size: 0.875em;">{{ $message }}</span>
+                                        @enderror
                                     </div>
                                     <div class="form-group">
                                         <label>Confirm New Password</label>
-                                        <input type="password" class="form-input" placeholder="Confirm new password">
+                                        <input type="password" name="new_password_confirmation" class="form-input" placeholder="Confirm new password" required>
                                     </div>
                                     <div class="form-actions">
                                         <button type="submit" class="btn-save">Update Password</button>
@@ -346,10 +351,10 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Theme</label>
-                                    <select class="form-input">
-                                        <option>Light Mode</option>
-                                        <option>Dark Mode</option>
-                                        <option>Auto (System)</option>
+                                    <select class="form-input" id="themeSelect">
+                                        <option value="light">Light Mode</option>
+                                        <option value="dark">Dark Mode</option>
+                                        <option value="auto">Auto (System)</option>
                                     </select>
                                 </div>
                             </div>
@@ -360,22 +365,22 @@
                                 </div>
                                 <div class="form-group">
                                     <label>Language</label>
-                                    <select class="form-input">
-                                        <option>English (US)</option>
-                                        <option>Bangla</option>
+                                    <select class="form-input" id="languageSelect">
+                                        <option value="en-US">English (US)</option>
+                                        <option value="bn">Bangla</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
                                     <label>Timezone</label>
-                                    <select class="form-input">
-                                        <option>Bangladesh Standard Time (BST)</option>
-                                        <option>Indian Standard Time (IST)</option>
-                                        <option>Coordinated Universal Time (UTC)</option>
-                                        <option>Eastern Standard Time (EST)</option>
+                                    <select class="form-input" id="timezoneSelect">
+                                        <option value="BST">Bangladesh Standard Time (BST)</option>
+                                        <option value="IST">Indian Standard Time (IST)</option>
+                                        <option value="UTC">Coordinated Universal Time (UTC)</option>
+                                        <option value="EST">Eastern Standard Time (EST)</option>
                                     </select>
                                 </div>
                                 <div class="form-actions">
-                                    <button type="submit" class="btn-save">Save Preferences</button>
+                                    <button type="button" class="btn-save" id="savePreferencesBtn">Save Preferences</button>
                                 </div>
                             </div>
                         </div>
@@ -386,6 +391,77 @@
     </div>
 
     <script>
+        // Theme Management
+        const themeSelect = document.getElementById('themeSelect');
+        const languageSelect = document.getElementById('languageSelect');
+        const timezoneSelect = document.getElementById('timezoneSelect');
+        const savePreferencesBtn = document.getElementById('savePreferencesBtn');
+
+        // Load saved preferences
+        const savedTheme = localStorage.getItem('theme') || 'auto';
+        const savedLanguage = localStorage.getItem('language') || 'en-US';
+        const savedTimezone = localStorage.getItem('timezone') || 'BST';
+        
+        // Initial setup
+        applyTheme(savedTheme);
+        themeSelect.value = savedTheme;
+        if(languageSelect) languageSelect.value = savedLanguage;
+        if(timezoneSelect) timezoneSelect.value = savedTimezone;
+
+        // Theme Event listener
+        themeSelect.addEventListener('change', function() {
+            const theme = this.value;
+            localStorage.setItem('theme', theme);
+            applyTheme(theme);
+            // Optional: Show toast for immediate feedback, or rely on Save button
+            // showToast(`Theme changed to ${theme} mode`, 'success'); 
+        });
+
+        // Save Preferences Button Listener
+        if(savePreferencesBtn) {
+            savePreferencesBtn.addEventListener('click', function() {
+                // Save Language
+                if(languageSelect) {
+                    localStorage.setItem('language', languageSelect.value);
+                }
+                
+                // Save Timezone
+                if(timezoneSelect) {
+                    localStorage.setItem('timezone', timezoneSelect.value);
+                }
+
+                // Theme is already saved on change, but we can confirm it here too if needed.
+                // localStorage.setItem('theme', themeSelect.value);
+
+                showToast('Preferences saved successfully', 'success');
+            });
+        }
+
+        function applyTheme(theme) {
+            if (theme === 'auto') {
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                }
+            } else if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+        }
+
+        // Listen for system changes if in auto mode
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+            if (localStorage.getItem('theme') === 'auto') {
+                if (e.matches) {
+                    document.body.classList.add('dark-mode');
+                } else {
+                    document.body.classList.remove('dark-mode');
+                }
+            }
+        });
+
         // Show toast notification
         function showToast(message, type = 'success') {
             const toast = document.createElement('div');
@@ -411,25 +487,13 @@
             }, 3000);
         }
 
-        // Handle form submissions
-        document.querySelectorAll('form').forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const btn = this.querySelector('button[type="submit"]');
-                const originalText = btn.innerHTML;
-
-                // Show loading state
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-
-                // Simulate API call
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                    showToast('Changes saved successfully!');
-                }, 1000);
+        @if(session('success'))
+            document.addEventListener('DOMContentLoaded', function() {
+                showToast("{{ session('success') }}", 'success');
             });
-        });
+        @endif
+
+
 
         // Handle cancel buttons
         document.querySelectorAll('.btn-cancel').forEach(btn => {

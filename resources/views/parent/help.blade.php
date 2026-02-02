@@ -14,12 +14,11 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <i class="fas fa-baby"></i>
-                    <h2>Childcare</h2>
+                    <h2>Little Stars Childcare</h2>
                 </div>
                 <div class="user-info">
-                    <div class="user-avatar">JD</div>
                     <div class="user-details">
-                        <h4>John Doe</h4>
+                        <h4>{{Auth::user()->name}}</h4>
                         <p>Parent Account</p>
                     </div>
                 </div>
@@ -51,12 +50,17 @@
                     <a href="{{ route('parent.messages') }}" class="nav-item">
                         <i class="fas fa-comments"></i>
                         <span>Messages</span>
-                        <span class="badge">3</span>
+                        @php
+                            $unreadMessages = \App\Models\Message::where('receiver_id', Auth::id())->where('is_read', false)->count();
+                        @endphp
+                        @if($unreadMessages > 0)
+                            <span class="badge">{{ $unreadMessages }}</span>
+                        @endif
                     </a>
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
@@ -115,13 +119,13 @@
                     <h1>Help & Support</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <div class="search-box">
+                 <!--   <div class="search-box">
                         <input type="text" placeholder="Search help topics...">
                         <i class="fas fa-search"></i>
-                    </div>
+                    </div> -->
                     <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
                     </a>
                     <a href="{{ route('parent.messages') }}" class="icon-btn">
                         <i class="fas fa-envelope"></i>

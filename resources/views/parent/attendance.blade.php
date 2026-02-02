@@ -14,12 +14,11 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <i class="fas fa-baby"></i>
-                    <h2>Childcare</h2>
+                    <h2>Little Stars Childcare</h2>
                 </div>
                 <div class="user-info">
-                    <div class="user-avatar">JD</div>
                     <div class="user-details">
-                        <h4>John Doe</h4>
+                        <h4>{{Auth::user()->name}}</h4>
                         <p>Parent Account</p>
                     </div>
                 </div>
@@ -51,12 +50,17 @@
                     <a href="{{ route('parent.messages') }}" class="nav-item">
                         <i class="fas fa-comments"></i>
                         <span>Messages</span>
-                        <span class="badge">3</span>
+                        @php
+                            $unreadMessages = \App\Models\Message::where('receiver_id', Auth::id())->where('is_read', false)->count();
+                        @endphp
+                        @if($unreadMessages > 0)
+                            <span class="badge">{{ $unreadMessages }}</span>
+                        @endif
                     </a>
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
@@ -115,14 +119,14 @@
                     <h1>Attendance Tracking</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <div class="search-box">
+                   <!-- <div class="search-box">
                         <input type="text" placeholder="Search...">
                         <i class="fas fa-search"></i>
-                    </div>
-                    <button class="icon-btn">
+                    </div> -->
+                    <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
-                    </button>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
+                    </a>
                     <button class="icon-btn">
                         <i class="fas fa-envelope"></i>
                     </button>
@@ -139,7 +143,7 @@
                     <i class="fas fa-check-circle"></i>
                 </div>
                 <div class="stat-details">
-                    <h3>94%</h3>
+                    <h3>{{ $attendanceRate }}%</h3>
                     <p>Attendance Rate</p>
                 </div>
             </div>
@@ -149,7 +153,7 @@
                     <i class="fas fa-calendar-day"></i>
                 </div>
                 <div class="stat-details">
-                    <h3>23</h3>
+                    <h3>{{ $daysPresent }}</h3>
                     <p>Days Present</p>
                 </div>
             </div>
@@ -159,7 +163,7 @@
                     <i class="fas fa-times-circle"></i>
                 </div>
                 <div class="stat-details">
-                    <h3>2</h3>
+                    <h3>{{ $daysAbsent }}</h3>
                     <p>Days Absent</p>
                 </div>
             </div>
@@ -169,7 +173,7 @@
                     <i class="fas fa-clock"></i>
                 </div>
                 <div class="stat-details">
-                    <h3>1</h3>
+                    <h3>{{ $timesLate }}</h3>
                     <p>Times Late</p>
                 </div>
             </div>
@@ -182,13 +186,17 @@
                 <div class="card-header">
                     <h2>Monthly Calendar</h2>
                     <div class="month-selector">
-                        <button class="month-btn" onclick="previousMonth()">
+                        @php
+                            $prevDate = \Carbon\Carbon::create($year, $month, 1)->subMonth();
+                            $nextDate = \Carbon\Carbon::create($year, $month, 1)->addMonth();
+                        @endphp
+                        <a href="{{ route('parent.attendance', array_merge(request()->query(), ['month' => $prevDate->month, 'year' => $prevDate->year])) }}" class="month-btn">
                             <i class="fas fa-chevron-left"></i>
-                        </button>
-                        <span class="current-month" id="currentMonth">December 2025</span>
-                        <button class="month-btn" onclick="nextMonth()">
+                        </a>
+                        <span class="current-month" id="currentMonth">{{ \Carbon\Carbon::create($year, $month, 1)->format('F Y') }}</span>
+                        <a href="{{ route('parent.attendance', array_merge(request()->query(), ['month' => $nextDate->month, 'year' => $nextDate->year])) }}" class="month-btn">
                             <i class="fas fa-chevron-right"></i>
-                        </button>
+                        </a>
                     </div>
                 </div>
 
@@ -202,123 +210,41 @@
                     <div class="calendar-day header">Fri</div>
                     <div class="calendar-day header">Sat</div>
 
-                    <!-- Sample Calendar Days -->
-                    <div class="calendar-day empty"></div>
-                    <div class="calendar-day present">
-                        <span class="day-number">1</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">2</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">3</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">4</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">5</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">6</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">7</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">8</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">9</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">10</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day absent">
-                        <span class="day-number">11</span>
-                        <span class="day-status">Absent</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">12</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">13</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">14</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">15</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">16</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">17</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day absent">
-                        <span class="day-number">18</span>
-                        <span class="day-status">Absent</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">19</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">20</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day present">
-                        <span class="day-number">21</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day today present">
-                        <span class="day-number">22</span>
-                        <span class="day-status">Present</span>
-                    </div>
-                    <div class="calendar-day future">
-                        <span class="day-number">23</span>
-                    </div>
-                    <div class="calendar-day future">
-                        <span class="day-number">24</span>
-                    </div>
-                    <div class="calendar-day future">
-                        <span class="day-number">25</span>
-                    </div>
-                    <div class="calendar-day future">
-                        <span class="day-number">26</span>
-                    </div>
-                    <div class="calendar-day future">
-                        <span class="day-number">27</span>
-                    </div>
-                    <div class="calendar-day future">
-                        <span class="day-number">28</span>
-                    </div>
-                    <div class="calendar-day future">
-                        <span class="day-number">29</span>
-                    </div>
-                    <div class="calendar-day future">
-                        <span class="day-number">30</span>
-                    </div>
-                    <div class="calendar-day future">
-                        <span class="day-number">31</span>
-                    </div>
+                    <!-- Calendar Days (Dynamic) -->
+                    @php
+                        // Empty cells before first day
+                        for ($i = 0; $i < $startDayOfWeek; $i++) {
+                            echo '<div class="calendar-day empty"></div>';
+                        }
+                        
+                        // Days of the month
+                        for ($day = 1; $day <= $daysInMonth; $day++) {
+                            $currentDate = \Carbon\Carbon::create($year, $month, $day);
+                            $dateString = $currentDate->format('Y-m-d');
+                            
+                            // Get attendance for this day
+                            $dayAttendance = $calendarData[$day] ?? [];
+                            $status = ''; // Will be set by JS for future/today, or PHP for past records
+                            $statusText = 'No Record';
+                            
+                            if (count($dayAttendance) > 0) {
+                                // If multiple children, show the most common status
+                                $statuses = collect($dayAttendance)->pluck('status');
+                                $status = $statuses->first(); 
+                                $statusText = ucfirst($status);
+                            } else {
+                                $status = 'absent'; // Default for past days with no record
+                            }
+                            
+                            $classes = "calendar-day $status";
+                            // Removed server-side today/future checks to rely on JS
+                            
+                            echo "<div class='$classes' data-date='$dateString'>";
+                            echo "<span class='day-number'>$day</span>";
+                            echo "<span class='day-status'>$statusText</span>";
+                            echo '</div>';
+                        }
+                    @endphp
                 </div>
 
                 <!-- Legend -->
@@ -329,11 +255,15 @@
                     </div>
                     <div class="legend-item">
                         <div class="legend-color absent"></div>
-                        <span>Absent</span>
+                        <span>Absent/No Record</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color future"></div>
                         <span>Future</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color today-legend" style="border: 2px solid #fbbf24; background: transparent; width: 14px; height: 14px;"></div>
+                        <span>Today</span>
                     </div>
                 </div>
             </div>
@@ -346,26 +276,26 @@
 
                 <div style="display: flex; flex-direction: column; gap: 20px;">
                     <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #10b981, #059669); border-radius: 12px; color: white;">
-                        <div style="font-size: 48px; font-weight: bold; margin-bottom: 8px;">94%</div>
+                        <div style="font-size: 48px; font-weight: bold; margin-bottom: 8px;">{{ $attendanceRate }}%</div>
                         <div style="font-size: 14px; opacity: 0.9;">Overall Attendance Rate</div>
                     </div>
 
                     <div style="display: grid; gap: 12px;">
                         <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
                             <span style="color: #6b7280; font-size: 14px;">Total Days:</span>
-                            <span style="color: #1f2937; font-weight: 600;">25</span>
+                            <span style="color: #1f2937; font-weight: 600;">{{ $totalDays }}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
                             <span style="color: #6b7280; font-size: 14px;">Present:</span>
-                            <span style="color: #059669; font-weight: 600;">23</span>
+                            <span style="color: #059669; font-weight: 600;">{{ $daysPresent }}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
                             <span style="color: #6b7280; font-size: 14px;">Absent:</span>
-                            <span style="color: #dc2626; font-weight: 600;">2</span>
+                            <span style="color: #dc2626; font-weight: 600;">{{ $daysAbsent }}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding: 12px; background: #f9fafb; border-radius: 8px;">
                             <span style="color: #6b7280; font-size: 14px;">Late Arrivals:</span>
-                            <span style="color: #d97706; font-weight: 600;">1</span>
+                            <span style="color: #d97706; font-weight: 600;">{{ $timesLate }}</span>
                         </div>
                     </div>
 
@@ -389,9 +319,16 @@
 
             <!-- Child Filter -->
             <div class="child-filter">
-                <button class="filter-btn active">All Children</button>
-                <button class="filter-btn">Emma Doe</button>
-                <button class="filter-btn">Lucas James</button>
+                <button onclick="window.location.href='{{ route('parent.attendance', array_merge(request()->query(), ['child_id' => 'all'])) }}'" 
+                        class="filter-btn {{ request('child_id') == 'all' || !request('child_id') ? 'active' : '' }}">
+                    All Children
+                </button>
+                @foreach($children as $child)
+                    <button onclick="window.location.href='{{ route('parent.attendance', array_merge(request()->query(), ['child_id' => $child->id])) }}'" 
+                            class="filter-btn {{ request('child_id') == $child->id ? 'active' : '' }}">
+                        {{ $child->first_name }} {{ $child->last_name }}
+                    </button>
+                @endforeach
             </div>
 
             <table class="history-table">
@@ -402,114 +339,41 @@
                         <th>Status</th>
                         <th>Check In</th>
                         <th>Check Out</th>
+                        <th>Marked By</th> <!-- New Column -->
                         <th>Notes</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>Dec 22, 2025</td>
-                        <td>
-                            <div class="child-name">
-                                <div class="child-avatar-small">EM</div>
-                                <span>Emma Doe</span>
-                            </div>
-                        </td>
-                        <td><span class="status-badge present">Present</span></td>
-                        <td><span class="time-in">8:30 AM</span></td>
-                        <td><span class="time-out">4:00 PM</span></td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>Dec 22, 2025</td>
-                        <td>
-                            <div class="child-name">
-                                <div class="child-avatar-small" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">LJ</div>
-                                <span>Lucas James</span>
-                            </div>
-                        </td>
-                        <td><span class="status-badge present">Present</span></td>
-                        <td><span class="time-in">8:45 AM</span></td>
-                        <td><span class="time-out">3:45 PM</span></td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>Dec 21, 2025</td>
-                        <td>
-                            <div class="child-name">
-                                <div class="child-avatar-small">EM</div>
-                                <span>Emma Doe</span>
-                            </div>
-                        </td>
-                        <td><span class="status-badge present">Present</span></td>
-                        <td><span class="time-in">8:25 AM</span></td>
-                        <td><span class="time-out">4:15 PM</span></td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>Dec 21, 2025</td>
-                        <td>
-                            <div class="child-name">
-                                <div class="child-avatar-small" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">LJ</div>
-                                <span>Lucas James</span>
-                            </div>
-                        </td>
-                        <td><span class="status-badge present">Present</span></td>
-                        <td><span class="time-in">9:00 AM</span></td>
-                        <td><span class="time-out">4:00 PM</span></td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>Dec 20, 2025</td>
-                        <td>
-                            <div class="child-name">
-                                <div class="child-avatar-small">EM</div>
-                                <span>Emma Doe</span>
-                            </div>
-                        </td>
-                        <td><span class="status-badge present">Present</span></td>
-                        <td><span class="time-in">8:35 AM</span></td>
-                        <td><span class="time-out">4:10 PM</span></td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>Dec 20, 2025</td>
-                        <td>
-                            <div class="child-name">
-                                <div class="child-avatar-small" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">LJ</div>
-                                <span>Lucas James</span>
-                            </div>
-                        </td>
-                        <td><span class="status-badge late">Late</span></td>
-                        <td><span class="time-in">9:30 AM</span></td>
-                        <td><span class="time-out">4:00 PM</span></td>
-                        <td>Doctor appointment</td>
-                    </tr>
-                    <tr>
-                        <td>Dec 18, 2025</td>
-                        <td>
-                            <div class="child-name">
-                                <div class="child-avatar-small">EM</div>
-                                <span>Emma Doe</span>
-                            </div>
-                        </td>
-                        <td><span class="status-badge absent">Absent</span></td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>Sick leave</td>
-                    </tr>
-                    <tr>
-                        <td>Dec 11, 2025</td>
-                        <td>
-                            <div class="child-name">
-                                <div class="child-avatar-small" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">LJ</div>
-                                <span>Lucas James</span>
-                            </div>
-                        </td>
-                        <td><span class="status-badge absent">Absent</span></td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>Family vacation</td>
-                    </tr>
+                    @forelse($recentAttendance as $attendance)
+                        <tr>
+                            <td>{{ \Carbon\Carbon::parse($attendance->date)->format('M d, Y') }}</td>
+                            <td>
+                                <div class="child-name">
+                                    <div class="child-avatar-small" style="background: linear-gradient(135deg, {{ $loop->iteration % 2 == 0 ? '#3b82f6, #2563eb' : '#10b981, #059669' }});">
+                                        {{ strtoupper(substr($attendance->child->first_name, 0, 1) . substr($attendance->child->last_name, 0, 1)) }}
+                                    </div>
+                                    <span>{{ $attendance->child->first_name }} {{ $attendance->child->last_name }}</span>
+                                </div>
+                            </td>
+                            <td><span class="status-badge {{ $attendance->status }}">{{ ucfirst($attendance->status) }}</span></td>
+                            <td><span class="time-in">{{ $attendance->check_in_time ? \Carbon\Carbon::parse($attendance->check_in_time)->format('g:i A') : '-' }}</span></td>
+                            <td><span class="time-out">{{ $attendance->check_out_time ? \Carbon\Carbon::parse($attendance->check_out_time)->format('g:i A') : '-' }}</span></td>
+                            <td>
+                                <!-- Display who marked the attendance -->
+                                <span class="marked-by" style="font-size: 0.9em; color: #555;">
+                                    <i class="fas fa-user-edit" style="margin-right: 4px; color: #888;"></i>
+                                    {{ ($attendance->caregiver && $attendance->caregiver->role === 'admin') ? 'Admin' : ($attendance->caregiver->name ?? 'System') }}
+                                </span>
+                            </td>
+                            <td>{{ $attendance->notes ?? '-' }}</td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: #64748b; padding: 20px;">
+                                No attendance records found.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
                 </div>
@@ -518,31 +382,35 @@
     </div>
 
     <script>
-        // Month navigation
-        let currentMonth = new Date();
+        // Client-side date logic for Calendar
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get local today string YYYY-MM-DD
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const localToday = `${year}-${month}-${day}`;
 
-        function previousMonth() {
-            currentMonth.setMonth(currentMonth.getMonth() - 1);
-            updateMonthDisplay();
-        }
+            // Process all calendar days
+            document.querySelectorAll('.calendar-day[data-date]').forEach(cell => {
+                const cellDate = cell.getAttribute('data-date');
+                
+                // Highlight Today
+                if (cellDate === localToday) {
+                    cell.classList.add('today');
+                }
 
-        function nextMonth() {
-            currentMonth.setMonth(currentMonth.getMonth() + 1);
-            updateMonthDisplay();
-        }
-
-        function updateMonthDisplay() {
-            const monthNames = ["January", "February", "March", "April", "May", "June",
-                "July", "August", "September", "October", "November", "December"];
-            document.getElementById('currentMonth').textContent =
-                monthNames[currentMonth.getMonth()] + ' ' + currentMonth.getFullYear();
-        }
-
-        // Filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
+                // Block/Style Future Dates
+                if (cellDate > localToday) {
+                    cell.classList.remove('absent', 'present', 'late'); // Remove any server-sidestatus
+                    cell.classList.add('future-blocked');
+                    
+                    const statusSpan = cell.querySelector('.day-status');
+                    if (statusSpan) {
+                        statusSpan.textContent = ' ';
+                        // Optionally completely hide it or change text
+                    }
+                }
             });
         });
 

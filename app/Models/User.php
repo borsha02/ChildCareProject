@@ -24,6 +24,8 @@ class User extends Authenticatable
         'phone',
         'role',
         'status',
+        'specialization',
+        'shift',
     ];
 
     /**
@@ -47,5 +49,21 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    public function assignedChildren()
+    {
+        return $this->belongsToMany(Child::class, 'child_assignments', 'caregiver_id', 'child_id')
+                    ->withPivot('start_date', 'end_date')
+                    ->withTimestamps();
+    }
+
+    public function children()
+    {
+        return $this->hasMany(Child::class, 'parent_id');
+    }
+
+    public function ratings()
+    {
+        return $this->hasMany(Rating::class, 'caregiver_id');
     }
 }

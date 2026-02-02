@@ -94,7 +94,7 @@
                         🕒
                     </div>
                     <h3 class="font-semibold text-gray-900 mb-1">Operating Hours</h3>
-                    <p class="text-sm text-gray-600">Sun - Thu, 8AM - 7PM</p>
+                    <p class="text-sm text-gray-600">Sun - Thu, 8AM - 6PM</p>
                 </div>
 
                 <div class="bg-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-teal-200 transition-all">
@@ -102,7 +102,7 @@
                         👥
                     </div>
                     <h3 class="font-semibold text-gray-900 mb-1">Class Size</h3>
-                    <p class="text-sm text-gray-600">Small groups, max 12</p>
+                    <p class="text-sm text-gray-600">Small groups, max 10</p>
                 </div>
 
                 <div class="bg-gray-50 border border-gray-200 rounded-xl p-6 hover:shadow-lg hover:border-teal-200 transition-all">

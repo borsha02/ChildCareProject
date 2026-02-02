@@ -1,0 +1,192 @@
+/* Leave Requests Styles */
+
+.btn-new-request {
+    padding: 10px 20px;
+    background: #059669;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-new-request:hover {
+    background-color: #047857;
+}
+
+/* Form Styles */
+.request-form-container {
+    margin-bottom: 30px;
+}
+
+.form-layout {
+    display: grid;
+    gap: 20px;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #1f2937;
+}
+
+.required-asterisk {
+    color: #ef4444;
+}
+
+.form-select,
+.form-input,
+.form-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.form-textarea {
+    resize: vertical;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.btn-cancel {
+    padding: 12px 24px;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-cancel:hover {
+    background-color: #e5e7eb;
+}
+
+.btn-submit {
+    padding: 12px 24px;
+    background: #059669;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-submit:hover {
+    background-color: #047857;
+}
+
+/* History Table Styles */
+.history-filter-select {
+    padding: 8px 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+.requests-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.requests-table th {
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #1f2937;
+    background: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.requests-table td {
+    padding: 12px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #4b5563;
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-approved {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.empty-state {
+    padding: 20px;
+    text-align: center;
+    color: #6b7280;
+}
+
+/* Back to Dashboard Icon */
+.back-dashboard-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    color: #4b5563;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-right: 15px;
+}
+
+.back-dashboard-icon:hover {
+    background-color: #e5e7eb;
+    color: #1f2937;
+    transform: translateX(-3px);
+}
+
+.btn-delete-row {
+    background: none;
+    border: none;
+    color: #ef4444;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 5px;
+    transition: all 0.2s;
+    border-radius: 4px;
+}
+
+.btn-delete-row:hover {
+    background-color: #fee2e2;
+    transform: scale(1.2);
+}

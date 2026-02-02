@@ -16,12 +16,11 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <i class="fas fa-baby"></i>
-                    <h2>Childcare</h2>
+                    <h2>Little Stars Childcare</h2>
                 </div>
                 <div class="user-info">
-                    <div class="user-avatar">JD</div>
                     <div class="user-details">
-                        <h4>John Doe</h4>
+                        <h4>{{ Auth::user()->name }}</h4>
                         <p>Parent Account</p>
                     </div>
                 </div>
@@ -53,12 +52,17 @@
                     <a href="{{ route('parent.messages') }}" class="nav-item">
                         <i class="fas fa-comments"></i>
                         <span>Messages</span>
-                        <span class="badge">3</span>
+                        @php
+                            $unreadMessages = \App\Models\Message::where('receiver_id', Auth::id())->where('is_read', false)->count();
+                        @endphp
+                        @if($unreadMessages > 0)
+                            <span class="badge">{{ $unreadMessages }}</span>
+                        @endif
                     </a>
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
@@ -112,14 +116,14 @@
                 </button>
                 <h1>Dashboard Overview</h1>
                 <div class="top-bar-actions">
-                    <div class="search-box">
+                    <!-- <div class="search-box">
                         <input type="text" placeholder="Search...">
                         <i class="fas fa-search"></i>
-                    </div>
-                    <button class="icon-btn">
+                    </div> -->
+                    <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
-                    </button>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
+                    </a>
                     <button class="icon-btn">
                         <i class="fas fa-envelope"></i>
                     </button>
@@ -134,7 +138,7 @@
                             <i class="fas fa-child"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>2</h3>
+                            <h3>{{ $childrenCount }}</h3>
                             <p>Registered Children</p>
                         </div>
                     </a>
@@ -143,7 +147,7 @@
                             <i class="fas fa-calendar-check"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>94%</h3>
+                            <h3>{{ $attendanceRate }}%</h3>
                             <p>Attendance Rate</p>
                         </div>
                     </a>
@@ -152,7 +156,7 @@
                             <i class="fas fa-file-invoice"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>$450</h3>
+                            <h3>{{ number_format($pendingPayment, 2) }}</h3>
                             <p>Pending Payment</p>
                         </div>
                     </a>
@@ -161,7 +165,7 @@
                             <i class="fas fa-calendar-day"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>3</h3>
+                            <h3>{{ $upcomingEventsCount }}</h3>
                             <p>Upcoming Events</p>
                         </div>
                     </a>
@@ -170,7 +174,7 @@
                             <i class="fas fa-chalkboard-teacher"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>2</h3>
+                            <h3>{{ $caregiversCount }}</h3>
                             <p>Assigned Caregivers</p>
                         </div>
                     </a>
@@ -179,7 +183,7 @@
                             <i class="fas fa-heartbeat"></i>
                         </div>
                         <div class="stat-details">
-                            <h3>2</h3>
+                            <h3>{{ $healthRecordsCount }}</h3>
                             <p>Health Records</p>
                         </div>
                     </a>
@@ -194,23 +198,27 @@
                             <a href="{{ route('parent.child-profile') }}" class="view-all">View All</a>
                         </div>
                         <div class="children-list">
-                            <div class="child-item">
-                                <div class="child-avatar">EM</div>
-                                <div class="child-info">
-                                    <h4>Emma Doe</h4>
-                                    <p>Age: 4 years • Class: Preschool A</p>
+                            @forelse($children as $child)
+                                <div class="child-item" onclick="window.location='{{ route('parent.child-profile') }}'">
+                                    @php
+                                        $initials = strtoupper(substr($child->first_name, 0, 1) . substr($child->last_name, 0, 1));
+                                        $bgStyle = $loop->iteration % 2 == 0 ? 'background: linear-gradient(135deg, #3b82f6, #2563eb);' : '';
+                                        $age = \Carbon\Carbon::parse($child->dob)->age;
+                                        $statusClass = in_array($child->status, ['approved', 'enrolled']) ? 'present' : 'absent';
+                                        $statusLabel = ucfirst($child->status);
+                                    @endphp
+                                    <div class="child-avatar" style="{{ $bgStyle }}">{{ $initials }}</div>
+                                    <div class="child-info">
+                                        <h4>{{ $child->first_name }} {{ $child->last_name }}</h4>
+                                        <p>Age: {{ $age }} years • Class: {{ $child->class ?? 'N/A' }}</p>
+                                    </div>
+                                    <span class="status-badge {{ $statusClass }}">{{ $statusLabel }}</span>
                                 </div>
-                                <span class="status-badge present">Present</span>
-                            </div>
-                            <div class="child-item">
-                                <div class="child-avatar"
-                                    style="background: linear-gradient(135deg, #3b82f6, #2563eb);">LJ</div>
-                                <div class="child-info">
-                                    <h4>Lucas James</h4>
-                                    <p>Age: 3 years • Class: Toddler B</p>
+                            @empty
+                                <div class="child-item" style="justify-content: center; background: transparent; cursor: default;">
+                                    <p style="color: var(--text-muted);">No children registered yet.</p>
                                 </div>
-                                <span class="status-badge present">Present</span>
-                            </div>
+                            @endforelse
                         </div>
                     </div>
 
@@ -221,36 +229,22 @@
                             <a href="{{ route('parent.events') }}" class="view-all">View All</a>
                         </div>
                         <div class="event-list">
+                            @forelse($upcomingEvents as $event)
                             <div class="event-item">
                                 <div class="event-date">
-                                    <div class="day">25</div>
-                                    <div class="month">DEC</div>
+                                    <div class="day">{{ $event->start_time->format('d') }}</div>
+                                    <div class="month">{{ $event->start_time->format('M') }}</div>
                                 </div>
                                 <div class="event-info">
-                                    <h4>Christmas Party</h4>
-                                    <p>10:00 AM - Main Hall</p>
+                                    <h4>{{ $event->title }}</h4>
+                                    <p>{{ $event->start_time->format('g:i A') }} - {{ $event->location }}</p>
                                 </div>
                             </div>
-                            <div class="event-item">
-                                <div class="event-date">
-                                    <div class="day">28</div>
-                                    <div class="month">DEC</div>
-                                </div>
-                                <div class="event-info">
-                                    <h4>Parent-Teacher Meeting</h4>
-                                    <p>2:00 PM - Conference Room</p>
-                                </div>
+                            @empty
+                            <div class="event-item" style="justify-content: center; border: none;">
+                                <p style="color: var(--text-muted); text-align: center;">No upcoming events.</p>
                             </div>
-                            <div class="event-item">
-                                <div class="event-date">
-                                    <div class="day">01</div>
-                                    <div class="month">JAN</div>
-                                </div>
-                                <div class="event-info">
-                                    <h4>New Year Celebration</h4>
-                                    <p>11:00 AM - Main Hall</p>
-                                </div>
-                            </div>
+                            @endforelse
                         </div>
                     </div>
                 </div>
@@ -264,36 +258,22 @@
                             <a href="{{ route('parent.reports') }}" class="view-all">View Details</a>
                         </div>
                         <div class="activity-list">
-                            <div class="activity-item">
-                                <div class="activity-icon meal">
-                                    <i class="fas fa-utensils"></i>
+                            @forelse($todaysActivities as $activity)
+                                <div class="activity-item">
+                                    <div class="activity-icon {{ $activity['type'] }}">
+                                        <i class="{{ $activity['icon'] }}"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <h4>{{ $activity['title'] }}</h4>
+                                        <p>{{ $activity['description'] }}</p>
+                                    </div>
+                                    <div class="activity-time">{{ $activity['time'] }}</div>
                                 </div>
-                                <div class="activity-content">
-                                    <h4>Breakfast Completed</h4>
-                                    <p>Emma had oatmeal and fruits</p>
+                            @empty
+                                <div class="activity-item" style="justify-content: center; border: none;">
+                                    <p style="color: var(--text-muted); text-align: center;">No activities recorded today yet.</p>
                                 </div>
-                                <div class="activity-time">8:30 AM</div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon play">
-                                    <i class="fas fa-palette"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <h4>Art Activity</h4>
-                                    <p>Lucas participated in painting class</p>
-                                </div>
-                                <div class="activity-time">10:00 AM</div>
-                            </div>
-                            <div class="activity-item">
-                                <div class="activity-icon nap">
-                                    <i class="fas fa-bed"></i>
-                                </div>
-                                <div class="activity-content">
-                                    <h4>Nap Time</h4>
-                                    <p>Both children are currently napping</p>
-                                </div>
-                                <div class="activity-time">12:30 PM</div>
-                            </div>
+                            @endforelse
                         </div>
                     </div>
 
@@ -327,6 +307,16 @@
     </div>
 
     <script>
+        // Apply theme from local storage
+        const savedTheme = localStorage.getItem('theme') || 'auto';
+        if (savedTheme === 'auto') {
+            if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.body.classList.add('dark-mode');
+            }
+        } else if (savedTheme === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+
         // Mobile menu toggle
         const mobileToggle = document.querySelector('.mobile-toggle');
         const sidebar = document.getElementById('sidebar');

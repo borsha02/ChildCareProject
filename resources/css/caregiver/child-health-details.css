@@ -1,0 +1,203 @@
+/* Child Health Details Styles */
+
+.header-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.back-link {
+    color: #6b7280;
+    font-size: 18px;
+}
+
+.page-title {
+    margin: 0;
+}
+
+/* Child Profile Card */
+.profile-card {
+    margin-bottom: 20px;
+}
+
+.profile-content {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    padding: 20px;
+}
+
+.profile-avatar {
+    width: 80px;
+    height: 80px;
+    font-size: 24px;
+    border-radius: 50%;
+    background: #3b82f6;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-name {
+    margin: 0 0 10px 0;
+    color: #1f2937;
+}
+
+.profile-stats {
+    display: flex;
+    gap: 20px;
+    color: #4b5563;
+    font-size: 14px;
+    flex-wrap: wrap;
+}
+
+.allergy-section {
+    margin-top: 10px;
+}
+
+.allergy-badge {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Grids */
+.details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Lists and Cards */
+.scrollable-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.list-item {
+    padding: 15px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+}
+
+.item-title {
+    margin: 0;
+    color: #1f2937;
+    font-size: 16px;
+}
+
+.item-meta {
+    font-size: 13px;
+    color: #4b5563;
+    margin: 5px 0;
+}
+
+.item-date {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0;
+}
+
+.item-notes {
+    font-size: 13px;
+    color: #4b5563;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+/* Status Badges */
+.status-badge {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.status-active {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-inactive {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.status-completed {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-pending {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+/* Table in Vaccination Card */
+.vaccine-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.vaccine-table th {
+    padding: 10px;
+    text-align: left;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.vaccine-table td {
+    padding: 10px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.vaccine-name {
+    color: #1f2937;
+    font-weight: 500;
+}
+
+.vaccine-date {
+    color: #4b5563;
+}
+
+.empty-state {
+    padding: 20px;
+    text-align: center;
+    color: #6b7280;
+}
+
+/* Back to Dashboard Icon */
+.back-dashboard-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    color: #4b5563;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-right: 15px;
+}
+
+.back-dashboard-icon:hover {
+    background-color: #e5e7eb;
+    color: #1f2937;
+    transform: translateX(-3px);
+}

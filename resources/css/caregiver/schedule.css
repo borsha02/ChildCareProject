@@ -1,0 +1,248 @@
+/* Schedule Styles */
+
+/* Week Navigation */
+.schedule-grid {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 20px;
+}
+
+@media (max-width: 1024px) {
+    .schedule-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Sidebar Styles */
+.sidebar-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.schedule-sidebar-header {
+    border-bottom: 1px solid #f3f4f6;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.schedule-sidebar-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.schedule-sidebar-header h3 i {
+    color: #4b5563;
+}
+
+.timings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.timing-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    color: #4b5563;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #e5e7eb;
+}
+
+.timing-item:last-child {
+    border-bottom: none;
+}
+
+.timing-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.timing-value {
+    font-weight: 600;
+    color: #111827;
+}
+
+.classroom-box {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.classroom-box:last-child {
+    margin-bottom: 0;
+}
+
+.classroom-name {
+    font-weight: 600;
+    color: #111827;
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+
+.classroom-detail {
+    font-size: 13px;
+    color: #6b7280;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* Week Navigation */
+.week-navigation-container {
+    margin-bottom: 20px;
+    /* Reduced from 30px to align better */
+}
+
+.week-navigation-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-nav-week {
+    padding: 10px 20px;
+    background: #059669;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-nav-week:hover {
+    background-color: #047857;
+}
+
+.week-title {
+    color: #1f2937;
+    font-size: 20px;
+    margin: 0;
+}
+
+/* Schedule List */
+.schedule-card {
+    margin-bottom: 20px;
+}
+
+.label-today {
+    color: #059669;
+    font-weight: 600;
+}
+
+.label-holiday {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.schedule-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.schedule-item {
+    display: flex;
+    padding: 15px;
+    border-bottom: 1px solid #f3f4f6;
+    transition: background 0.1s;
+}
+
+.schedule-item:last-child {
+    border-bottom: none;
+}
+
+.schedule-item:hover {
+    background: #f9fafb;
+}
+
+.schedule-time {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 80px;
+    padding-right: 20px;
+    border-right: 2px solid #e5e7eb;
+}
+
+.time-text {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+}
+
+.period-text {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.schedule-info {
+    padding-left: 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.schedule-info h4 {
+    margin: 0 0 5px 0;
+    color: #1f2937;
+    font-size: 16px;
+}
+
+.schedule-info p {
+    margin: 0;
+    color: #4b5563;
+    font-size: 14px;
+}
+
+/* Holiday Empty State */
+.holiday-state {
+    padding: 40px;
+    text-align: center;
+    color: #6b7280;
+}
+
+.holiday-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #d1d5db;
+}
+
+.holiday-text {
+    font-size: 16px;
+    margin: 0;
+}
+
+/* Back to Dashboard Icon */
+.back-dashboard-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #f3f4f6;
+    color: #4b5563;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    margin-right: 15px;
+}
+
+.back-dashboard-icon:hover {
+    background-color: #e5e7eb;
+    color: #1f2937;
+    transform: translateX(-3px);
+}

@@ -2,12 +2,12 @@
     <div class="sidebar-header">
         <div class="logo">
             <i class="fas fa-baby"></i>
-            <h2>Childcare</h2>
+            <h2>Little Stars Childcare</h2>
         </div>
         <div class="user-info">
-            <div class="user-avatar">SC</div>
+            <div class="user-avatar">{{ substr(Auth::user()->name ?? 'User', 0, 2) }}</div>
             <div class="user-details">
-                <h4>Sarah Connor</h4>
+                <h4>{{ Auth::user()->name }}</h4>
                 <p>Caregiver</p>
             </div>
         </div>
@@ -36,7 +36,7 @@
 
         <div class="nav-section">
             <div class="nav-section-title">Activities</div>
-            <a href="{{ route('caregiver.reports') }}" class="nav-item {{ request()->routeIs('caregiver.reports') ? 'active' : '' }}">
+            <a href="{{ route('caregiver.daily-reports') }}" class="nav-item {{ request()->routeIs('caregiver.daily-reports') ? 'active' : '' }}">
                 <i class="fas fa-file-alt"></i>
                 <span>Daily Reports</span>
             </a>
@@ -48,14 +48,31 @@
                 <i class="fas fa-calendar-days"></i>
                 <span>Events</span>
             </a>
+            <a href="{{ route('caregiver.ratings') }}" class="nav-item {{ request()->routeIs('caregiver.ratings') ? 'active' : '' }}">
+                <i class="fas fa-star"></i>
+                <span>Ratings</span>
+            </a>
             <a href="{{ route('caregiver.messages') }}" class="nav-item {{ request()->routeIs('caregiver.messages') ? 'active' : '' }}">
                 <i class="fas fa-comments"></i>
                 <span>Messages</span>
-                <span class="badge">4</span>
+                @php
+                    $unreadMessages = \App\Models\Message::where('receiver_id', Auth::id())
+                        ->where('is_read', false)
+                        ->count();
+                @endphp
+                @if($unreadMessages > 0)
+                    <span class="badge">{{ $unreadMessages }}</span>
+                @endif
             </a>
             <a href="{{ route('caregiver.notifications') }}" class="nav-item {{ request()->routeIs('caregiver.notifications') ? 'active' : '' }}">
                 <i class="fas fa-bell"></i>
                 <span>Notifications</span>
+                @php
+                    $unreadNotifications = Auth::user()->unreadNotifications->count();
+                @endphp
+                @if($unreadNotifications > 0)
+                    <span class="badge">{{ $unreadNotifications }}</span>
+                @endif
             </a>
         </div>
 
@@ -64,6 +81,10 @@
             <a href="{{ route('caregiver.leave') }}" class="nav-item {{ request()->routeIs('caregiver.leave') ? 'active' : '' }}">
                 <i class="fas fa-calendar-times"></i>
                 <span>Leave Requests</span>
+            </a>
+            <a href="{{ route('caregiver.settings') }}" class="nav-item {{ request()->routeIs('caregiver.settings') ? 'active' : '' }}">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
             </a>
             <a href="{{ route('logout') }}" class="nav-item"
                 onclick="event.preventDefault(); document.getElementById('logout-form').submit();">

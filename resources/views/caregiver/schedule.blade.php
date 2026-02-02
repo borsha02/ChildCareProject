@@ -1,324 +1,194 @@
-<!DOCTYPE html>
-<html lang="en">
+@extends('layouts.caregiver')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Schedule - Caregiver Dashboard</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    @vite(['resources/css/caregiver/dashboard.css'])
-</head>
+@section('title', 'My Schedule')
 
-<body>
-    <div class="dashboard-container">
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <i class="fas fa-baby"></i>
-                    <h2>Childcare</h2>
-                </div>
-                <div class="user-info">
-                    <div class="user-avatar">SC</div>
-                    <div class="user-details">
-                        <h4>Sarah Connor</h4>
-                        <p>Caregiver</p>
-                    </div>
-                </div>
-            </div>
+@section('styles')
+    @vite(['resources/css/caregiver/schedule.css'])
+@endsection
 
-            <nav class="nav-menu">
-                <div class="nav-section">
-                    <div class="nav-section-title">Main Menu</div>
-                    <a href="{{ route('caregiver.dashboard') }}" class="nav-item">
-                        <i class="fas fa-home"></i>
-                        <span>Dashboard</span>
-                    </a>
-                    <a href="{{ route('caregiver.assigned') }}" class="nav-item">
-                        <i class="fas fa-users"></i>
-                        <span>Assigned Children</span>
-                    </a>
-                    <a href="{{ route('caregiver.schedule') }}" class="nav-item active">
-                        <i class="fas fa-calendar-alt"></i>
-                        <span>My Schedule</span>
-                    </a>
-                    <a href="{{ route('caregiver.attendance') }}" class="nav-item">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Attendance</span>
-                    </a>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">Activities</div>
-                    <a href="{{ route('caregiver.reports') }}" class="nav-item">
-                        <i class="fas fa-file-alt"></i>
-                        <span>Daily Reports</span>
-                    </a>
-                    <a href="{{ route('caregiver.health') }}" class="nav-item">
-                        <i class="fas fa-heartbeat"></i>
-                        <span>Health Records</span>
-                    </a>
-                    <a href="{{ route('caregiver.events') }}" class="nav-item">
-                        <i class="fas fa-calendar-days"></i>
-                        <span>Events</span>
-                    </a>
-                    <a href="{{ route('caregiver.messages') }}" class="nav-item">
-                        <i class="fas fa-comments"></i>
-                        <span>Messages</span>
-                        <span class="badge">4</span>
-                    </a>
-                    <a href="{{ route('caregiver.notifications') }}" class="nav-item">
-                        <i class="fas fa-bell"></i>
-                        <span>Notifications</span>
-                    </a>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">Personal</div>
-                    <a href="{{ route('caregiver.leave') }}" class="nav-item">
-                        <i class="fas fa-calendar-times"></i>
-                        <span>Leave Requests</span>
-                    </a>
-                    <a href="{{ route('logout') }}" class="nav-item"
-                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </a>
-                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                        @csrf
-                    </form>
-                </div>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="top-bar">
-                <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <h1>My Schedule</h1>
-                <div class="top-bar-actions">
-                    <div class="search-box">
-                        <input type="text" placeholder="Search schedule...">
-                        <i class="fas fa-search"></i>
-                    </div>
-                    <a href="{{ route('caregiver.notifications') }}" class="icon-btn {{ request()->routeIs('caregiver.notifications') ? 'active' : '' }}">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
-                    </a>
-                    <a href="{{ route('caregiver.messages') }}" class="icon-btn {{ request()->routeIs('caregiver.messages') ? 'active' : '' }}">
-                        <i class="fas fa-envelope"></i>
-                    </a>
-                </div>
-            </div>
-
-            <div class="content-area">
-                <!-- Week Navigation -->
-                <div class="card" style="margin-bottom: 30px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <button style="padding: 10px 20px; background: #059669; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                            <i class="fas fa-chevron-left"></i> Previous Week
-                        </button>
-                        <h3 style="color: #1f2937; font-size: 20px;">Week of December 23 - 29, 2025</h3>
-                        <button style="padding: 10px 20px; background: #059669; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                            Next Week <i class="fas fa-chevron-right"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Monday -->
-                <div class="card" style="margin-bottom: 20px;">
-                    <div class="card-header">
-                        <h3>Monday, December 23</h3>
-                        <span style="color: #059669; font-weight: 600;">Today</span>
-                    </div>
-                    <div class="schedule-list">
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">8:00</div>
-                                <div class="period">AM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Morning Arrival & Check-in</h4>
-                                <p>Welcome children and parents • Preschool A</p>
-                            </div>
-                        </div>
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">9:00</div>
-                                <div class="period">AM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Morning Circle Time</h4>
-                                <p>Songs, stories, and calendar • Preschool A</p>
-                            </div>
-                        </div>
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">10:00</div>
-                                <div class="period">AM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Snack Time</h4>
-                                <p>Healthy snacks and drinks • All Classes</p>
-                            </div>
-                        </div>
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">10:30</div>
-                                <div class="period">AM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Art Activity - Painting</h4>
-                                <p>Creative expression time • All Classes</p>
-                            </div>
-                        </div>
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">12:00</div>
-                                <div class="period">PM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Lunch Time</h4>
-                                <p>Supervised meal time • Cafeteria</p>
-                            </div>
-                        </div>
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">1:00</div>
-                                <div class="period">PM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Nap Time</h4>
-                                <p>Quiet rest period • Toddler Classes</p>
-                            </div>
-                        </div>
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">2:00</div>
-                                <div class="period">PM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Outdoor Play</h4>
-                                <p>Physical activity and games • Playground</p>
-                            </div>
-                        </div>
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">3:30</div>
-                                <div class="period">PM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Afternoon Snack</h4>
-                                <p>Light refreshments • All Classes</p>
-                            </div>
-                        </div>
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">4:00</div>
-                                <div class="period">PM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Free Play & Pick-up</h4>
-                                <p>Indoor activities until parent arrival • All Classes</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tuesday -->
-                <div class="card" style="margin-bottom: 20px;">
-                    <div class="card-header">
-                        <h3>Tuesday, December 24</h3>
-                    </div>
-                    <div class="schedule-list">
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">8:00</div>
-                                <div class="period">AM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Morning Arrival & Check-in</h4>
-                                <p>Welcome children and parents • Preschool A</p>
-                            </div>
-                        </div>
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">9:00</div>
-                                <div class="period">AM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Music & Movement</h4>
-                                <p>Dance and rhythm activities • All Classes</p>
-                            </div>
-                        </div>
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">10:30</div>
-                                <div class="period">AM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Science Exploration</h4>
-                                <p>Hands-on experiments • Preschool A</p>
-                            </div>
-                        </div>
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">12:00</div>
-                                <div class="period">PM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Lunch Time</h4>
-                                <p>Supervised meal time • Cafeteria</p>
-                            </div>
-                        </div>
-                        <div class="schedule-item">
-                            <div class="schedule-time">
-                                <div class="time">2:00</div>
-                                <div class="period">PM</div>
-                            </div>
-                            <div class="schedule-info">
-                                <h4>Story Time</h4>
-                                <p>Reading and comprehension • All Classes</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Wednesday -->
-                <div class="card" style="margin-bottom: 20px;">
-                    <div class="card-header">
-                        <h3>Wednesday, December 25</h3>
-                        <span style="color: #ef4444; font-weight: 600;">Holiday - Closed</span>
-                    </div>
-                    <div style="padding: 40px; text-align: center; color: #6b7280;">
-                        <i class="fas fa-calendar-times" style="font-size: 48px; margin-bottom: 15px; color: #d1d5db;"></i>
-                        <p style="font-size: 16px;">Facility closed for Christmas Day</p>
-                    </div>
-                </div>
-            </div>
-        </main>
+@section('content')
+    <div class="top-bar">
+        <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div style="display: flex; align-items: center;">
+            <a href="{{ route('caregiver.dashboard') }}" class="back-dashboard-icon">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1>My Schedule</h1>
+        </div>
+        <div class="top-bar-actions">
+           <!-- <div class="search-box">
+                <input type="text" placeholder="Search schedule...">
+                <i class="fas fa-search"></i>
+            </div> -->
+            <a href="{{ route('caregiver.notifications') }}"
+                class="icon-btn {{ request()->routeIs('caregiver.notifications') ? 'active' : '' }}">
+                <i class="fas fa-bell"></i>
+                <span class="notification-dot"></span>
+            </a>
+            <a href="{{ route('caregiver.messages') }}"
+                class="icon-btn {{ request()->routeIs('caregiver.messages') ? 'active' : '' }}">
+                <i class="fas fa-envelope"></i>
+            </a>
+        </div>
     </div>
 
-    <script>
-        // Mobile menu toggle
-        const mobileToggle = document.querySelector('.mobile-toggle');
-        const sidebar = document.getElementById('sidebar');
+    <div class="content-area">
+        <div class="schedule-grid">
+            <!-- Left Column: Schedule -->
+            <div class="schedule-main" id="schedule-content">
+                <!-- Day Navigation -->
+                <div class="card week-navigation-container">
+                    <div class="week-navigation-content">
+                        <a href="{{ route('caregiver.schedule', ['date' => $prevDate]) }}" class="btn-nav-week">
+                            <i class="fas fa-chevron-left"></i> Previous Day
+                        </a>
+                        <h3 class="week-title">{{ $selectedDate->format('l, F d, Y') }}</h3>
+                        <a href="{{ route('caregiver.schedule', ['date' => $nextDate]) }}" class="btn-nav-week">
+                            Next Day <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
 
-        if (mobileToggle) {
-            // Toggle handled by inline onclick
-        }
+                <div class="card schedule-card">
+                    <div class="card-header">
+                        <h3>{{ $daySchedule['date']->format('l, F d') }}</h3>
+                        @if($daySchedule['is_today'])
+                            <span class="label-today">Today</span>
+                        @endif
+                        @if($daySchedule['is_holiday'])
+                            <span class="label-holiday">{{ $daySchedule['holiday_name'] }}</span>
+                        @elseif($daySchedule['is_weekend'])
+                             <span class="label-holiday" style="color: #6b7280;">Off Day</span>
+                        @endif
+                    </div>
 
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768) {
-                if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
-                    sidebar.classList.remove('active');
+                    @if($daySchedule['is_holiday'])
+                        <div class="holiday-state">
+                            <i class="fas fa-calendar-times holiday-icon"></i>
+                            <p class="holiday-text">Facility closed for {{ $daySchedule['holiday_name'] }}</p>
+                        </div>
+                    @else
+                        @if(empty($daySchedule['items']))
+                            <div class="holiday-state">
+                                @if($daySchedule['is_weekend'])
+                                    <i class="fas fa-couch holiday-icon" style="font-size: 32px;"></i>
+                                    <p class="holiday-text">Off Day - No events scheduled.</p>
+                                @else
+                                    <i class="fas fa-bed holiday-icon" style="font-size: 32px;"></i>
+                                    <p class="holiday-text">No schedule items for this day.</p>
+                                @endif
+                            </div>
+                        @else
+                            <div class="schedule-list">
+                                @foreach($daySchedule['items'] as $item)
+                                <div class="schedule-item">
+                                    <div class="schedule-time">
+                                        <div class="time-text">{{ \Carbon\Carbon::parse($item['time'])->format('g:i') }}</div>
+                                        <div class="period-text">{{ \Carbon\Carbon::parse($item['time'])->format('A') }}</div>
+                                    </div>
+                                    <div class="schedule-info">
+                                        <h4>{{ $item['title'] }}</h4>
+                                        <p>{{ $item['description'] }}</p>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    @endif
+                </div>
+            </div>
+
+            <!-- Right Column: Sidebar -->
+            <div class="schedule-sidebar">
+                <!-- Operating Hours -->
+                <div class="sidebar-card">
+                    <div class="schedule-sidebar-header">
+                        <h3><i class="fas fa-clock"></i> Operating Hours</h3>
+                    </div>
+                    <div class="timings-list">
+                        <div class="timing-item">
+                            <div class="timing-label"><i class="fas fa-door-open"></i> Facility Opens</div>
+                            <div class="timing-value">{{ \Carbon\Carbon::parse($timings['opening_time'])->format('g:i A') }}</div>
+                        </div>
+                        <div class="timing-item">
+                            <div class="timing-label"><i class="fas fa-utensils"></i> Breakfast</div>
+                            <div class="timing-value">{{ \Carbon\Carbon::parse($timings['breakfast_time'])->format('g:i A') }}</div>
+                        </div>
+                        <div class="timing-item">
+                            <div class="timing-label"><i class="fas fa-hamburger"></i> Lunch</div>
+                            <div class="timing-value">{{ \Carbon\Carbon::parse($timings['lunch_time'])->format('g:i A') }}</div>
+                        </div>
+                        <div class="timing-item">
+                            <div class="timing-label"><i class="fas fa-bed"></i> Nap Time</div>
+                            <div class="timing-value">{{ \Carbon\Carbon::parse($timings['nap_time'])->format('g:i A') }}</div>
+                        </div>
+                        <div class="timing-item">
+                            <div class="timing-label"><i class="fas fa-cookie"></i> Snack</div>
+                            <div class="timing-value">{{ \Carbon\Carbon::parse($timings['snack_time'])->format('g:i A') }}</div>
+                        </div>
+                        <div class="timing-item">
+                            <div class="timing-label"><i class="fas fa-door-closed"></i> Facility Closes</div>
+                            <div class="timing-value">{{ \Carbon\Carbon::parse($timings['closing_time'])->format('g:i A') }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assigned Classrooms -->
+                <div class="sidebar-card">
+                    <div class="schedule-sidebar-header">
+                        <h3><i class="fas fa-chalkboard-teacher"></i> My Classrooms</h3>
+                    </div>
+                    @forelse($classrooms as $classroom)
+                        <div class="classroom-box">
+                            <div class="classroom-name">{{ $classroom->name }}</div>
+                            <div class="classroom-detail">
+                                <span>{{ $classroom->class }}</span>
+                                <span><i class="fas fa-users"></i> {{ $classroom->capacity }}</span>
+                            </div>
+                        </div>
+                    @empty
+                        <p style="color: #6b7280; font-size: 14px; text-align: center;">No classrooms assigned.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        document.body.addEventListener('click', function(e) {
+            const link = e.target.closest('.btn-nav-week');
+            if (link) {
+                e.preventDefault();
+                const url = link.href;
+                
+                // Add loading opacity
+                const container = document.getElementById('schedule-content');
+                if(container) {
+                    container.style.opacity = '0.5';
+
+                    fetch(url)
+                        .then(response => response.text())
+                        .then(html => {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            const newContent = doc.getElementById('schedule-content').innerHTML;
+                            container.innerHTML = newContent;
+                            container.style.opacity = '1';
+                            
+                            // IMPORTANT: Do NOT pushState to history (keeps URL same)
+                        })
+                        .catch(err => {
+                            console.error('Failed to load schedule', err);
+                            container.style.opacity = '1';
+                        });
                 }
             }
         });
-    </script>
-</body>
-
-</html>
+    });
+</script>
+@endsection

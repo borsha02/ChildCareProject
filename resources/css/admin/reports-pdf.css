@@ -1,0 +1,201 @@
+body {
+    font-family: 'Helvetica', 'Arial', sans-serif;
+    color: #1e293b;
+    line-height: 1.5;
+    margin: 0;
+    padding: 20px;
+    background: #fff;
+}
+
+.report-page {
+    max-width: 800px;
+    margin: 0 auto;
+    page-break-after: always;
+    border: 1px solid #e2e8f0;
+    padding: 40px;
+    background: #fff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #3b82f6;
+    padding-bottom: 20px;
+}
+
+.header h1 {
+    margin: 0 0 5px 0;
+    font-size: 26px;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.header p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+/* Summary Card */
+.child-info {
+    margin-bottom: 30px;
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.value {
+    font-size: 15px;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+/* Sections */
+.section {
+    margin-bottom: 25px;
+    page-break-inside: avoid;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    color: #0f172a;
+    border-left: 4px solid #3b82f6;
+    padding-left: 10px;
+    background: #eff6ff;
+    padding: 8px 10px;
+    border-radius: 0 4px 4px 0;
+}
+
+/* 2-Column Grid for Sections */
+.grid-2-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+/* Lists */
+ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Meal List */
+.meal-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.meal-list li:last-child {
+    border-bottom: none;
+}
+
+/* Activity Tags */
+.activity-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.activity-tag {
+    background: #f1f5f9;
+    color: #334155;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    border: 1px solid #cbd5e1;
+    font-weight: 500;
+}
+
+/* Medication List */
+.medication-list {
+    display: grid;
+    gap: 10px;
+}
+
+.medication-item {
+    background: #fef2f2;
+    padding: 10px 15px;
+    border-radius: 6px;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* Notes */
+.notes-box {
+    background: #fffbeb;
+    padding: 15px;
+    border-radius: 6px;
+    border: 1px solid #fef3c7;
+    color: #92400e;
+    font-size: 14px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+/* Footer */
+.footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 11px;
+    color: #94a3b8;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 15px;
+}
+
+/* Print Overrides */
+@media print {
+    @page {
+        margin: 1cm;
+        size: A4;
+    }
+
+    body {
+        padding: 0;
+        background: white;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .report-page {
+        border: none;
+        padding: 0;
+        margin: 0;
+        width: 100%;
+        box-shadow: none;
+        max-width: none;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+}

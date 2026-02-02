@@ -14,12 +14,11 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <i class="fas fa-baby"></i>
-                    <h2>Childcare</h2>
+                    <h2>Little Stars Childcare</h2>
                 </div>
                 <div class="user-info">
-                    <div class="user-avatar">JD</div>
                     <div class="user-details">
-                        <h4>John Doe</h4>
+                        <h4>{{Auth::user()->name}}</h4>
                         <p>Parent Account</p>
                     </div>
                 </div>
@@ -51,12 +50,18 @@
                     <a href="{{ route('parent.messages') }}" class="nav-item">
                         <i class="fas fa-comments"></i>
                         <span>Messages</span>
-                        <span class="badge">3</span>
+                        @php
+                            $unreadMessages = \App\Models\Message::where('receiver_id', Auth::id())->where('is_read', false)->count();
+                        @endphp
+                        @if($unreadMessages > 0)
+                            <span class="badge">{{ $unreadMessages }}</span>
+                        @endif
                     </a>
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
+                        <span class="badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item">
                         <i class="fas fa-calendar-alt"></i>
@@ -115,14 +120,14 @@
                     <h1>Progress Reports</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <div class="search-box">
+                   <!-- <div class="search-box">
                         <input type="text" placeholder="Search...">
                         <i class="fas fa-search"></i>
-                    </div>
-                    <button class="icon-btn">
+                    </div> -->
+                    <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
-                    </button>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
+                    </a>
                     <button class="icon-btn">
                         <i class="fas fa-envelope"></i>
                     </button>
@@ -132,140 +137,75 @@
             <div class="content-area">
                 <div class="reports-container">
                     <!-- Filter Section -->
-                    <div class="filter-section">
+                    <form action="{{ route('parent.reports') }}" method="GET" class="filter-section">
                         <div class="filter-group">
                             <label>Select Child:</label>
-                            <select class="filter-select" id="childFilter">
-                                <option value="all">All Children</option>
-                                <option value="emma">Emma Doe</option>
-                                <option value="lucas">Lucas James</option>
+                            <select name="child_id" class="filter-select" onchange="this.form.submit()">
+                                <option value="">All Children</option>
+                                @foreach($children as $child)
+                                    <option value="{{ $child->id }}" {{ request('child_id') == $child->id ? 'selected' : '' }}>
+                                        {{ $child->first_name }} {{ $child->last_name }}
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
+
                         <div class="filter-group">
-                            <label>Report Type:</label>
-                            <select class="filter-select" id="reportType">
-                                <option value="all">All Reports</option>
-                                <option value="progress">Progress Reports</option>
-                                <option value="activity">Activity Reports</option>
-                                <option value="behavior">Behavior Reports</option>
-                            </select>
+                            <label>Date:</label>
+                            <input type="date" name="date" id="reportDateInput" class="filter-select" value="{{ $date }}" onchange="this.form.submit()" autocomplete="off">
                         </div>
-                        <div class="filter-group">
-                            <label>Time Period:</label>
-                            <select class="filter-select" id="timePeriod">
-                                <option value="month">This Month</option>
-                                <option value="quarter">This Quarter</option>
-                                <option value="year">This Year</option>
-                                <option value="custom">Custom Range</option>
-                            </select>
-                        </div>
-                    </div>
+                    </form>
 
                     <!-- Stats Overview -->
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-icon blue">
-                                <i class="fas fa-star"></i>
+                                <i class="fas fa-calendar-check"></i>
                             </div>
                             <div class="stat-details">
-                                <h3>Excellent</h3>
-                                <p>Overall Performance</p>
+                                <h3>{{ $daysPresent }} Days</h3>
+                                <p>Present on {{ \Carbon\Carbon::parse($date)->format('M d, Y') }}</p>
                             </div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon green">
-                                <i class="fas fa-trophy"></i>
+                                <i class="fas fa-shapes"></i>
                             </div>
                             <div class="stat-details">
-                                <h3>12</h3>
-                                <p>Achievements</p>
+                                <h3>{{ $totalActivities }}</h3>
+                                <p>Activities Completed</p>
                             </div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon orange">
-                                <i class="fas fa-tasks"></i>
+                                <i class="fas fa-bed"></i>
                             </div>
                             <div class="stat-details">
-                                <h3>8/10</h3>
-                                <p>Skills Mastered</p>
+                                <h3>{{ round($avgNapDuration) }} min</h3>
+                                <p>Avg Nap Duration</p>
                             </div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon purple">
-                                <i class="fas fa-smile"></i>
+                                <i class="fas fa-file-alt"></i>
                             </div>
                             <div class="stat-details">
-                                <h3>95%</h3>
-                                <p>Positive Behavior</p>
+                                <h3>{{ $totalReports }}</h3>
+                                <p>Daily Reports</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Report Cards Grid -->
                     <div class="content-grid">
-                        <!-- Progress Report Card -->
+                        <!-- Progress Report Card (Latest Notes) -->
                         <div class="card">
                             <div class="card-header">
-                                <h2><i class="fas fa-chart-line"></i> Progress Report</h2>
-                                <button class="download-btn">
-                                    <i class="fas fa-download"></i> Download
-                                </button>
+                                <h2><i class="fas fa-comment-dots"></i> Latest Teacher's Note</h2>
                             </div>
                             <div class="report-content">
-                                <div class="child-selector">
-                                    <div class="child-tab active" data-child="emma">
-                                        <div class="child-avatar-small">EM</div>
-                                        <span>Emma</span>
-                                    </div>
-                                    <div class="child-tab" data-child="lucas">
-                                        <div class="child-avatar-small" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">LJ</div>
-                                        <span>Lucas</span>
-                                    </div>
-                                </div>
-
-                                <div class="progress-section">
-                                    <h3>Development Areas</h3>
-                                    <div class="progress-item">
-                                        <div class="progress-header">
-                                            <span>Cognitive Skills</span>
-                                            <span class="progress-value">85%</span>
-                                        </div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: 85%; background: linear-gradient(90deg, #3b82f6, #2563eb);"></div>
-                                        </div>
-                                    </div>
-                                    <div class="progress-item">
-                                        <div class="progress-header">
-                                            <span>Social Skills</span>
-                                            <span class="progress-value">92%</span>
-                                        </div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: 92%; background: linear-gradient(90deg, #10b981, #059669);"></div>
-                                        </div>
-                                    </div>
-                                    <div class="progress-item">
-                                        <div class="progress-header">
-                                            <span>Motor Skills</span>
-                                            <span class="progress-value">78%</span>
-                                        </div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: 78%; background: linear-gradient(90deg, #f59e0b, #d97706);"></div>
-                                        </div>
-                                    </div>
-                                    <div class="progress-item">
-                                        <div class="progress-header">
-                                            <span>Language Skills</span>
-                                            <span class="progress-value">88%</span>
-                                        </div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: 88%; background: linear-gradient(90deg, #8b5cf6, #7c3aed);"></div>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <div class="teacher-notes">
-                                    <h4><i class="fas fa-comment-dots"></i> Teacher's Notes</h4>
-                                    <p>Emma has shown remarkable improvement in her social interactions and communication skills. She actively participates in group activities and demonstrates excellent problem-solving abilities.</p>
+                                    <p>{{ $latestTeacherNote }}</p>
                                 </div>
                             </div>
                         </div>
@@ -273,74 +213,24 @@
                         <!-- Activity Summary -->
                         <div class="card">
                             <div class="card-header">
-                                <h2><i class="fas fa-clipboard-list"></i> Activity Summary</h2>
-                                <span class="date-range">Dec 1-22, 2025</span>
+                                <h2><i class="fas fa-clipboard-list"></i> Activity Summary ({{ \Carbon\Carbon::parse($date)->format('M d, Y') }})</h2>
                             </div>
                             <div class="activity-summary">
-                                <div class="activity-stat">
-                                    <div class="activity-icon art">
-                                        <i class="fas fa-palette"></i>
-                                    </div>
-                                    <div class="activity-info">
-                                        <h4>Art & Crafts</h4>
-                                        <p>15 sessions completed</p>
-                                        <div class="activity-rating">
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star-half-alt"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="activity-stat">
-                                    <div class="activity-icon music">
-                                        <i class="fas fa-music"></i>
-                                    </div>
-                                    <div class="activity-info">
-                                        <h4>Music & Dance</h4>
-                                        <p>12 sessions completed</p>
-                                        <div class="activity-rating">
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="far fa-star"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="activity-stat">
-                                    <div class="activity-icon sports">
-                                        <i class="fas fa-running"></i>
-                                    </div>
-                                    <div class="activity-info">
-                                        <h4>Physical Activities</h4>
-                                        <p>20 sessions completed</p>
-                                        <div class="activity-rating">
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
+                                @forelse($topActivities as $activityName => $count)
+                                    <div class="activity-stat">
+                                        <div class="activity-icon art"> <!-- Generic icon/color class if names vary -->
                                             <i class="fas fa-star"></i>
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="activity-stat">
-                                    <div class="activity-icon reading">
-                                        <i class="fas fa-book"></i>
-                                    </div>
-                                    <div class="activity-info">
-                                        <h4>Reading & Stories</h4>
-                                        <p>18 sessions completed</p>
-                                        <div class="activity-rating">
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
-                                            <i class="fas fa-star"></i>
+                                        <div class="activity-info">
+                                            <h4>{{ ucfirst($activityName) }}</h4>
+                                            <p>{{ $count }} sessions completed</p>
                                         </div>
                                     </div>
-                                </div>
+                                @empty
+                                    <div style="text-align: center; color: #94a3b8; padding: 20px;">
+                                        No activities recorded for this date.
+                                    </div>
+                                @endforelse
                             </div>
                         </div>
                     </div>
@@ -349,7 +239,9 @@
                     <div class="card">
                         <div class="card-header">
                             <h2><i class="fas fa-file-alt"></i> Recent Reports</h2>
-                            <button class="view-all-btn">View All</button>
+                            <!-- <button class="view-all-btn" onclick="updateFilters('view_all', '{{ request('view_all') ? '0' : '1' }}')">
+                                {{ request('view_all') ? 'Show Less' : 'View All' }}
+                            </button> -->
                         </div>
                         <table class="reports-table">
                             <thead>
@@ -362,82 +254,65 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>Dec 20, 2025</td>
-                                    <td>
-                                        <div class="child-name">
-                                            <div class="child-avatar-small">EM</div>
-                                            <span>Emma Doe</span>
-                                        </div>
-                                    </td>
-                                    <td><span class="report-type progress">Progress Report</span></td>
-                                    <td><span class="status-badge completed">Completed</span></td>
-                                    <td>
-                                        <button class="action-icon-btn view" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon-btn download" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Dec 18, 2025</td>
-                                    <td>
-                                        <div class="child-name">
-                                            <div class="child-avatar-small" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">LJ</div>
-                                            <span>Lucas James</span>
-                                        </div>
-                                    </td>
-                                    <td><span class="report-type activity">Activity Report</span></td>
-                                    <td><span class="status-badge completed">Completed</span></td>
-                                    <td>
-                                        <button class="action-icon-btn view" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon-btn download" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Dec 15, 2025</td>
-                                    <td>
-                                        <div class="child-name">
-                                            <div class="child-avatar-small">EM</div>
-                                            <span>Emma Doe</span>
-                                        </div>
-                                    </td>
-                                    <td><span class="report-type behavior">Behavior Report</span></td>
-                                    <td><span class="status-badge completed">Completed</span></td>
-                                    <td>
-                                        <button class="action-icon-btn view" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon-btn download" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>Dec 10, 2025</td>
-                                    <td>
-                                        <div class="child-name">
-                                            <div class="child-avatar-small" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">LJ</div>
-                                            <span>Lucas James</span>
-                                        </div>
-                                    </td>
-                                    <td><span class="report-type progress">Progress Report</span></td>
-                                    <td><span class="status-badge pending">Pending Review</span></td>
-                                    <td>
-                                        <button class="action-icon-btn view" title="View">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-icon-btn download" title="Download">
-                                            <i class="fas fa-download"></i>
-                                        </button>
-                                    </td>
-                                </tr>
+                                @forelse($recentReports as $report)
+                                    <tr>
+                                        <td>{{ \Carbon\Carbon::parse($report->report_date)->format('M d, Y') }}</td>
+                                        <td>
+                                            <div class="child-name">
+                                                <div class="child-avatar-small" style="background: linear-gradient(135deg, {{ $loop->iteration % 2 == 0 ? '#3b82f6, #2563eb' : '#10b981, #059669' }});">
+                                                    {{ strtoupper(substr($report->child->first_name, 0, 1) . substr($report->child->last_name, 0, 1)) }}
+                                                </div>
+                                                <span>{{ $report->child->first_name }} {{ $report->child->last_name }}</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="report-type progress">Daily Report</span>
+                                        </td>
+                                        <td>
+                                            @if($report->status == 'completed')
+                                                <span class="status-badge completed">Completed</span>
+                                            @elseif($report->status == 'draft')
+                                                <span class="status-badge pending">Draft</span>
+                                            @else
+                                                <span class="status-badge" style="background: #e2e8f0; color: #475569;">{{ ucfirst($report->status) }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <button class="action-icon-btn view" title="View" 
+                                                onclick="viewReport(
+                                                    {{ $report->id }}, 
+                                                    '{{ addslashes($report->child->first_name . ' ' . $report->child->last_name) }}', 
+                                                    '{{ $report->report_date }}', 
+                                                    '{{ $report->mood }}', 
+                                                    {{ json_encode($report->meals) }}, 
+                                                    '{{ $report->nap_duration }}', 
+                                                    '{{ $report->nap_quality }}', 
+                                                    {{ json_encode($report->activities) }}, 
+                                                    '{{ addslashes($report->notes ?? '') }}',
+                                                    {{ json_encode($report->medications_included) }},
+                                                    '{{ addslashes($report->caregiver ? $report->caregiver->name : 'Unknown') }}',
+                                                    '{{ addslashes($report->child->class) }}'
+                                                )">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            @if($report->status === 'completed')
+                                                <a href="{{ route('parent.reports.download', $report->id) }}" class="action-icon-btn download" title="Download PDF">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                            @else
+                                                <button class="action-icon-btn download disabled" title="Draft reports cannot be downloaded" disabled>
+                                                    <i class="fas fa-download"></i>
+                                                </button>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" style="text-align: center; color: #64748b; padding: 20px;">
+                                            No reports found.
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -446,15 +321,195 @@
         </main>
     </div>
 
+    <!-- Report Detail Modal -->
+    <!-- Report Detail Modal (Smart Design) -->
+    <div id="reportModal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; align-items: center; justify-content: center;">
+        <div class="modal-content-smart">
+            <div class="modal-header-smart">
+                <h2 id="modalTitle">Daily Report</h2>
+                <button class="modal-close-btn" onclick="closeReportModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Summary Section -->
+                <div class="modal-summary">
+                    <div class="summary-row">
+                        <span class="summary-label">Child Name:</span>
+                        <span id="summaryChildName" class="summary-value"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Class:</span>
+                        <span id="summaryClass" class="summary-value"></span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Caregiver:</span>
+                        <span id="summaryCaregiver" class="summary-value"></span>
+                    </div>
+                </div>
+
+                <div class="smart-grid">
+                    <!-- Mood Card -->
+                    <div class="info-card">
+                        <span class="card-label">Mood</span>
+                        <div id="modalMood" class="card-content"></div>
+                    </div>
+
+                    <!-- Meals Card -->
+                    <div class="info-card">
+                        <span class="card-label">Meals</span>
+                        <ul id="modalMeals" class="meal-list"></ul>
+                    </div>
+
+                    <!-- Nap Card -->
+                    <div class="info-card">
+                        <span class="card-label">Nap Time</span>
+                        <div id="modalNap" class="card-content"></div>
+                    </div>
+
+                    <!-- Activities Card -->
+                    <div class="info-card">
+                        <span class="card-label">Activities</span>
+                        <div id="modalActivities" class="activity-tags"></div>
+                    </div>
+
+                    <!-- Medications Card (Full Width) -->
+                    <div class="info-card full-width">
+                        <span class="card-label">Medications Administered</span>
+                        <div id="modalMedications" class="medication-list"></div>
+                    </div>
+
+                    <!-- Notes Card (Full Width) -->
+                    <div class="info-card full-width">
+                        <span class="card-label">Notes & Observations</span>
+                        <p id="modalNotes" class="card-content notes-text"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Child tab switching
-        document.querySelectorAll('.child-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                document.querySelectorAll('.child-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                // Here you would load the specific child's data
-            });
-        });
+        // Clear URL parameters on load to ensure Refresh resets to defaults
+        if (window.history.replaceState) {
+             const url = new URL(window.location.href);
+             if (url.search.length > 0) {
+                 url.search = '';
+                 window.history.replaceState({}, document.title, url.toString());
+             }
+        }
+
+
+        // View report details in modal
+        function viewReport(id, childName, date, mood, meals, napDuration, napQuality, activities, notes, medications, caregiverName, childClass) {
+            // Set Header Title
+            const formattedDate = new Date(date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            document.getElementById('modalTitle').textContent = `Daily Report - ${formattedDate}`;
+
+            // Populate Summary
+            document.getElementById('summaryChildName').textContent = childName;
+            document.getElementById('summaryClass').textContent = childClass || 'N/A';
+            document.getElementById('summaryCaregiver').textContent = caregiverName || 'Unknown';
+
+            // Mood
+            document.getElementById('modalMood').textContent = mood || 'Not recorded';
+            
+            // Display meals (List Format)
+            let mealsHtml = '';
+            if (meals && typeof meals === 'object') {
+                for (let [meal, status] of Object.entries(meals)) {
+                    mealsHtml += `<li><strong>${meal.charAt(0).toUpperCase() + meal.slice(1)}:</strong> ${status}</li>`;
+                }
+            }
+            document.getElementById('modalMeals').innerHTML = mealsHtml || '<li style="color: #94a3b8">No meals recorded</li>';
+            
+            // Display nap
+            let napText = '';
+            if (napDuration) {
+                napText = `${napDuration} minutes`;
+                if (napQuality) napText += ` - ${napQuality}`;
+            } else {
+                napText = 'Not recorded';
+            }
+            document.getElementById('modalNap').textContent = napText;
+            
+            // Display activities (Tags)
+            let activitiesHtml = '';
+            if (activities && Array.isArray(activities) && activities.length > 0) {
+                activities.forEach(activity => {
+                    // Check if activity is an object (new structure) or string (old structure)
+                    let activityName = typeof activity === 'object' ? (activity.name || 'Unknown Activity') : activity;
+                    activitiesHtml += `<span class="activity-tag">${activityName}</span>`;
+                });
+            } else {
+                activitiesHtml = '<span style="color: #94a3b8; font-size: 13px;">No activities recorded</span>';
+            }
+            document.getElementById('modalActivities').innerHTML = activitiesHtml;
+            
+            // Display medications (Detailed List)
+            let medicationsHtml = '';
+            if (medications && Array.isArray(medications) && medications.length > 0) {
+                medications.forEach(med => {
+                    let medObj = med;
+                    // If it's a string that looks like JSON, try to parse it
+                    if (typeof med === 'string' && (med.startsWith('{') || med.startsWith('['))) {
+                        try {
+                            medObj = JSON.parse(med);
+                        } catch (e) {
+                            medObj = med; // Keep as string if parse fails
+                        }
+                    }
+
+                    // Extract name and details
+                    let name = 'Unknown Medication';
+                    let time = '';
+                    let doseInfo = '';
+                    
+                    if (typeof medObj === 'object' && medObj !== null) {
+                        name = medObj.medication_name || medObj.name || 'Unknown Medication';
+                        time = medObj.time ? `Given at ${medObj.time}` : 'Time not recorded';
+                        
+                        // Build dose information
+                        let doseParts = [];
+                        if (medObj.dose_index) {
+                            doseParts.push(`Dose ${medObj.dose_index}`);
+                        }
+                        if (medObj.amount) {
+                            doseParts.push(medObj.amount);
+                        }
+                        if (doseParts.length > 0) {
+                            doseInfo = ` (${doseParts.join(' - ')})`;
+                        }
+                    } else {
+                        name = String(medObj);
+                    }
+
+                    medicationsHtml += `
+                        <div class="medication-item">
+                            <span class="med-name">${name}${doseInfo}</span>
+                            <span class="med-time">
+                                <i class="fas fa-check-circle"></i> ${time}
+                            </span>
+                        </div>
+                    `;
+                });
+            } else {
+                 medicationsHtml = '<p style="color: #94a3b8; font-size: 14px;">No medications administered</p>';
+            }
+            document.getElementById('modalMedications').innerHTML = medicationsHtml;
+            
+            document.getElementById('modalNotes').textContent = notes || 'No additional notes.';
+            
+            // Show modal
+            document.getElementById('reportModal').style.display = 'flex';
+        }
+        
+        function closeReportModal() {
+            document.getElementById('reportModal').style.display = 'none';
+        }
+
+
 
         // Mobile menu toggle
         const mobileToggle = document.querySelector('.mobile-toggle');
@@ -472,6 +527,21 @@
                 if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
                     sidebar.classList.remove('active');
                 }
+            }
+        });
+        // Client-side date logic for Reports
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateInput = document.getElementById('reportDateInput');
+            
+            if (dateInput) {
+                // Set max date to today
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const localToday = `${year}-${month}-${day}`;
+                
+                dateInput.max = localToday;
             }
         });
     </script>

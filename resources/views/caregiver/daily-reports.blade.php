@@ -1,336 +1,704 @@
-<!DOCTYPE html>
-<html lang="en">
+@extends('layouts.caregiver')
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daily Reports - Caregiver Dashboard</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    @vite(['resources/css/caregiver/dashboard.css'])
-</head>
+@section('title', 'Daily Reports')
 
-<body>
-    <div class="dashboard-container">
-        <!-- Sidebar -->
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <div class="logo">
-                    <i class="fas fa-baby"></i>
-                    <h2>Childcare</h2>
+@section('styles')
+    @vite(['resources/css/caregiver/daily-reports.css'])
+@endsection
+
+@section('content')
+    <div class="top-bar">
+        <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div style="display: flex; align-items: center;">
+            <a href="{{ route('caregiver.dashboard') }}" class="back-dashboard-icon">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1>Daily Reports</h1>
+        </div>
+        <div class="top-bar-actions">
+            <button onclick="document.getElementById('create-report-form').scrollIntoView({behavior: 'smooth'})"
+                class="btn-create">
+                <i class="fas fa-plus"></i> Create New Report
+            </button>
+            <a href="{{ route('caregiver.notifications') }}"
+                class="icon-btn {{ request()->routeIs('caregiver.notifications') ? 'active' : '' }}">
+                <i class="fas fa-bell"></i>
+                <span class="notification-dot"></span>
+            </a>
+            <a href="{{ route('caregiver.messages') }}"
+                class="icon-btn {{ request()->routeIs('caregiver.messages') ? 'active' : '' }}">
+                <i class="fas fa-envelope"></i>
+            </a>
+        </div>
+    </div>
+
+    <div class="content-area">
+        @if(session('success'))
+            <div class="alert-success">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="alert-error" style="background-color: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem;">
+                <ul style="margin-bottom: 0;">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-file-alt"></i>
                 </div>
-                <div class="user-info">
-                    <div class="user-avatar">SC</div>
-                    <div class="user-details">
-                        <h4>Sarah Connor</h4>
-                        <p>Caregiver</p>
-                    </div>
+                <div class="stat-details">
+                    <h3>{{ $assignedChildren->count() }}</h3>
+                    <p>Reports Today</p>
                 </div>
             </div>
-
-            <nav class="nav-menu">
-                <div class="nav-section">
-                    <div class="nav-section-title">Main Menu</div>
-                    <a href="{{ route('caregiver.dashboard') }}" class="nav-item">
-                        <i class="fas fa-home"></i>
-                        <span>Dashboard</span>
-                    </a>
-                    <a href="{{ route('caregiver.assigned') }}" class="nav-item">
-                        <i class="fas fa-users"></i>
-                        <span>Assigned Children</span>
-                    </a>
-                    <a href="{{ route('caregiver.schedule') }}" class="nav-item">
-                        <i class="fas fa-calendar-alt"></i>
-                        <span>My Schedule</span>
-                    </a>
-                    <a href="{{ route('caregiver.attendance') }}" class="nav-item">
-                        <i class="fas fa-calendar-check"></i>
-                        <span>Attendance</span>
-                    </a>
+            <div class="stat-card">
+                <div class="stat-icon orange">
+                    <i class="fas fa-clock"></i>
                 </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">Activities</div>
-                    <a href="{{ route('caregiver.reports') }}" class="nav-item active">
-                        <i class="fas fa-file-alt"></i>
-                        <span>Daily Reports</span>
-                    </a>
-                    <a href="{{ route('caregiver.health') }}" class="nav-item">
-                        <i class="fas fa-heartbeat"></i>
-                        <span>Health Records</span>
-                    </a>
-                    <a href="{{ route('caregiver.events') }}" class="nav-item">
-                        <i class="fas fa-calendar-days"></i>
-                        <span>Events</span>
-                    </a>
-                    <a href="{{ route('caregiver.messages') }}" class="nav-item">
-                        <i class="fas fa-comments"></i>
-                        <span>Messages</span>
-                        <span class="badge">4</span>
-                    </a>
-                    <a href="{{ route('caregiver.notifications') }}" class="nav-item">
-                        <i class="fas fa-bell"></i>
-                        <span>Notifications</span>
-                    </a>
-                </div>
-
-                <div class="nav-section">
-                    <div class="nav-section-title">Personal</div>
-                    <a href="{{ route('caregiver.leave') }}" class="nav-item">
-                        <i class="fas fa-calendar-times"></i>
-                        <span>Leave Requests</span>
-                    </a>
-                    <a href="{{ route('logout') }}" class="nav-item"
-                        onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span>Logout</span>
-                    </a>
-                    <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                        @csrf
-                    </form>
-                </div>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="top-bar">
-                <button class="mobile-toggle" onclick="document.getElementById('sidebar').classList.toggle('active')">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <h1>Daily Reports</h1>
-                <div class="top-bar-actions">
-                    <button style="padding: 10px 20px; background: #059669; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
-                        <i class="fas fa-plus"></i> Create New Report
-                    </button>
-                    <a href="{{ route('caregiver.notifications') }}" class="icon-btn {{ request()->routeIs('caregiver.notifications') ? 'active' : '' }}">
-                        <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
-                    </a>
-                    <a href="{{ route('caregiver.messages') }}" class="icon-btn {{ request()->routeIs('caregiver.messages') ? 'active' : '' }}">
-                        <i class="fas fa-envelope"></i>
-                    </a>
+                <!-- Logic for pending reports: assigned children count - today's reports count -->
+                <div class="stat-details">
+                    <h3>{{ $pendingReportsCount }}</h3>
+                    <p>Pending Reports</p>
                 </div>
             </div>
-
-            <div class="content-area">
-                <!-- Stats Grid -->
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon green">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3>8</h3>
-                            <p>Reports Today</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon orange">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3">4</h3>
-                            <p>Pending Reports</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon blue">
-                            <i class="fas fa-check-circle"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3>45</h3>
-                            <p>Completed This Week</p>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon purple">
-                            <i class="fas fa-star"></i>
-                        </div>
-                        <div class="stat-details">
-                            <h3>98%</h3>
-                            <p>Completion Rate</p>
-                        </div>
-                    </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-check-circle"></i>
                 </div>
-
-                <!-- Create Report Form -->
-                <div class="card" style="margin-bottom: 30px;">
-                    <div class="card-header">
-                        <h3>Create Daily Report</h3>
-                    </div>
-                    <form style="display: grid; gap: 20px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                            <div>
-                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">Select Child</label>
-                                <select style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
-                                    <option>Select a child</option>
-                                    <option>Emma Martinez</option>
-                                    <option>Lucas Johnson</option>
-                                    <option>Olivia Williams</option>
-                                    <option>Ava Davis</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">Date</label>
-                                <input type="date" value="2025-12-23" style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">Mood</label>
-                            <div style="display: flex; gap: 10px;">
-                                <button type="button" style="padding: 10px 20px; border: 2px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer; font-size: 24px;">😊</button>
-                                <button type="button" style="padding: 10px 20px; border: 2px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer; font-size: 24px;">😐</button>
-                                <button type="button" style="padding: 10px 20px; border: 2px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer; font-size: 24px;">😢</button>
-                                <button type="button" style="padding: 10px 20px; border: 2px solid #059669; border-radius: 8px; background: #d1fae5; cursor: pointer; font-size: 24px;">😄</button>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">Meals</label>
-                            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
-                                <div>
-                                    <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #6b7280;">Breakfast</label>
-                                    <select style="width: 100%; padding: 8px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
-                                        <option>All</option>
-                                        <option>Most</option>
-                                        <option>Some</option>
-                                        <option>None</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #6b7280;">Lunch</label>
-                                    <select style="width: 100%; padding: 8px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
-                                        <option>All</option>
-                                        <option>Most</option>
-                                        <option>Some</option>
-                                        <option>None</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #6b7280;">Snack</label>
-                                    <select style="width: 100%; padding: 8px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
-                                        <option>All</option>
-                                        <option>Most</option>
-                                        <option>Some</option>
-                                        <option>None</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">Nap Time</label>
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                                <div>
-                                    <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #6b7280;">Duration (minutes)</label>
-                                    <input type="number" placeholder="90" style="width: 100%; padding: 8px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
-                                </div>
-                                <div>
-                                    <label style="display: block; margin-bottom: 5px; font-size: 13px; color: #6b7280;">Quality</label>
-                                    <select style="width: 100%; padding: 8px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 13px;">
-                                        <option>Excellent</option>
-                                        <option>Good</option>
-                                        <option>Fair</option>
-                                        <option>Poor</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">Activities Participated</label>
-                            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                                <label style="display: flex; align-items: center; gap: 8px; padding: 8px 15px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer;">
-                                    <input type="checkbox" checked> Art & Crafts
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 8px; padding: 8px 15px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer;">
-                                    <input type="checkbox" checked> Outdoor Play
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 8px; padding: 8px 15px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer;">
-                                    <input type="checkbox"> Music & Dance
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 8px; padding: 8px 15px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer;">
-                                    <input type="checkbox" checked> Story Time
-                                </label>
-                                <label style="display: flex; align-items: center; gap: 8px; padding: 8px 15px; border: 2px solid #e5e7eb; border-radius: 8px; cursor: pointer;">
-                                    <input type="checkbox"> Science
-                                </label>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500; color: #1f2937;">Notes & Observations</label>
-                            <textarea rows="4" placeholder="Enter any observations, achievements, or concerns..." style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
-                        </div>
-
-                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                            <button type="button" style="padding: 12px 24px; background: #f3f4f6; color: #4b5563; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
-                                Save as Draft
-                            </button>
-                            <button type="submit" style="padding: 12px 24px; background: #059669; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500;">
-                                Submit Report
-                            </button>
-                        </div>
-                    </form>
+                <div class="stat-details">
+                    <h3>{{ $completedWeekCount }}</h3>
+                    <p>Completed This Week</p>
                 </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="stat-details">
+                    <h3>{{ $completionRate }}%</h3>
+                    <p>Completion Rate</p>
+                </div>
+            </div>
+        </div>
 
-                <!-- Recent Reports -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Recent Reports</h3>
-                        <select style="padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;">
-                            <option>All Children</option>
-                            <option>Emma Martinez</option>
-                            <option>Lucas Johnson</option>
-                            <option>Olivia Williams</option>
+        <!-- Create Report Form -->
+        <div class="card create-report-section" id="create-report-form">
+            <div class="card-header">
+                <h3>Create Daily Report</h3>
+            </div>
+            <form action="{{ route('caregiver.reports.store') }}" method="POST" class="form-grid">
+                @csrf
+                <div class="form-row">
+                    <div>
+                        <label class="form-label">Select Child</label>
+                        <select name="child_id" required class="form-control">
+                            <option value="">Select a child</option>
+                            @foreach($assignedChildren as $child)
+                                <option value="{{ $child->id }}">{{ $child->first_name }} {{ $child->last_name }}</option>
+                            @endforeach
                         </select>
                     </div>
-                    <div style="display: grid; gap: 15px;">
-                        <div style="padding: 15px; background: #f9fafb; border-radius: 10px; border-left: 4px solid #059669;">
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                                <div>
-                                    <h4 style="color: #1f2937; font-size: 16px; margin-bottom: 5px;">Emma Martinez - December 23, 2025</h4>
-                                    <p style="color: #6b7280; font-size: 13px;">Mood: 😄 Happy • Meals: All eaten • Nap: 90 mins (Excellent)</p>
-                                </div>
-                                <span style="padding: 6px 12px; background: #d1fae5; color: #065f46; border-radius: 20px; font-size: 12px; font-weight: 600;">Submitted</span>
-                            </div>
-                            <p style="color: #4b5563; font-size: 14px;">Emma had a wonderful day! She was very engaged during art activities and created a beautiful painting. She played well with others during outdoor time.</p>
+                    <div>
+                        <label class="form-label">Date</label>
+                        <input type="date" name="report_date" id="report_date" class="form-control">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Mood</label>
+                    <input type="hidden" name="mood" id="selectedMood">
+                    <div class="mood-buttons">
+                        <button type="button" onclick="selectMood('Happy', this)" class="mood-btn">😄</button>
+                        <button type="button" onclick="selectMood('Content', this)" class="mood-btn">😊</button>
+                        <button type="button" onclick="selectMood('Fussy', this)" class="mood-btn">😐</button>
+                        <button type="button" onclick="selectMood('Sad', this)" class="mood-btn">😢</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Meals</label>
+                    <div class="meals-grid">
+                        <div>
+                            <label class="sub-label">Breakfast</label>
+                            <select name="meals[breakfast]" class="meal-select">
+                                <option value="All">All</option>
+                                <option value="Most">Most</option>
+                                <option value="Some">Some</option>
+                                <option value="None">None</option>
+                            </select>
                         </div>
-                        <div style="padding: 15px; background: #f9fafb; border-radius: 10px; border-left: 4px solid #059669;">
-                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                                <div>
-                                    <h4 style="color: #1f2937; font-size: 16px; margin-bottom: 5px;">Lucas Johnson - December 23, 2025</h4>
-                                    <p style="color: #6b7280; font-size: 13px;">Mood: 😊 Content • Meals: Most eaten • Nap: 75 mins (Good)</p>
-                                </div>
-                                <span style="padding: 6px 12px; background: #d1fae5; color: #065f46; border-radius: 20px; font-size: 12px; font-weight: 600;">Submitted</span>
-                            </div>
-                            <p style="color: #4b5563; font-size: 14px;">Lucas enjoyed story time and participated actively. He was a bit fussy during lunch but ate most of his meal. Good nap today.</p>
+                        <div>
+                            <label class="sub-label">Lunch</label>
+                            <select name="meals[lunch]" class="meal-select">
+                                <option value="All">All</option>
+                                <option value="Most">Most</option>
+                                <option value="Some">Some</option>
+                                <option value="None">None</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="sub-label">Snack</label>
+                            <select name="meals[snack]" class="meal-select">
+                                <option value="All">All</option>
+                                <option value="Most">Most</option>
+                                <option value="Some">Some</option>
+                                <option value="None">None</option>
+                            </select>
                         </div>
                     </div>
                 </div>
+
+                <div>
+                    <label class="form-label">Nap Time</label>
+                    <div class="nap-grid">
+                        <div>
+                            <label class="sub-label">Duration (minutes)</label>
+                            <input type="number" name="nap_duration" placeholder="90" class="meal-select">
+                        </div>
+                        <div>
+                            <label class="sub-label">Quality</label>
+                            <select name="nap_quality" class="meal-select">
+                                <option value="Excellent">Excellent</option>
+                                <option value="Good">Good</option>
+                                <option value="Fair">Fair</option>
+                                <option value="Poor">Poor</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Activities Participated</label>
+                    <div class="activities-container">
+                        <label class="activity-label">
+                            <input type="checkbox" name="activities[]" value="Art & Crafts"> Art & Crafts
+                        </label>
+                        <label class="activity-label">
+                            <input type="checkbox" name="activities[]" value="Outdoor Play"> Outdoor Play
+                        </label>
+                        <label class="activity-label">
+                            <input type="checkbox" name="activities[]" value="Music & Dance"> Music & Dance
+                        </label>
+                        <label class="activity-label">
+                            <input type="checkbox" name="activities[]" value="Story Time"> Story Time
+                        </label>
+                        <label class="activity-label">
+                            <input type="checkbox" name="activities[]" value="Science"> Science
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Medications Administered</label>
+                    <div id="medications-container" class="medications-list">
+                        <div class="empty-state-small">Select a child to view active medications</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Notes & Observations</label>
+                    <textarea name="notes" rows="4" placeholder="Enter any observations, achievements, or concerns..." class="notes-area"></textarea>
+                </div>
+
+                <div class="form-actions" style="display: flex; gap: 10px; justify-content: flex-end;">
+                  <!--  <button type="submit" name="submit_action" value="save_draft" class="btn-submit" style="background-color: #6b7280; color: white;">
+                        Save Draft
+                    </button>-->
+                    <button type="submit" name="submit_action" value="complete" class="btn-submit">
+                        Submit Report
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Recent Reports -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Recent Reports</h3>
             </div>
-        </main>
+            <div class="reports-list">
+                @forelse($recentReports as $report)
+                    <div class="report-item">
+                        <div class="report-header">
+                            <div>
+                                <h4 class="report-title">{{ $report->child->first_name }} {{ $report->child->last_name }} - {{ $report->report_date->format('F d, Y') }}</h4>
+                                <p class="report-meta">
+                                    Mood: {{ $report->mood }} • 
+                                    Meals: B:{{ $report->meals['breakfast'] ?? '-' }}/L:{{ $report->meals['lunch'] ?? '-' }}/S:{{ $report->meals['snack'] ?? '-' }} • 
+                                    Nap: {{ $report->nap_duration }} mins ({{ $report->nap_quality }})
+                                </p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <button onclick="viewReport({{ $report->id }})" class="btn-view-report" title="View Full Report">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <span class="status-badge {{ $report->status === 'completed' ? 'submitted' : 'draft' }}" 
+                                      style="background-color: {{ $report->status === 'completed' ? '#d1fae5' : '#f3f4f6' }}; 
+                                             color: {{ $report->status === 'completed' ? '#065f46' : '#374151' }}; 
+                                             padding: 2px 10px; 
+                                             border-radius: 12px; 
+                                             font-size: 0.75rem;">
+                                    {{ $report->status === 'completed' ? 'Submitted' : 'Draft' }}
+                                </span>
+                            </div>
+                        </div>
+                        <p class="report-notes">{{ Str::limit($report->notes, 100) }}</p>
+                        @if(!empty($report->activities))
+                            <div class="activity-tags">
+                                @foreach($report->activities as $activity)
+                                    <span class="activity-tag">{{ $activity }}</span>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                @empty
+                    <div class="empty-reports">No reports filed recently.</div>
+                @endforelse
+            </div>
+        </div>
+    </div>
+
+    <!-- View Report Modal -->
+    <div class="modal" id="viewReportModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="modalReportTitle">Report Details</h2>
+                <button class="close-modal" onclick="closeReportModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalReportBody">
+                <!-- Report details will be loaded here -->
+            </div>
+        </div>
     </div>
 
     <script>
-        // Mobile menu toggle
-        const mobileToggle = document.querySelector('.mobile-toggle');
-        const sidebar = document.getElementById('sidebar');
+        // Set default date to client's local today and restrict future dates
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateInput = document.getElementById('report_date');
+            if (dateInput) {
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const formattedDate = `${year}-${month}-${day}`;
+                
+                // Restrict future dates
+                dateInput.max = formattedDate;
 
-        if (mobileToggle) {
-            // Toggle handled by inline onclick
-        }
-
-        // Close sidebar when clicking outside on mobile
-        document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768) {
-                if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
-                    sidebar.classList.remove('active');
+                if (!dateInput.value) {
+                    dateInput.value = formattedDate;
                 }
             }
         });
-    </script>
-</body>
 
-</html>
+        const reportsData = @json($recentReports);
+        const childrenData = @json($assignedChildren);
+
+        // Shared function to update medications
+        function updateMedicationList(existingMeds = []) {
+            const childSelect = document.querySelector('select[name="child_id"]');
+            const dateInput = document.getElementById('report_date');
+            const container = document.getElementById('medications-container');
+            
+            const childId = childSelect.value;
+            const reportDate = dateInput.value;
+            
+            container.innerHTML = ''; // Clear previous
+
+            if (!childId) {
+                container.innerHTML = '<div class="empty-state-small">Select a child to view active medications</div>';
+                return;
+            }
+
+            if (!reportDate) {
+                container.innerHTML = '<div class="empty-state-small">Select a date to view active medications</div>';
+                return;
+            }
+
+            const selectedChild = childrenData.find(c => c.id == childId);
+            const allMedications = selectedChild ? selectedChild.medications : [];
+
+            // Filter medications based on Report Date
+            const medications = allMedications.filter(med => {
+                const medStart = new Date(med.start_date);
+                const medEnd = med.end_date ? new Date(med.end_date) : null;
+                const rDate = new Date(reportDate);
+                
+                // Reset times to compare dates only
+                medStart.setHours(0,0,0,0);
+                if(medEnd) medEnd.setHours(0,0,0,0);
+                rDate.setHours(0,0,0,0);
+
+                const isActive = rDate >= medStart && (!medEnd || rDate <= medEnd);
+                return isActive; // Only show if active on the report date
+            });
+
+            if (medications.length === 0) {
+                container.innerHTML = '<div class="empty-state-small">No active medications for this date.</div>';
+                return;
+            }
+
+            let logIndex = 0;
+            
+            medications.forEach(med => {
+                // Parse frequency to get count (e.g. "2 times" -> 2)
+                let count = parseInt(med.frequency);
+                if (isNaN(count) || count < 1) count = 1;
+                if (count > 10) count = 10; // Safety limit
+
+                // Create a container for this medication's doses
+                const medGroup = document.createElement('div');
+                medGroup.className = 'medication-group';
+                
+                medGroup.innerHTML = `
+                    <div class="medication-group-header">
+                        <span>${med.medication_name}</span>
+                        <span class="medication-meta">${med.dosage} • ${med.frequency}</span>
+                    </div>
+                `;
+
+                for(let i = 0; i < count; i++) {
+                    const item = document.createElement('div');
+                    item.className = 'medication-item';
+                    
+                    const uniqueId = `med_${med.id}_${i}`;
+                    const labelText = count > 1 ? `Dose ${i + 1}` : 'Mark as Given';
+
+                    // Check if this specific dose was already given in the draft
+                    // existingMeds structure: array of objects {medication_id, dose_index, given, time, ...}
+                    // match by medication_id AND dose_index (or infer index if not strict)
+                    // Since we save full log, we should find exact match
+                    let foundDose = null;
+                    if (existingMeds && existingMeds.length > 0) {
+                         foundDose = existingMeds.find(m => 
+                            m.medication_id == med.id && 
+                            // Legacy support (check index only if present, or infer from list order?)
+                            // Better to match by dose_index if we saved it. We did add it to hidden field.
+                            (m.dose_index == (i + 1)) 
+                        );
+                    }
+
+                    const isChecked = foundDose && (foundDose.given == "1" || foundDose.status == "Given");
+                    const savedTime = foundDose ? foundDose.time : '';
+
+                    item.innerHTML = `
+                        <div class="med-action">
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="${uniqueId}" name="medication_log[${logIndex}][given]" value="1" onchange="toggleMedicationState(this)" ${isChecked ? 'checked' : ''}>
+                                <label for="${uniqueId}">${labelText}</label>
+                                <input type="hidden" name="medication_log[${logIndex}][medication_id]" value="${med.id}">
+                                <input type="hidden" name="medication_log[${logIndex}][medication_name]" value="${med.medication_name}">
+                                <input type="hidden" name="medication_log[${logIndex}][dose_index]" value="${i + 1}">
+                            </div>
+                            <div class="time-input-wrapper" style="${isChecked ? 'display: block;' : 'display: none;'}">
+                                <input type="time" name="medication_log[${logIndex}][time]" value="${savedTime}" placeholder="Time" ${isChecked ? '' : 'disabled'}>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Add checked class if needed right away
+                    if(isChecked) item.classList.add('checked');
+
+                    medGroup.appendChild(item);
+                    logIndex++;
+                }
+                container.appendChild(medGroup);
+            });
+        }
+
+        function toggleMedicationState(checkbox) {
+            // Find parent item to toggle style class
+            const medItem = checkbox.closest('.medication-item');
+            const wrapper = medItem.querySelector('.time-input-wrapper');
+            const timeInput = wrapper.querySelector('input');
+            
+            if (checkbox.checked) {
+                medItem.classList.add('checked');
+                wrapper.style.display = 'block';
+                timeInput.disabled = false;
+                timeInput.required = true;
+                
+                // Set default time to now if empty
+                if (!timeInput.value) {
+                    const now = new Date();
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    timeInput.value = `${hours}:${minutes}`;
+                }
+            } else {
+                medItem.classList.remove('checked');
+                wrapper.style.display = 'none';
+                timeInput.disabled = true;
+                timeInput.required = false;
+                timeInput.value = '';
+            }
+        }
+        
+        async function checkDraft() {
+            const childId = document.querySelector('select[name="child_id"]').value;
+            const reportDate = document.getElementById('report_date').value;
+
+            if (!childId || !reportDate) return;
+
+            try {
+                const response = await fetch(`{{ route('caregiver.daily-reports.check') }}?child_id=${childId}&date=${reportDate}`);
+                const data = await response.json();
+                populateForm(data);
+            } catch (error) {
+                console.error('Error checking draft:', error);
+                // Even on error, update meds list (empty)
+                updateMedicationList([]);
+            }
+        }
+
+        function populateForm(data) {
+            // Reset common fields first
+            document.querySelector('textarea[name="notes"]').value = '';
+            // Reset mood buttons
+            document.querySelectorAll('.mood-btn').forEach(b => {
+                b.style.borderColor = '#e5e7eb';
+                b.style.background = 'white';
+            });
+            document.getElementById('selectedMood').value = '';
+            // Reset selects
+            document.querySelectorAll('select').forEach(s => {
+                if(s.name !== 'child_id') s.value = ''; // Don't reset child select
+            });
+            // Reset inputs
+            document.querySelector('input[name="nap_duration"]').value = '';
+
+            if (!data) {
+                // No draft, just show empty meds list
+                updateMedicationList([]);
+                return;
+            }
+
+            // Populate fields
+            if (data.notes) document.querySelector('textarea[name="notes"]').value = data.notes;
+            if (data.nap_duration) document.querySelector('input[name="nap_duration"]').value = data.nap_duration;
+            if (data.nap_quality) document.querySelector('select[name="nap_quality"]').value = data.nap_quality;
+            
+            // Meals
+            if (data.meals) {
+                if (data.meals.breakfast) document.querySelector('select[name="meals[breakfast]"]').value = data.meals.breakfast;
+                if (data.meals.lunch) document.querySelector('select[name="meals[lunch]"]').value = data.meals.lunch;
+                if (data.meals.snack) document.querySelector('select[name="meals[snack]"]').value = data.meals.snack;
+            }
+
+            // Mood
+            if (data.mood) {
+                const btn = Array.from(document.querySelectorAll('.mood-btn')).find(b => b.textContent.trim().includes(getMoodEmoji(data.mood)) || b.getAttribute('onclick').includes(data.mood));
+                // Since onclick has 'Happy', we can match intent. My helper logic below is simpler:
+                // Just use the existing helper function logic manually
+                 const moodMap = { 'Happy': '😄', 'Content': '😊', 'Fussy': '😐', 'Sad': '😢' };
+                 // Find button by onclick text
+                 const targetBtn = document.querySelector(`button[onclick*="'${data.mood}'"]`);
+                 if(targetBtn) selectMood(data.mood, targetBtn);
+            }
+
+            // Activities
+            // Reset all checkboxes first
+            document.querySelectorAll('input[name="activities[]"]').forEach(cb => cb.checked = false);
+            if (data.activities && Array.isArray(data.activities)) {
+                data.activities.forEach(activity => {
+                    const cb = document.querySelector(`input[name="activities[]"][value="${activity}"]`);
+                    if (cb) cb.checked = true;
+                });
+            }
+
+            // Medications
+            let savedMeds = [];
+            if (data.medications_included) {
+                try {
+                     savedMeds = typeof data.medications_included === 'string' ? JSON.parse(data.medications_included) : data.medications_included;
+                     if (!Array.isArray(savedMeds)) savedMeds = Object.values(savedMeds);
+                } catch(e) { savedMeds = []; }
+            }
+            updateMedicationList(savedMeds);
+            
+            // UX: Update button text?
+            const submitBtn = document.querySelector('button[value="complete"]');
+            if (data.status === 'completed') {
+               // warning or text change
+               submitBtn.textContent = 'Update Submitted Report';
+            } else {
+               submitBtn.textContent = 'Submit Report';
+            }
+        }
+
+        function getMoodEmoji(mood) {
+             const moodMap = { 'Happy': '😄', 'Content': '😊', 'Fussy': '😐', 'Sad': '😢' };
+             return moodMap[mood] || '';
+        }
+
+        // Attach listeners
+        const childSelect = document.querySelector('select[name="child_id"]');
+        if (childSelect) {
+            childSelect.addEventListener('change', checkDraft);
+        }
+        
+        const reportDateInput = document.getElementById('report_date');
+        if (reportDateInput) {
+            reportDateInput.addEventListener('change', checkDraft);
+        }
+        
+        // Initial run
+        document.addEventListener('DOMContentLoaded', () => { 
+            setTimeout(() => {
+                // If child is selected (e.g. browser autofill or back navigation), check draft
+                if(childSelect.value && reportDateInput.value) {
+                    checkDraft();
+                } else {
+                    updateMedicationList(); 
+                }
+            }, 100); 
+        });
+
+        function viewReport(reportId) {
+            const report = reportsData.find(r => r.id === reportId);
+            if (!report) return;
+
+            const modal = document.getElementById('viewReportModal');
+            const title = document.getElementById('modalReportTitle');
+            const body = document.getElementById('modalReportBody');
+
+            title.textContent = `${report.child.first_name} ${report.child.last_name} - ${new Date(report.report_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+
+            const meals = report.meals || {};
+            const activities = report.activities || [];
+            // Parse medication log if it's a string, otherwise use as object
+            let medications = report.medications_included;
+            if (typeof medications === 'string') {
+                try {
+                    medications = JSON.parse(medications);
+                } catch(e) {
+                    medications = [];
+                }
+            }
+            // Ensure it's an array (handle object collection edge cases)
+            medications = Array.isArray(medications) ? medications : (medications ? Object.values(medications) : []);
+            
+            // Filter only given medications
+            const givenMedications = medications.filter(m => m.given == "1" || m.status == "Given");
+
+            let medicationsHtml = '';
+            if ( givenMedications.length > 0) {
+                medicationsHtml = '<div class="medication-list-view">';
+                givenMedications.forEach(m => {
+                    let timeDisplay = m.time 
+                        ? new Date(`2000-01-01T${m.time}`).toLocaleTimeString([], {hour: 'numeric', minute:'2-digit'})
+                        : 'Time not recorded';
+                    
+                    let doseLabel = m.dose_index ? `(Dose ${m.dose_index})` : '';
+
+                    medicationsHtml += `
+                        <div class="med-view-item" style="display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee;">
+                            <div>
+                                <strong class="text-gray-700">${m.medication_name}</strong>
+                                <span class="text-xs text-gray-500">${doseLabel}</span>
+                            </div>
+                            <div class="text-green-600" style="color: #059669;">
+                                <i class="fas fa-check-circle"></i> Given at ${timeDisplay}
+                            </div>
+                        </div>
+                    `;
+                });
+                medicationsHtml += '</div>';
+            } else {
+                medicationsHtml = '<p class="text-gray-500 italic" style="color: #6b7280; font-style: italic;">No medications administered.</p>';
+            }
+
+            body.innerHTML = `
+                <div class="report-detail-grid">
+                    <div class="detail-section">
+                        <h4 class="detail-heading">Mood</h4>
+                        <p class="detail-value">${report.mood || 'Not recorded'}</p>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4 class="detail-heading">Meals</h4>
+                        <ul class="meal-list">
+                            <li><strong>Breakfast:</strong> ${meals.breakfast || 'Not recorded'}</li>
+                            <li><strong>Lunch:</strong> ${meals.lunch || 'Not recorded'}</li>
+                            <li><strong>Snack:</strong> ${meals.snack || 'Not recorded'}</li>
+                        </ul>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4 class="detail-heading">Nap Time</h4>
+                        <p class="detail-value">
+                            ${report.nap_duration ? report.nap_duration + ' minutes' : 'No nap'} 
+                            ${report.nap_quality ? ' - ' + report.nap_quality : ''}
+                        </p>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4 class="detail-heading">Activities</h4>
+                        <div class="activity-tags">
+                            ${activities.length ? activities.map(a => `<span class="activity-tag">${a}</span>`).join('') : 'None recorded'}
+                        </div>
+                    </div>
+
+                    <div class="detail-section full-width">
+                        <h4 class="detail-heading">Medications Administered</h4>
+                        <div class="medication-log-container" style="background: #f9fafb; padding: 10px; border-radius: 8px; border: 1px solid #e5e7eb;">
+                            ${medicationsHtml}
+                        </div>
+                    </div>
+
+                    <div class="detail-section full-width">
+                        <h4 class="detail-heading">Notes & Observations</h4>
+                        <p class="detail-value" style="white-space: pre-wrap;">${report.notes || 'No additional notes.'}</p>
+                    </div>
+                </div>
+            `;
+
+            modal.classList.add('active');
+        }
+
+        function formatTime(timeString) {
+            if (!timeString) return '';
+            const [hours, minutes] = timeString.split(':');
+            const h = parseInt(hours);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const h12 = h % 12 || 12;
+            return `${h12}:${minutes} ${ampm}`;
+        }
+
+        function closeReportModal() {
+            document.getElementById('viewReportModal').classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('viewReportModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('viewReportModal')) {
+                closeReportModal();
+            }
+        });
+
+        function selectMood(mood, btn) {
+            document.getElementById('selectedMood').value = mood;
+            
+            // Reset all buttons
+            btn.parentElement.querySelectorAll('button').forEach(b => {
+                b.style.borderColor = '#e5e7eb';
+                b.style.background = 'white';
+            });
+            
+            // Highlight selected
+            btn.style.borderColor = '#059669';
+            btn.style.background = '#d1fae5';
+        }
+    </script>
+@endsection

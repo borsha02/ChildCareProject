@@ -14,12 +14,11 @@
             <div class="sidebar-header">
                 <div class="logo">
                     <i class="fas fa-baby"></i>
-                    <h2>Childcare</h2>
+                    <h2>Little Stars Childcare</h2>
                 </div>
                 <div class="user-info">
-                    <div class="user-avatar">JD</div>
                     <div class="user-details">
-                        <h4>John Doe</h4>
+                        <h4>{{Auth::user()->name}}</h4>
                         <p>Parent Account</p>
                     </div>
                 </div>
@@ -51,12 +50,17 @@
                     <a href="{{ route('parent.messages') }}" class="nav-item">
                         <i class="fas fa-comments"></i>
                         <span>Messages</span>
-                        <span class="badge">3</span>
+                        @php
+                            $unreadMessages = \App\Models\Message::where('receiver_id', Auth::id())->where('is_read', false)->count();
+                        @endphp
+                        @if($unreadMessages > 0)
+                            <span class="badge">{{ $unreadMessages }}</span>
+                        @endif
                     </a>
                     <a href="{{ route('parent.notifications') }}" class="nav-item">
                         <i class="fas fa-bell"></i>
                         <span>Notifications</span>
-                        <span class="badge">5</span>
+                        <span class="badge">{{ $unreadCount > 0 ? $unreadCount : '' }}</span>
                     </a>
                     <a href="{{ route('parent.events') }}" class="nav-item active">
                         <i class="fas fa-calendar-alt"></i>
@@ -115,14 +119,14 @@
                     <h1>Events & Activities</h1>
                 </div>
                 <div class="top-bar-actions">
-                    <div class="search-box">
+                 <!--   <div class="search-box">
                         <input type="text" placeholder="Search events...">
                         <i class="fas fa-search"></i>
-                    </div>
-                    <button class="icon-btn">
+                    </div> -->
+                    <a href="{{ route('parent.notifications') }}" class="icon-btn">
                         <i class="fas fa-bell"></i>
-                        <span class="notification-dot"></span>
-                    </button>
+                        <span class="notification-dot" style="{{ $unreadCount > 0 ? 'display:block' : 'display:none' }}"></span>
+                    </a>
                     <button class="icon-btn">
                         <i class="fas fa-envelope"></i>
                     </button>
@@ -140,73 +144,14 @@
                             <button class="filter-tab" data-filter="registered">My Registrations</button>
                         </div>
                         <div class="filter-actions">
-                            <select class="filter-select">
+                            <select class="filter-select" id="categoryFilter">
                                 <option value="all">All Categories</option>
                                 <option value="educational">Educational</option>
                                 <option value="sports">Sports & Recreation</option>
                                 <option value="cultural">Cultural</option>
                                 <option value="social">Social Events</option>
+                                <option value="holiday">Holidays</option>
                             </select>
-                        </div>
-                    </div>
-
-                    <!-- Calendar View Toggle -->
-                    <div class="view-toggle">
-                        <button class="view-btn active" data-view="list">
-                            <i class="fas fa-list"></i> List View
-                        </button>
-                        <button class="view-btn" data-view="calendar">
-                            <i class="fas fa-calendar"></i> Calendar View
-                        </button>
-                    </div>
-
-                    <!-- Upcoming Events Highlight -->
-                    <div class="featured-events">
-                        <h2><i class="fas fa-star"></i> Featured Events</h2>
-                        <div class="featured-grid">
-                            <div class="featured-card christmas">
-                                <div class="featured-badge">This Week</div>
-                                <div class="featured-icon">
-                                    <i class="fas fa-gifts"></i>
-                                </div>
-                                <div class="featured-content">
-                                    <h3>Christmas Party</h3>
-                                    <p class="featured-date">
-                                        <i class="fas fa-calendar"></i> December 25, 2025
-                                    </p>
-                                    <p class="featured-time">
-                                        <i class="fas fa-clock"></i> 10:00 AM - 2:00 PM
-                                    </p>
-                                    <p class="featured-location">
-                                        <i class="fas fa-map-marker-alt"></i> Main Hall
-                                    </p>
-                                    <button class="register-btn registered">
-                                        <i class="fas fa-check-circle"></i> Registered
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="featured-card newyear">
-                                <div class="featured-badge">Next Week</div>
-                                <div class="featured-icon">
-                                    <i class="fas fa-champagne-glasses"></i>
-                                </div>
-                                <div class="featured-content">
-                                    <h3>New Year Celebration</h3>
-                                    <p class="featured-date">
-                                        <i class="fas fa-calendar"></i> January 1, 2026
-                                    </p>
-                                    <p class="featured-time">
-                                        <i class="fas fa-clock"></i> 11:00 AM - 1:00 PM
-                                    </p>
-                                    <p class="featured-location">
-                                        <i class="fas fa-map-marker-alt"></i> Main Hall
-                                    </p>
-                                    <button class="register-btn">
-                                        <i class="fas fa-plus-circle"></i> Register Now
-                                    </button>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -214,208 +159,156 @@
                     <div class="events-section">
                         <h2><i class="fas fa-calendar-alt"></i> All Events</h2>
 
-                        <!-- Event Card 1 -->
-                        <div class="event-card">
-                            <div class="event-date-badge">
-                                <div class="date-day">28</div>
-                                <div class="date-month">DEC</div>
-                            </div>
-                            <div class="event-content">
-                                <div class="event-header">
-                                    <h3>Parent-Teacher Meeting</h3>
-                                    <span class="event-category educational">Educational</span>
-                                </div>
-                                <p class="event-description">
-                                    Join us for an important discussion about your child's progress and development. Individual sessions will be scheduled.
-                                </p>
-                                <div class="event-details">
-                                    <span class="event-detail">
-                                        <i class="fas fa-clock"></i> 2:00 PM - 5:00 PM
-                                    </span>
-                                    <span class="event-detail">
-                                        <i class="fas fa-map-marker-alt"></i> Conference Room
-                                    </span>
-                                    <span class="event-detail">
-                                        <i class="fas fa-users"></i> 25 Attendees
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="event-actions">
-                                <button class="action-btn primary">
-                                    <i class="fas fa-calendar-plus"></i> Register
-                                </button>
-                                <button class="action-btn secondary">
-                                    <i class="fas fa-info-circle"></i> Details
-                                </button>
-                            </div>
-                        </div>
+                        @forelse($events as $event)
+                            @php
+                                $isPast = $event->end_time->isPast();
+                                $isRegistered = $event->registrations->isNotEmpty();
+                                $filterClass = $isPast ? 'past' : 'upcoming';
+                                if($isRegistered) $filterClass .= ' registered';
+                            @endphp
 
-                        <!-- Event Card 2 -->
-                        <div class="event-card">
-                            <div class="event-date-badge">
-                                <div class="date-day">05</div>
-                                <div class="date-month">JAN</div>
-                            </div>
-                            <div class="event-content">
-                                <div class="event-header">
-                                    <h3>Winter Sports Day</h3>
-                                    <span class="event-category sports">Sports</span>
+                            <div class="event-card {{ $filterClass }} {{ $event->category }}" data-category="{{ $event->category }}">
+                                <div class="event-date-badge">
+                                    <div class="date-day">{{ $event->start_time->format('d') }}</div>
+                                    <div class="date-month">{{ $event->start_time->format('M') }}</div>
                                 </div>
-                                <p class="event-description">
-                                    A fun-filled day of outdoor activities and games for children. Parents are welcome to join and cheer!
-                                </p>
-                                <div class="event-details">
-                                    <span class="event-detail">
-                                        <i class="fas fa-clock"></i> 9:00 AM - 3:00 PM
-                                    </span>
-                                    <span class="event-detail">
-                                        <i class="fas fa-map-marker-alt"></i> Sports Ground
-                                    </span>
-                                    <span class="event-detail">
-                                        <i class="fas fa-users"></i> 50 Attendees
-                                    </span>
+                                <div class="event-content">
+                                    <div class="event-header">
+                                        <h3>{{ $event->title }}</h3>
+                                    </div>
+                                    <p class="event-description">
+                                        {{ Str::limit($event->description, 100) }}
+                                    </p>
+                                    <div class="event-details">
+                                        <span class="event-detail">
+                                            <i class="fas fa-clock"></i> {{ $event->start_time->format('h:i A') }} - {{ $event->end_time->format('h:i A') }}
+                                        </span>
+                                        @if($event->location)
+                                            <span class="event-detail">
+                                                <i class="fas fa-map-marker-alt"></i> {{ $event->location }}
+                                            </span>
+                                        @endif
+                                        @if($event->capacity)
+                                            <span class="event-detail">
+                                                <i class="fas fa-users"></i> {{ $event->registrations_count ?? 0 }} / {{ $event->capacity }}
+                                            </span>
+                                        @endif
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="event-actions">
-                                <button class="action-btn primary">
-                                    <i class="fas fa-calendar-plus"></i> Register
-                                </button>
-                                <button class="action-btn secondary">
-                                    <i class="fas fa-info-circle"></i> Details
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Event Card 3 -->
-                        <div class="event-card">
-                            <div class="event-date-badge">
-                                <div class="date-day">12</div>
-                                <div class="date-month">JAN</div>
-                            </div>
-                            <div class="event-content">
-                                <div class="event-header">
-                                    <h3>Art Exhibition</h3>
-                                    <span class="event-category cultural">Cultural</span>
+                                <div style="align-self: center;">
+                                    <span class="event-category {{ $event->category }}">{{ ucfirst($event->category) }}</span>
                                 </div>
-                                <p class="event-description">
-                                    Showcase of children's artwork from the past semester. Come celebrate your child's creativity!
-                                </p>
-                                <div class="event-details">
-                                    <span class="event-detail">
-                                        <i class="fas fa-clock"></i> 10:00 AM - 4:00 PM
-                                    </span>
-                                    <span class="event-detail">
-                                        <i class="fas fa-map-marker-alt"></i> Art Gallery
-                                    </span>
-                                    <span class="event-detail">
-                                        <i class="fas fa-users"></i> 100 Attendees
-                                    </span>
+                                <div class="event-actions">
+                                    @if($isRegistered)
+                                        <button class="action-btn secondary" disabled>
+                                            <i class="fas fa-check-circle"></i> Registered
+                                        </button>
+                                    @elseif(!$isPast)
+                                        <button type="button" class="action-btn primary" onclick="openRegisterModal({{ $event->id }}, '{{ addslashes($event->title) }}')">
+                                            <i class="fas fa-calendar-plus"></i> Register
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
-                            <div class="event-actions">
-                                <button class="action-btn primary">
-                                    <i class="fas fa-calendar-plus"></i> Register
-                                </button>
-                                <button class="action-btn secondary">
-                                    <i class="fas fa-info-circle"></i> Details
-                                </button>
+                        @empty
+                            <div class="no-events" style="text-align: center; padding: 60px 20px; color: #6b7280;">
+                                <i class="fas fa-calendar-times" style="font-size: 64px; color: #d1d5db; margin-bottom: 20px; display: block;"></i>
+                                <p style="font-size: 18px; margin: 0;">No events found.</p>
                             </div>
-                        </div>
-
-                        <!-- Event Card 4 -->
-                        <div class="event-card">
-                            <div class="event-date-badge">
-                                <div class="date-day">20</div>
-                                <div class="date-month">JAN</div>
-                            </div>
-                            <div class="event-content">
-                                <div class="event-header">
-                                    <h3>Family Picnic Day</h3>
-                                    <span class="event-category social">Social</span>
-                                </div>
-                                <p class="event-description">
-                                    A relaxing day out with families. Bring your picnic baskets and enjoy games, music, and quality time together.
-                                </p>
-                                <div class="event-details">
-                                    <span class="event-detail">
-                                        <i class="fas fa-clock"></i> 11:00 AM - 5:00 PM
-                                    </span>
-                                    <span class="event-detail">
-                                        <i class="fas fa-map-marker-alt"></i> Central Park
-                                    </span>
-                                    <span class="event-detail">
-                                        <i class="fas fa-users"></i> 75 Attendees
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="event-actions">
-                                <button class="action-btn primary">
-                                    <i class="fas fa-calendar-plus"></i> Register
-                                </button>
-                                <button class="action-btn secondary">
-                                    <i class="fas fa-info-circle"></i> Details
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Event Card 5 -->
-                        <div class="event-card past">
-                            <div class="event-date-badge">
-                                <div class="date-day">15</div>
-                                <div class="date-month">DEC</div>
-                            </div>
-                            <div class="event-content">
-                                <div class="event-header">
-                                    <h3>Holiday Concert</h3>
-                                    <span class="event-category cultural">Cultural</span>
-                                </div>
-                                <p class="event-description">
-                                    Children performed beautiful holiday songs and dances. Thank you to all who attended!
-                                </p>
-                                <div class="event-details">
-                                    <span class="event-detail">
-                                        <i class="fas fa-clock"></i> 3:00 PM - 5:00 PM
-                                    </span>
-                                    <span class="event-detail">
-                                        <i class="fas fa-map-marker-alt"></i> Auditorium
-                                    </span>
-                                    <span class="event-detail">
-                                        <i class="fas fa-users"></i> 120 Attended
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="event-actions">
-                                <button class="action-btn secondary">
-                                    <i class="fas fa-images"></i> View Photos
-                                </button>
-                            </div>
-                        </div>
+                        @endforelse
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
+    <!-- Registration Modal -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Register for Event</h3>
+                <span class="close-modal" onclick="closeRegisterModal()">&times;</span>
+            </div>
+            <form action="{{ route('parent.events.register') }}" method="POST">
+                @csrf
+                <input type="hidden" name="event_id" id="modalEventId">
+                
+                <div class="modal-body">
+                    <p style="margin-bottom: 15px; color: #6b7280;">Select children to register:</p>
+                    
+                    @if($children->count() > 0)
+                        <div class="checkbox-group">
+                            <label class="checkbox-container select-all">
+                                <input type="checkbox" id="selectAll" onchange="toggleAllChildren(this)">
+                                <span class="checkmark"></span>
+                                Select All
+                            </label>
+                            
+                            @foreach($children as $child)
+                                <label class="checkbox-container">
+                                    <input type="checkbox" name="selected_children[]" value="{{ $child->id }}" class="child-checkbox" onchange="updateSelectAll()">
+                                    <span class="checkmark"></span>
+                                    {{ $child->first_name }} {{ $child->last_name }}
+                                </label>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="error-text">No active children found. Please add a child profile first.</p>
+                    @endif
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel" onclick="closeRegisterModal()">Cancel</button>
+                    @if($children->count() > 0)
+                        <button type="submit" class="btn-confirm">Confirm Registration</button>
+                    @endif
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
-        // Filter tabs
-        document.querySelectorAll('.filter-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                // Filter events based on data-filter attribute
+        document.addEventListener('DOMContentLoaded', function() {
+            const events = document.querySelectorAll('.event-card');
+            const filterTabs = document.querySelectorAll('.filter-tab');
+            const categoryFilter = document.getElementById('categoryFilter');
+
+            function filterEvents() {
+                const activeTab = document.querySelector('.filter-tab.active').dataset.filter;
+                const category = categoryFilter.value;
+
+                events.forEach(event => {
+                    let show = true; // Default to show
+
+                    // Tab filter
+                    if (activeTab === 'upcoming' && event.classList.contains('past')) show = false;
+                    if (activeTab === 'past' && !event.classList.contains('past')) show = false;
+                    if (activeTab === 'registered' && !event.classList.contains('registered')) show = false;
+
+                    // Category filter
+                    if (category !== 'all' && event.dataset.category !== category) show = false;
+
+                    event.style.display = show ? 'flex' : 'none'; 
+                });
+            }
+
+            filterTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    filterTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    filterEvents();
+                });
             });
+
+            if (categoryFilter) {
+                categoryFilter.addEventListener('change', filterEvents);
+            }
+            
+            // Initial filter
+            filterEvents();
         });
 
-        // View toggle
-        document.querySelectorAll('.view-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                // Switch between list and calendar view
-            });
-        });
-
-        // Mobile menu toggle
+        // Mobile menu toggle (existing code)
         const mobileToggle = document.querySelector('.mobile-toggle');
         const sidebar = document.getElementById('sidebar');
 
@@ -428,11 +321,43 @@
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (e) => {
             if (window.innerWidth <= 768) {
-                if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
+                if (sidebar && !sidebar.contains(e.target) && !mobileToggle.contains(e.target)) {
                     sidebar.classList.remove('active');
                 }
             }
         });
+
+        // Modal Functions
+        const modal = document.getElementById('registerModal');
+        
+        function openRegisterModal(eventId, eventTitle) {
+            document.getElementById('modalEventId').value = eventId;
+            document.getElementById('modalTitle').innerText = 'Register for: ' + eventTitle;
+            modal.style.display = 'block';
+        }
+
+        function closeRegisterModal() {
+            modal.style.display = 'none';
+        }
+
+        function toggleAllChildren(source) {
+            const checkboxes = document.querySelectorAll('.child-checkbox');
+            checkboxes.forEach(cb => cb.checked = source.checked);
+        }
+
+        function updateSelectAll() {
+            const checkboxes = document.querySelectorAll('.child-checkbox');
+            const selectAll = document.getElementById('selectAll');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            selectAll.checked = allChecked;
+        }
+
+        // Close modal if clicking outside content
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                closeRegisterModal();
+            }
+        }
     </script>
 </body>
 </html>

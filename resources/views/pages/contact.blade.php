@@ -32,7 +32,7 @@
                             📞
                         </div>
                         <div class="font-semibold text-gray-900 mb-1">Call Us</div>
-                        <div class="text-sm text-gray-600">+880 1XXX-XXXXXX</div>
+                        <div class="text-sm text-gray-600">+8801881452126</div>
                     </div>
 
                     {{-- Email --}}
@@ -41,7 +41,7 @@
                             ✉️
                         </div>
                         <div class="font-semibold text-gray-900 mb-1">Email</div>
-                        <div class="text-sm text-gray-600">hello@littlestars.com</div>
+                        <div class="text-sm text-gray-600">info.littlestars.childcarecenter@gmail.com</div>
                     </div>
 
                     {{-- Location --}}
@@ -50,18 +50,18 @@
                             📍
                         </div>
                         <div class="font-semibold text-gray-900 mb-1">Visit</div>
-                        <div class="text-sm text-gray-600">Dhaka, Bangladesh</div>
+                        <div class="text-sm text-gray-600">Road 12, Sector 13, Uttara, Dhaka, Bangladesh</div>
                     </div>
 
                 </div>
 
                 {{-- CTA Button --}}
-                <button
+             <!--   <button
                     class="w-full bg-gradient-to-r from-teal-500 to-cyan-600 text-white py-4 rounded-xl font-semibold text-lg
                            hover:shadow-xl hover:scale-[1.02] transition-all flex items-center justify-center gap-3">
                     Schedule Your Visit Today
                     <span>➤</span>
-                </button>
+                </button>-->
 
             </div>
         </div>

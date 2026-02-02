@@ -67,9 +67,9 @@
                             sensory-based and play-driven activities.
                         </p>
 
-                        <button class="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white px-6 py-3 rounded-lg font-semibold">
+                       <!-- <button class="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white px-6 py-3 rounded-lg font-semibold">
                             Learn More
-                        </button>
+                        </button>-->
                     </div>
 
                     <div>
@@ -98,9 +98,9 @@
                             Our preschool program builds early literacy, creativity and curiosity.
                         </p>
 
-                        <button class="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-3 rounded-lg font-semibold">
+                      <!--  <button class="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-3 rounded-lg font-semibold">
                             Learn More
-                        </button>
+                        </button>-->
                     </div>
 
                     <div>
@@ -129,9 +129,9 @@
                             Our Pre-K program prepares children for school success.
                         </p>
 
-                        <button class="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">
+                        <!--<button class="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold">
                             Learn More
-                        </button>
+                        </button>-->
                     </div>
 
                     <div>
@@ -160,9 +160,9 @@
                             Our young learners program introduces leadership and STEM concepts.
                         </p>
 
-                        <button class="bg-gradient-to-r from-violet-500 to-violet-600 text-white px-6 py-3 rounded-lg font-semibold">
+                        <!--<button class="bg-gradient-to-r from-violet-500 to-violet-600 text-white px-6 py-3 rounded-lg font-semibold">
                             Learn More
-                        </button>
+                        </button>-->
                     </div>
 
                     <div>

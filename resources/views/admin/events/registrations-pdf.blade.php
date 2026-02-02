@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Registrations - {{ $event->title }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            padding: 40px;
+            color: #333;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #6366f1;
+            padding-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+
+        .header .event-date {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .summary {
+            display: table;
+            width: 100%;
+            margin-bottom: 30px;
+            border-collapse: separate;
+            border-spacing: 15px 0;
+        }
+
+        .summary-cell {
+            display: table-cell;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            width: 33.33%;
+        }
+
+        .summary-registrations { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+        .summary-parents { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+        .summary-children { background: #fffcf0; border: 1px solid #fef08a; color: #854d0e; }
+
+        .summary-label { font-size: 11px; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        .summary-value { font-size: 20px; font-weight: bold; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        thead {
+            background: #f9fafb;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            font-weight: 700;
+            color: #374151;
+            border-bottom: 2px solid #e5e7eb;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #f3f4f6;
+            font-size: 13px;
+            color: #4b5563;
+        }
+
+        tr:nth-child(even) { background: #f9fafb; }
+
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 11px;
+            color: #9ca3af;
+        }
+
+        @media print {
+            body { padding: 20px; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Event Registration List</h1>
+        <div class="event-title" style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">{{ $event->title }}</div>
+        <div class="event-date">
+            {{ $event->start_time->format('M d, Y') }} | {{ $event->start_time->format('h:i A') }} - {{ $event->end_time->format('h:i A') }}
+        </div>
+    </div>
+
+    <div class="summary">
+        <div class="summary-cell summary-registrations">
+            <div class="summary-label">Total Registrations</div>
+            <div class="summary-value">{{ $total_registrations }}</div>
+        </div>
+        <div class="summary-cell summary-parents">
+            <div class="summary-label">Total Parents</div>
+            <div class="summary-value">{{ $total_parents }}</div>
+        </div>
+        <div class="summary-cell summary-children">
+            <div class="summary-label">Total Children</div>
+            <div class="summary-value">{{ $total_children }}</div>
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 30%;">Parent Name</th>
+                <th style="width: 30%;">Child Name</th>
+                <th style="width: 15%;">Child ID</th>
+                <th style="width: 20%;">Registered At</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($event->registrations as $index => $reg)
+                <tr>
+                    <td>{{ $index + 1 }}</td>
+                    <td style="font-weight: bold; color: #111827;">{{ $reg->user->name }}</td>
+                    <td>{{ $reg->child ? $reg->child->first_name . ' ' . $reg->child->last_name : 'N/A' }}</td>
+                    <td style="color: #6366f1;">{{ $reg->child ? 'CH' . str_pad($reg->child->id, 3, '0', STR_PAD_LEFT) : 'N/A' }}</td>
+                    <td>{{ $reg->created_at->format('M d, Y h:i A') }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="5" style="text-align: center; padding: 30px;">No registrations found for this event.</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p>Generated by Little Stars Childcare Management System on {{ date('M d, Y \a\t h:i A') }}</p>
+    </div>
+
+    <script>
+        window.onload = function() {
+            window.print();
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+/* Children List Section - Inline display below stats */
+.children-list-section {
+    background: white;
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-top: 30px;
+    overflow: hidden;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 30px;
+    border-bottom: 2px solid #f3f4f6;
+    background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+}
+
+.list-header h3 {
+    font-size: 20px;
+    color: #1f2937;
+    font-weight: 600;
+    margin: 0;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.download-pdf-btn {
+    background: #3b82f6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.download-pdf-btn:hover {
+    background: #2563eb;
+    transform: translateY(-1px);
+}
+
+.close-list-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.close-list-btn:hover {
+    background: #dc2626;
+    transform: translateY(-1px);
+}
+
+#childrenListContent {
+    padding: 30px;
+}
+
+.children-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.children-table thead {
+    background: #f9fafb;
+}
+
+.children-table th {
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1f2937;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.children-table td {
+    padding: 16px;
+    border-bottom: 1px solid #f3f4f6;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.children-table tbody tr:hover {
+    background: #fafafa;
+}
+
+.children-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table-student-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.table-student-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 15px;
+    flex-shrink: 0;
+}
+
+.table-student-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 3px;
+}
+
+.table-student-id {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+@media (max-width: 768px) {
+    .list-header {
+        padding: 20px;
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+
+    .close-list-btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    #childrenListContent {
+        padding: 20px;
+    }
+
+    .children-table {
+        font-size: 13px;
+    }
+
+    .children-table th,
+    .children-table td {
+        padding: 12px 10px;
+    }
+}
